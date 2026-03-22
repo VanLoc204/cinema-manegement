@@ -1,0 +1,124 @@
+/* Container tổng của Sơ đồ ghế */
+.booking-container {
+  background: #fdfcf0; /* Nền kem nhạt đồng bộ toàn web */
+  padding: 40px 20px;
+  border-radius: 15px;
+  text-align: center;
+  color: #333;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* 📺 Hiệu ứng màn hình cong phía trên */
+.screen-container {
+  margin-bottom: 50px;
+  perspective: 1000px;
+}
+
+.screen-arc {
+  width: 80%;
+  height: 8px;
+  background: #bcbcbc;
+  margin: 0 auto;
+  border-radius: 50% / 100% 100% 0 0; /* Tạo độ cong */
+  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+}
+
+.screen-text {
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: bold;
+  color: #888;
+  letter-spacing: 10px;
+  text-transform: uppercase;
+}
+
+/* 💺 Bố cục hàng ghế */
+.seat-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.row-label {
+  width: 25px;
+  font-weight: bold;
+  color: #888;
+  font-size: 14px;
+}
+
+/* 🎨 Định dạng từng ô ghế */
+.seat-item {
+  width: 34px;
+  height: 30px;
+  border-radius: 5px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #7d7d7d; /* Màu mặc định: Xám đậm */
+  color: #fff;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Ghế VIP (Hàng D đến G) - Màu đỏ cam Cinema Lux */
+.seat-item.vip {
+  background-color: #fb4226;
+}
+
+/* Ghế Sweetbox (Hàng cuối) - Màu hồng tím */
+.seat-item.sweetbox {
+  background-color: #e91e63;
+}
+
+/* Ghế đang chọn - Màu xanh dương */
+.seat-item.selected {
+  background-color: #4b8df8 !important;
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(75, 141, 248, 0.5);
+}
+
+/* Ghế đã có người đặt - Màu xám nhạt gạch chéo */
+.seat-item.booked {
+  background-color: #e9e9e9 !important;
+  color: #bbb;
+  cursor: not-allowed;
+  position: relative;
+}
+
+.seat-item.booked::after {
+  content: "✕";
+  font-size: 14px;
+}
+
+/* 💡 Chú thích loại ghế (Legend) */
+.legend {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 25px;
+  margin-top: 50px;
+  padding: 20px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+}
+
+.legend-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}

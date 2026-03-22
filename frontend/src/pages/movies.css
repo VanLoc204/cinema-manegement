@@ -1,0 +1,78 @@
+/* movies.css */
+
+/* 🎬 Tiêu đề chính "Danh sách phim" */
+.title {
+  text-align: center;
+  margin: 30px 0;
+  color: #333; /* Chuyển sang màu đen xám */
+  font-size: 2rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* 📦 Lưới danh sách phim */
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 30px;
+  padding: 0 20px;
+}
+
+/* 🎴 Thẻ phim (Card) */
+.movie-card {
+  background: #ffffff; /* Nền trắng sang trọng */
+  border-radius: 12px;
+  overflow: hidden;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Đổ bóng nhẹ hơn cho nền sáng */
+  border: 1px solid #eee; /* Viền mảnh */
+}
+
+.movie-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* 🖼️ Ảnh Poster */
+.movie-card img {
+  width: 100%;
+  height: 340px;
+  object-fit: cover;
+}
+
+/* 🏷️ Tên phim */
+.movie-card h3 {
+  margin: 15px 10px 5px;
+  color: #222; /* Chữ màu đen đậm */
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+/* 📝 Mô tả phim */
+.movie-card p {
+  font-size: 14px;
+  padding: 0 15px;
+  color: #666; /* Chữ màu xám trung tính */
+  line-height: 1.4;
+  height: 40px; /* Giới hạn độ dài mô tả */
+  overflow: hidden;
+}
+
+/* 🔘 Nút "Xem chi tiết" */
+.movie-card button {
+  margin: 20px 0;
+  padding: 10px 20px;
+  border: none;
+  background: #fb4226; /* Đỏ cam chuẩn Cinema Lux */
+  color: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.movie-card button:hover {
+  background: #d6361e; /* Đỏ cam đậm hơn khi hover */
+}
