@@ -7,18 +7,16 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     
-    // Kiểm tra email đã tồn tại chưa
     const exist = await User.findOne({ email });
     if (exist) return res.status(400).json("Email này đã được sử dụng");
 
     const hash = await bcrypt.hash(password, 10);
 
-    // Tạo user mới với quyền mặc định là 'customer'
     const user = await User.create({ 
       name, 
       email, 
       password: hash,
-      role: "customer" // 🛡️ Luôn là khách hàng khi đăng ký web
+      role: "customer" 
     });
 
     res.json({ message: "Đăng ký thành công!", user: { name: user.name, email: user.email } });
@@ -27,7 +25,7 @@ exports.register = async (req, res) => {
   }
 };
 
-// 🔑 ĐĂNG NHẬP (Phân biệt Admin và Customer)
+// 🔑 ĐĂNG NHẬP (Đã thêm userId để sửa lỗi lưu vé)
 exports.login = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
@@ -36,18 +34,18 @@ exports.login = async (req, res) => {
     const isMatch = await bcrypt.compare(req.body.password, user.password);
     if (!isMatch) return res.status(400).json("Sai mật khẩu");
 
-    // 🛡️ Đính kèm Role (quyền) vào trong Token để bảo mật
     const token = jwt.sign(
       { id: user._id, role: user.role }, 
       "SECRET", 
-      { expiresIn: "1d" } // Token hết hạn sau 1 ngày
+      { expiresIn: "1d" }
     );
 
-    // Trả về cả token và quyền để Frontend chuyển hướng trang
+    // 🚀 TRẢ VỀ THÊM userId ĐỂ FRONTEND LẤY DÙNG KHI ĐẶT VÉ
     res.json({ 
       token, 
       role: user.role, 
-      name: user.name 
+      name: user.name,
+      userId: user._id // 👈 Sếp lưu ý dòng này nhé!
     });
   } catch (err) {
     res.status(500).json("Lỗi đăng nhập");

@@ -1,10 +1,11 @@
-const mongoose = require("mongoose"); // 👈 THÊM DÒNG NÀY VÀO ĐẦU FILE
+const mongoose = require("mongoose");
 
 const roomSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  type: { type: String, default: "2D" },
-  rows: { type: Number, default: 5 },
-  cols: { type: Number, default: 8 }
-}, { collection: 'room' }); // Đảm bảo đã có dòng chỉ định collection 'room' này
+  type: { type: String, default: "2D" }, // 🎬 Thêm Loại phòng: 2D, 3D, IMAX...
+  price: { type: Number, required: true },
+  rows: { type: Number, default: 9 },
+  cols: { type: Number, default: 12 }
+});
 
 module.exports = mongoose.model("Room", roomSchema);

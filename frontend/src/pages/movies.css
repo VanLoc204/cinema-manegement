@@ -1,78 +1,93 @@
 /* movies.css */
 
-/* 🎬 Tiêu đề chính "Danh sách phim" */
+/* 🏠 1. Cái "Lồng" bao quanh toàn bộ trang chủ để mọi thứ nằm ở giữa */
+.container {
+  max-width: 1200px; /* 📏 Cùng độ rộng với cái Banner sếp đã làm */
+  margin: 0 auto;   /* 🎯 Đưa cả danh sách vào chính giữa màn hình */
+  padding: 20px;
+}
+
+/* 🎬 2. Tiêu đề chính "Danh sách phim" */
 .title {
   text-align: center;
-  margin: 30px 0;
-  color: #333; /* Chuyển sang màu đen xám */
-  font-size: 2rem;
-  font-weight: 800;
+  margin: 40px 0 30px;
+  color: #333;
+  font-size: 1.8rem;
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
 }
 
-/* 📦 Lưới danh sách phim */
+/* 📊 3. Lưới danh sách phim (CHỐT 4 PHIM 1 HÀNG) */
 .movie-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 30px;
-  padding: 0 20px;
+  grid-template-columns: repeat(4, 1fr); /* 🚀 Chia đúng 4 cột đều nhau */
+  gap: 30px; /* Khoảng cách giữa các phim */
+  padding-bottom: 50px;
 }
 
-/* 🎴 Thẻ phim (Card) */
+/* 🎴 4. Thẻ phim (Card) - Đã thêm hiệu ứng Hover và con trỏ Click */
 .movie-card {
-  background: #ffffff; /* Nền trắng sang trọng */
-  border-radius: 12px;
+  background: #ffffff;
+  border-radius: 16px; /* Bo góc tròn trịa hơn cho hiện đại */
   overflow: hidden;
   text-align: center;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* Đổ bóng nhẹ hơn cho nền sáng */
-  border: 1px solid #eee; /* Viền mảnh */
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); /* Hiệu ứng nảy nhẹ khi hover */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f0f0f0;
+  cursor: pointer; /* 👆 Biến thành bàn tay để khách biết là nhấn được */
+  position: relative;
 }
 
+/* ✨ Hiệu ứng khi di chuột vào: Bay lên và đổ bóng đậm */
 .movie-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  transform: translateY(-12px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  border-color: #fb4226; /* Hiện viền đỏ nhẹ khi chọn */
 }
 
-/* 🖼️ Ảnh Poster */
+/* 🖼️ 5. Ảnh Poster */
 .movie-card img {
   width: 100%;
-  height: 340px;
+  height: 380px; /* Tăng chiều cao ảnh cho chuyên nghiệp */
   object-fit: cover;
+  border-bottom: 1px solid #f5f5f5;
 }
 
-/* 🏷️ Tên phim */
+/* 🏷️ 6. Tên phim */
 .movie-card h3 {
-  margin: 15px 10px 5px;
-  color: #222; /* Chữ màu đen đậm */
-  font-size: 1.2rem;
-  font-weight: 700;
+  margin: 15px 10px 8px;
+  color: #222;
+  font-size: 1.1rem;
+  font-weight: 800;
+  /* 📝 Chặn tên phim quá dài làm lệch hàng */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* 📝 Mô tả phim */
+/* 📝 7. Mô tả phim (Giới hạn 2 dòng cho đều hàng) */
 .movie-card p {
-  font-size: 14px;
-  padding: 0 15px;
-  color: #666; /* Chữ màu xám trung tính */
-  line-height: 1.4;
-  height: 40px; /* Giới hạn độ dài mô tả */
+  font-size: 13px;
+  padding: 0 15px 20px;
+  color: #777;
+  line-height: 1.5;
+  height: 40px; 
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 🚀 Chỉ hiện đúng 2 dòng mô tả */
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* 🔘 Nút "Xem chi tiết" */
-.movie-card button {
-  margin: 20px 0;
-  padding: 10px 20px;
-  border: none;
-  background: #fb4226; /* Đỏ cam chuẩn Cinema Lux */
-  color: white;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background 0.3s;
-}
+/* ❌ ĐÃ XÓA CSS CỦA NÚT "XEM CHI TIẾT" VÌ SẾP KHÔNG DÙNG NỮA */
 
-.movie-card button:hover {
-  background: #d6361e; /* Đỏ cam đậm hơn khi hover */
+/* 📱 8. Hỗ trợ màn hình nhỏ (iPad) hiện 2 cột cho đẹp */
+@media (max-width: 992px) {
+  .movie-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

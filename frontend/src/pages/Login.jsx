@@ -11,10 +11,12 @@ export default function Login() {
         try {
             const res = await axios.post("/auth/login", { email, password });
             
-            // 💾 Lưu tất cả thông tin quan trọng vào máy khách
+            // 💾 Lưu tất cả thông tin quan trọng vào localStorage
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("name", res.data.name); 
             localStorage.setItem("role", res.data.role);
+            // 🚀 QUAN TRỌNG: Lưu ID người dùng để đặt vé không bị null
+            localStorage.setItem("userId", res.data.userId); 
 
             if (res.data.role === "admin") {
                 alert(`Chào sếp ${res.data.name}! Đang chuyển hướng đến trang quản trị...`);
@@ -23,7 +25,7 @@ export default function Login() {
                 navigate("/");
             }
 
-            // 🔄 Tự động tải lại trang để Navbar cập nhật "Hi, [Tên của bạn]!"
+            // 🔄 Tự động tải lại trang để cập nhật Navbar và các trạng thái khác
             window.location.reload();
 
         } catch (err) {

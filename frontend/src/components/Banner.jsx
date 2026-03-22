@@ -1,28 +1,69 @@
-import { useEffect, useState } from "react";
+import { Swiper, SwiperSlide } from 'swiper/react';
+import { Navigation, Pagination, Autoplay } from 'swiper/modules';
 
-const images = [
-  "https://picsum.photos/1200/400?1",
-  "https://picsum.photos/1200/400?2",
-  "https://picsum.photos/1200/400?3"
-];
+// 🚀 Import CSS của Swiper để hiện nút bấm và dấu chấm
+import 'swiper/css';
+import 'swiper/css/navigation';
+import 'swiper/css/pagination';
 
 export default function Banner() {
-  const [index, setIndex] = useState(0);
+    // 🖼️ Danh sách các Banner sếp muốn hiện (Sếp có thể thay link ảnh tùy ý)
+    const bannerImages = [
+        "https://www.elleman.vn/app/uploads/2018/04/25/Avengers-Infinity-War-ELLE-Man-featured-01-01.jpg", // Godzilla x Kong
+        "https://baokhanhhoa.vn/file/e7837c02857c8ca30185a8c39b582c03/042025/b_20250401144223.webp", // Dune 2
+        "https://image.dienthoaivui.com.vn/x,webp,q90/https://dashboard.dienthoaivui.com.vn/uploads/dashboard/editor_upload/poster-phim-hoat-hinh-20.jpg", // Kung Fu Panda 4
+        "https://aeonmall-review-rikkei.cdn.vccloud.vn/public/wp/21/news/eYMabpzR2xAghCdee11Fb1PRg2wSbzaG1tNZ0xfa.jpg"
+    ];
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIndex(prev => (prev + 1) % images.length);
-    }, 3000);
+    return (
+        /* 📦 BƯỚC 1: TẠO CÁI LỒNG Ở GIỮA */
+        <div style={{
+            maxWidth: "1200px", // 📏 Sếp chỉnh con số này để tăng/giảm độ rộng của Banner
+            margin: "20px auto", // 🎯 "auto" giúp đẩy Banner ra chính giữa màn hình
+            padding: "0 20px", // 🛡️ Giữ khoảng cách nhỏ khi thu nhỏ màn hình điện thoại
+            overflow: "hidden"
+        }}>
 
-    return () => clearInterval(interval);
-  }, []);
-
-  return (
-    <div style={{ width: "100%", overflow: "hidden" }}>
-      <img
-        src={images[index]}
-        style={{ width: "100%", height: "400px", objectFit: "cover" }}
-      />
-    </div>
-  );
+            {/* 🎞️ BƯỚC 2: CÁI SWIPER BÂY GIỜ SẼ NẰM GỌN TRONG LỒNG NÀY */}
+            <Swiper
+                modules={[Navigation, Pagination, Autoplay]}
+                spaceBetween={20} // ↔️ Tạo khoảng cách nhỏ nếu sếp hiện nhiều slide
+                slidesPerView={1}
+                navigation={true}
+                pagination={{ clickable: true }}
+                autoplay={{ delay: 3500 }}
+                style={{
+                    height: "450px",
+                    borderRadius: "15px", // ✨ Bo góc cho giống CGV sếp nhé
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.15)" // 🌫️ Thêm tí đổ bóng cho sang
+                }}
+            >
+                {bannerImages.map((url, index) => (
+                    <SwiperSlide key={index}>
+                        <div style={{
+                            width: "100%",
+                            height: "100%",
+                            backgroundImage: `url(${url})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center",
+                        }}>
+                        </div>
+                    </SwiperSlide>
+                ))}
+            </Swiper>
+        </div>
+    );
 }
+
+// --- 💄 Styles cho đẹp ---
+const overlayStyle = {
+    width: "100%", height: "100%",
+    background: "linear-gradient(to top, rgba(0,0,0,0.6), transparent)",
+    display: "flex", alignItems: "flex-end", padding: "0 0 50px 60px"
+};
+
+const textStyle = {
+    color: "#fff", fontSize: "2.5rem", fontWeight: "900",
+    textShadow: "2px 2px 10px rgba(0,0,0,0.5)", margin: 0,
+    letterSpacing: "2px"
+};
