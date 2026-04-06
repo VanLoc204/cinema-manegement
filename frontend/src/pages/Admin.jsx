@@ -173,12 +173,83 @@ export default function Admin() {
         }
     };
 
+    // 🍿 STATE CHO QUẢN LÝ BẮP NƯỚC
+    const [snacks, setSnacks] = useState([]);
+    const [editingSnack, setEditingSnack] = useState(null); // Để lưu món đang chọn để sửa
+    const [newSnack, setNewSnack] = useState({ name: "", price: "", description: "" });
+    const [snackFile, setSnackFile] = useState(null); // Lưu file ảnh thật để upload
+    const [preview, setPreview] = useState(null); // Để hiện ảnh nhỏ xem trước (preview)
+
+    const fetchSnacks = () => {
+        axios.get("/snacks").then(res => setSnacks(res.data));
+    };
+
+    useEffect(() => {
+        if (activeTab === "snacks") fetchSnacks();
+    }, [activeTab]);
+
+    // ➕/✏️ HÀM LƯU BẮP NƯỚC (Dùng chung cho cả Thêm và Sửa)
+    // Tìm hàm handleSaveSnack trong Admin.jsx và sửa như sau:
+    const handleSaveSnack = async (e) => {
+        e.preventDefault();
+
+        // 🛡️ BƯỚC MỚI: Nếu là THÊM MỚI mà sếp quên chọn file thì nhắc ngay
+        if (!editingSnack && !snackFile) {
+            return alert("Sếp ơi, món mới này chưa có ảnh! Bấm 'Choose File' để chọn ảnh đã nhé.");
+        }
+
+        const formData = new FormData();
+        const data = editingSnack || newSnack;
+
+        formData.append("name", data.name);
+        formData.append("price", data.price);
+        formData.append("description", data.description || "");
+
+        if (snackFile) formData.append("image", snackFile);
+
+        try {
+            if (editingSnack) {
+                await axios.put(`/snacks/${editingSnack._id}`, formData, {
+                    headers: { "Content-Type": "multipart/form-data" }
+                });
+                alert("✅ Cập nhật thành công!");
+            } else {
+                await axios.post("/snacks", formData, {
+                    headers: { "Content-Type": "multipart/form-data" }
+                });
+                alert("✅ Thêm bắp nước mới thành công!");
+            }
+
+            // Reset form và file input sau khi thành công
+            setNewSnack({ name: "", price: "", description: "" });
+            setEditingSnack(null);
+            setSnackFile(null);
+            setPreview(null);
+
+            // 💡 Mẹo: Reset cái ô chọn file trên giao diện
+            e.target.reset();
+
+            fetchSnacks();
+        } catch (err) {
+            alert("❌ Lỗi xử lý bắp nước sếp ơi!");
+        }
+    };
+
+    // ❌ HÀM XÓA BẮP NƯỚC
+    const handleDeleteSnack = async (id) => {
+        if (window.confirm("Xóa món này khỏi kho hả sếp?")) {
+            await axios.delete(`/snacks/${id}`);
+            fetchSnacks();
+        }
+    };
+
     // 📝 Danh sách menu quản trị
     const menuItems = [
         { id: "dashboard", label: "📊 Dashboard", color: "#3498db" },
         { id: "movies", label: "🎬 Quản lý Phim", color: "#e74c3c" },
         { id: "rooms", label: "🏢 Quản lý Phòng chiếu", color: "#f1c40f" },
         { id: "showtimes", label: "🕒 Quản lý Suất chiếu", color: "#9b59b6" },
+        { id: "snacks", label: "🍿 Quản lý Bắp nước", color: "#f39c12" },
         { id: "users", label: "👥 Quản lý tài khoản", color: "#1abc9c" },
         { id: "revenue", label: "💰 Quản lý doanh thu", color: "#2ecc71" },
     ];
@@ -600,6 +671,73 @@ export default function Admin() {
                                     ))}
                                 </div>
                             </div>
+                        </div>
+                    )}
+
+                    {/* 🍿 TRƯỜNG HỢP 5: QUẢN LÝ BẮP NƯỚC (FULL CRUD) */}
+                    {activeTab === "snacks" && (
+                        <div>
+                            <div style={cardStyle}>
+                                <h3 style={{ marginTop: 0 }}>{editingSnack ? "✏️ Sửa bắp nước" : "➕ Thêm bắp nước mới"}</h3>
+                                {/* 🛠️ Đã sửa handleSaveSaveSnack thành handleSaveSnack */}
+                                <form onSubmit={handleSaveSnack} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px" }}>
+                                    <input placeholder="Tên món" style={inputStyle}
+                                        value={editingSnack ? editingSnack.name : newSnack.name}
+                                        onChange={e => editingSnack ? setEditingSnack({ ...editingSnack, name: e.target.value }) : setNewSnack({ ...newSnack, name: e.target.value })} required />
+
+                                    <input placeholder="Giá tiền" type="number" style={inputStyle}
+                                        value={editingSnack ? editingSnack.price : newSnack.price}
+                                        onChange={e => editingSnack ? setEditingSnack({ ...editingSnack, price: e.target.value }) : setNewSnack({ ...newSnack, price: e.target.value })} required />
+
+                                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                                        <input type="file" accept="image/*" onChange={(e) => {
+                                            const file = e.target.files[0];
+                                            setSnackFile(file);
+                                            setPreview(URL.createObjectURL(file));
+                                        }} />
+                                        {/* Hiện preview ảnh hoặc ảnh cũ từ server */}
+                                        {(preview || (editingSnack && editingSnack.image)) && (
+                                            <img src={preview || `http://localhost:5000${editingSnack.image}`} width="45" height="45" style={{ borderRadius: "5px", objectFit: "cover" }} />
+                                        )}
+                                    </div>
+
+                                    <textarea placeholder="Mô tả" style={{ ...inputStyle, gridColumn: "span 2" }}
+                                        value={editingSnack ? editingSnack.description : newSnack.description}
+                                        onChange={e => editingSnack ? setEditingSnack({ ...editingSnack, description: e.target.value }) : setNewSnack({ ...newSnack, description: e.target.value })} />
+
+                                    <div style={{ gridColumn: "span 1", display: "flex", gap: "10px" }}>
+                                        <button type="submit" style={btnSubmitStyle}>{editingSnack ? "CẬP NHẬT" : "THÊM MỚI"}</button>
+                                        {editingSnack && <button type="button" onClick={() => { setEditingSnack(null); setPreview(null); }} style={{ background: '#888', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>HỦY</button>}
+                                    </div>
+                                </form>
+                            </div>
+
+                            <table style={tableStyle}>
+                                <thead>
+                                    <tr style={{ background: "#f8f9fa" }}>
+                                        <th style={thStyle}>Ảnh</th>
+                                        <th style={thStyle}>Tên món</th>
+                                        <th style={thStyle}>Giá</th>
+                                        <th style={thStyle}>Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {snacks.map(s => (
+                                        <tr key={s._id} style={{ borderBottom: "1px solid #eee" }}>
+                                            <td style={tdStyle}>
+                                                <img src={`http://localhost:5000${s.image}`} width="55" height="55" style={{ borderRadius: "8px", objectFit: "cover" }}
+                                                    onError={(e) => e.target.src = "https://via.placeholder.com/50"} />
+                                            </td>
+                                            <td style={tdStyle}><b>{s.name}</b></td>
+                                            <td style={{ ...tdStyle, color: "#fb4226", fontWeight: "bold" }}>{s.price.toLocaleString()}đ</td>
+                                            <td style={tdStyle}>
+                                                <button onClick={() => { setEditingSnack(s); setPreview(null); }} style={{ ...btnEditStyle, marginRight: 10 }}>Sửa</button>
+                                                <button onClick={() => handleDeleteSnack(s._id)} style={btnDeleteStyle}>Xóa</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         </div>
                     )}
 
