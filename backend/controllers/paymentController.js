@@ -2,7 +2,6 @@
 const qs = require("qs");
 const crypto = require("crypto");
 const moment = require("moment");
-const config = require("../config/vnpayConfig");
 
 exports.createPayment = (req, res) => {
   const date = new Date();
