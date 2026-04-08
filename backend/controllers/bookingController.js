@@ -59,28 +59,112 @@ exports.getUserBookings = async (req, res) => {
     }
 };
 
-// 📊 4. Doanh thu
+// 📊 4. Doanh thu (ĐÃ NÂNG CẤP BÓC TÁCH CHI TIẾT)
 exports.getRevenue = async (req, res) => {
     try {
         const bookings = await Booking.find().populate({ path: 'showtimeId', populate: { path: 'movieId' } });
-        const totalRevenue = bookings.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
-        const totalTickets = bookings.reduce((sum, item) => sum + (item.seats?.length || 0), 0);
-        res.json({ totalRevenue, totalTickets, history: bookings.sort((a, b) => b.createdAt - a.createdAt) });
-    } catch (err) { res.status(500).json("Lỗi doanh thu"); }
+
+        let totalRevenue = 0;   // Tổng tiền (Vé + Bắp)
+        let snackRevenue = 0;   // Tổng tiền Bắp nước
+        let totalTickets = 0;   // Tổng số vé
+        let totalSnacks = 0;    // Tổng số combo bắp nước
+
+        bookings.forEach(b => {
+            // 1. Cộng dồn tổng doanh thu thực tế
+            totalRevenue += (b.totalAmount || 0);
+            
+            // 2. Cộng dồn số lượng vé
+            totalTickets += (b.seats ? b.seats.length : 0);
+
+            // 3. Xử lý bóc tách phần bắp nước
+            if (b.snacks && b.snacks.length > 0) {
+                b.snacks.forEach(s => {
+                    snackRevenue += (s.price * s.quantity); // Tiền bắp = giá món x số lượng
+                    totalSnacks += s.quantity;              // Tổng số lượng combo
+                });
+            }
+        });
+
+        // 4. Tiền vé = Tổng doanh thu - Tiền bắp nước
+        const ticketRevenue = totalRevenue - snackRevenue;
+
+        res.json({ 
+            totalRevenue, 
+            ticketRevenue, 
+            snackRevenue, 
+            totalTickets, 
+            totalSnacks, 
+            history: bookings.sort((a, b) => b.createdAt - a.createdAt) 
+        });
+    } catch (err) { 
+        res.status(500).json({ message: "Lỗi tính toán doanh thu sếp ơi!" }); 
+    }
 };
 
-// 📊 5. Dashboard
+// 📊 5. Dashboard (Bản nâng cấp bóc tách chi tiết vé và bắp nước)
 exports.getDashboard = async (req, res) => {
     try {
         const bookings = await Booking.find().populate({ path: 'showtimeId', populate: { path: 'movieId' } });
         const totalMovies = await Movie.countDocuments();
         const totalRooms = await Room.countDocuments();
-        const movieSales = {};
+        
+        // 🧮 Khởi tạo các biến tính toán
+        let totalRevenue = 0;   // Tổng (Vé + Bắp)
+        let snackRevenue = 0;   // Tổng tiền bắp nước
+        let totalTickets = 0;   // Tổng số vé
+        let totalSnacks = 0;    // Tổng số combo bắp nước
+        let movieSales = {};    // Để tính top phim
+
         bookings.forEach(b => {
+            // 1. Tính tổng doanh thu chung
+            const amount = b.totalAmount || 0;
+            totalRevenue += amount;
+
+            // 2. Tính tổng số vé
+            totalTickets += (b.seats ? b.seats.length : 0);
+            
+            // 3. Bóc tách tiền bắp nước trong từng đơn hàng
+            if (b.snacks && b.snacks.length > 0) {
+                b.snacks.forEach(s => {
+                    snackRevenue += (s.price * s.quantity); // Tiền bắp = Giá x Số lượng
+                    totalSnacks += s.quantity;              // Cộng dồn số lượng combo
+                });
+            }
+
+            // 4. Gom nhóm doanh thu theo phim (Dùng totalAmount để tính phim hái ra tiền)
             const title = b.showtimeId?.movieId?.title || "Phim đã xóa";
-            movieSales[title] = (movieSales[title] || 0) + b.totalAmount;
+            movieSales[title] = (movieSales[title] || 0) + amount;
         });
-        const topMovies = Object.entries(movieSales).map(([title, revenue]) => ({ title, revenue })).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-        res.json({ totalRevenue: bookings.reduce((sum, i) => sum + i.totalAmount, 0), totalTickets: bookings.reduce((sum, i) => sum + i.seats.length, 0), totalMovies, totalRooms, topMovies, recentBookings: bookings.sort((a, b) => b.createdAt - a.createdAt).slice(0, 5) });
-    } catch (err) { res.status(500).json({ message: "Lỗi Dashboard" }); }
+
+        // 5. Tính doanh thu vé thuần túy
+        const ticketRevenue = totalRevenue - snackRevenue;
+
+        // 6. Xử lý danh sách Top 5 phim hái ra tiền
+        const topMovies = Object.entries(movieSales)
+            .map(([title, revenue]) => ({ title, revenue }))
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+
+        // 7. Sắp xếp 5 giao dịch mới nhất
+        const recentBookings = [...bookings]
+            .sort((a, b) => b.createdAt - a.createdAt)
+            .slice(0, 5);
+
+        // 🚀 Trả về Full bộ chỉ số cho Frontend
+        res.json({ 
+            totalRevenue, 
+            ticketRevenue,   // 🎟️ Mới thêm
+            snackRevenue,    // 🍿 Mới thêm
+            totalTickets, 
+            totalSnacks,     // 🥤 Mới thêm
+            totalMovies, 
+            totalRooms, 
+            topMovies, 
+            recentBookings 
+        });
+
+    } catch (err) { 
+        console.error("Lỗi Dashboard:", err);
+        res.status(500).json({ message: "Lỗi Dashboard sếp ơi!" }); 
+    }
 };

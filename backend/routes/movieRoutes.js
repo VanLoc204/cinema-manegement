@@ -1,53 +1,48 @@
 const router = require("express").Router();
-const Movie = require("../models/Movie");
-const { verifyAdmin } = require("../middleware/authMiddleware"); // 👮 Import "Cảnh sát" bảo vệ
+const movieController = require("../controllers/movieController");
+const { verifyAdmin } = require("../middleware/authMiddleware");
+const multer = require("multer");
+const path = require("path");
 
-// 🔍 1. Lấy danh sách phim (Dùng cho cả Khách và Admin - Không cần bảo vệ)
-router.get("/", async (req, res) => {
-  try {
-    const movies = await Movie.find().sort({ createdAt: -1 });
-    res.json(movies);
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi kết nối Database", error: err.message });
-  }
-});
-
-// ➕ 2. Thêm phim mới (🛡️ Chỉ Admin mới được vào)
-router.post("/", verifyAdmin, async (req, res) => {
-  try {
-    const newMovie = new Movie(req.body);
-    const savedMovie = await newMovie.save();
-    res.status(201).json(savedMovie);
-  } catch (err) {
-    res.status(400).json({ message: "Lỗi khi thêm phim mới", error: err.message });
-  }
-});
-
-// ❌ 3. Xóa phim (🛡️ Chỉ Admin mới được vào)
-router.delete("/:id", verifyAdmin, async (req, res) => {
-  try {
-    const deletedMovie = await Movie.findByIdAndDelete(req.params.id);
-    if (!deletedMovie) {
-      return res.status(404).json({ message: "Không tìm thấy phim để xóa" });
+// 📁 1. Cấu hình nơi lưu trữ ảnh Phim (Lưu vào uploads/movies)
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, "uploads/movies/"); // Sếp nhớ tạo thư mục này nhé!
+    },
+    filename: (req, file, cb) => {
+        // Đặt tên file: phim-timestamp.jpg để không bị trùng
+        const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1E9);
+        cb(null, "movie-" + uniqueSuffix + path.extname(file.originalname));
     }
-    res.json({ message: "Đã xóa phim thành công!" });
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi khi xóa phim", error: err.message });
-  }
 });
 
-// ✏️ 4. Cập nhật thông tin phim (🛡️ Chỉ Admin mới được vào)
-router.put("/:id", verifyAdmin, async (req, res) => {
-  try {
-    const updatedMovie = await Movie.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.json(updatedMovie);
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi cập nhật phim", error: err.message });
-  }
+const upload = multer({ 
+    storage: storage,
+    fileFilter: (req, file, cb) => {
+        // Chỉ cho phép định dạng ảnh
+        if (file.mimetype.startsWith("image/")) {
+            cb(null, true);
+        } else {
+            cb(new Error("Chỉ được upload ảnh thôi sếp ơi!"), false);
+        }
+    }
 });
+
+// ---------------------------------------------------------
+// 🚀 CÁC ĐƯỜNG DẪN (ROUTES)
+// ---------------------------------------------------------
+
+// 🔍 Lấy danh sách phim & Chi tiết phim (Công khai)
+router.get("/", movieController.getMovies);
+router.get("/detail/:id", movieController.getMovieDetail);
+
+// ➕ Thêm phim mới (Admin + Upload 1 ảnh với tên field là "image")
+router.post("/", verifyAdmin, upload.single("image"), movieController.createMovie);
+
+// ✏️ Cập nhật phim (Admin + Upload ảnh mới nếu cần)
+router.put("/:id", verifyAdmin, upload.single("image"), movieController.updateMovie);
+
+// ❌ Xóa phim (Admin)
+router.delete("/:id", verifyAdmin, movieController.deleteMovie);
 
 module.exports = router;

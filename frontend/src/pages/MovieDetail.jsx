@@ -9,6 +9,9 @@ export default function MovieDetail() {
     const [movie, setMovie] = useState({});
     const [showtimes, setShowtimes] = useState([]);
 
+    // 🚩 ĐỊA CHỈ SERVER (Để lấy đúng link ảnh)
+    const API_URL = "http://localhost:5000";
+
     useEffect(() => {
         // 🎬 Lấy thông tin phim
         axios.get("/movies").then(res => {
@@ -37,10 +40,14 @@ export default function MovieDetail() {
             {/* 🎥 Phần thông tin Phim */}
             <div style={movieHeaderStyle}>
                 <div style={posterContainerStyle}>
+                    {/* 🚩 ĐÃ SỬA: Thêm API_URL và xử lý ảnh lỗi */}
                     <img
-                        src={movie?.image}
+                        src={movie?.image ? `${API_URL}${movie.image}` : ""}
                         alt={movie?.title}
                         style={posterImageStyle}
+                        onError={(e) => {
+                            e.target.src = "https://via.placeholder.com/300x450?text=No+Poster";
+                        }}
                     />
                 </div>
                 
@@ -55,7 +62,8 @@ export default function MovieDetail() {
                     <p style={descriptionStyle}>{movie?.description}</p>
                     
                     <div style={detailListStyle}>
-                        <p><strong>🕒 Khởi chiếu:</strong> 2026-03-22</p>
+                        {/* 🚩 Cập nhật ngày tháng động từ DB nếu có */}
+                        <p><strong>🕒 Khởi chiếu:</strong> {movie?.createdAt ? new Date(movie.createdAt).toLocaleDateString('vi-VN') : "2026-03-22"}</p>
                         <p><strong>🌐 Ngôn ngữ:</strong> Phụ đề Tiếng Việt</p>
                     </div>
                 </div>
@@ -110,7 +118,7 @@ export default function MovieDetail() {
     );
 }
 
-// --- 🎨 Styles cho Tone màu sáng (Cinema Lux) ---
+// --- 🎨 Styles (Giữ nguyên phong cách của sếp) ---
 
 const containerStyle = {
     maxWidth: "1100px",
@@ -135,7 +143,8 @@ const posterImageStyle = {
     width: "100%",
     borderRadius: "12px",
     boxShadow: "0 10px 30px rgba(0,0,0,0.15)",
-    border: "4px solid #fff"
+    border: "4px solid #fff",
+    objectFit: "cover"
 };
 
 const infoContentStyle = {

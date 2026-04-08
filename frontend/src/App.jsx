@@ -5,7 +5,7 @@ import Booking from "./pages/Booking";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MovieDetail from "./pages/MovieDetail";
-import Admin from "./pages/Admin";
+import Admin from "./pages/Admin/Admin";
 import TicketHistory from "./pages/TicketHistory";
 import Profile from "./pages/Profile";
 
