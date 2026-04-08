@@ -1,34 +1,48 @@
-import { useState } from "react";
+import { useEffect } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import MovieManager from "./MovieManager"; 
 import RoomManager from "./RoomManager";   
 import SnackManager from "./SnackManager"; 
 import Dashboard from "./Dashboard";
-import ShowtimeManager from "./ShowtimeManager"; // ✅ Đã sửa tên import cho đồng nhất
-import RevenueManager from "./RevenueManager";   // ✅ Import thêm cái này để sếp dùng nốt tab cuối
+import ShowtimeManager from "./ShowtimeManager"; 
+import RevenueManager from "./RevenueManager";   
 
 export default function Admin() {
-    const [activeTab, setActiveTab] = useState("dashboard"); // Để dashboard làm mặc định cho xịn sếp ạ
+    const navigate = useNavigate();
+    const location = useLocation();
 
+    // Danh sách menu sếp dùng
     const menuItems = [
-        { id: "dashboard", label: "📊 Dashboard", color: "#3498db" },
-        { id: "movies", label: "🎬 Quản lý Phim", color: "#e74c3c" },
-        { id: "rooms", label: "🏢 Quản lý Phòng chiếu", color: "#f1c40f" },
-        { id: "showtimes", label: "🕒 Quản lý Suất chiếu", color: "#9b59b6" }, // ID là showtimes
-        { id: "snacks", label: "🍿 Quản lý Bắp nước", color: "#f39c12" },
-        { id: "revenue", label: "💰 Quản lý doanh thu", color: "#2ecc71" },
-        { id: "member", label: "Quản lý thành viên", color: "#2ecc71" },
+        { id: "dashboard", path: "/admin", label: "📊 Dashboard", color: "#3498db" },
+        { id: "movies", path: "/admin/movies", label: "🎬 Quản lý Phim", color: "#e74c3c" },
+        { id: "rooms", path: "/admin/rooms", label: "🏢 Quản lý Phòng chiếu", color: "#f1c40f" },
+        { id: "showtimes", path: "/admin/showtimes", label: "🕒 Quản lý Suất chiếu", color: "#9b59b6" },
+        { id: "snacks", path: "/admin/snacks", label: "🍿 Quản lý Bắp nước", color: "#f39c12" },
+        { id: "revenue", path: "/admin/revenue", label: "💰 Quản lý doanh thu", color: "#2ecc71" },
+        { id: "member", path: "/admin/member", label: "👥 Quản lý thành viên", color: "#2ecc71" },
     ];
+
+    // Tìm xem tab nào đang active dựa trên URL thực tế của trình duyệt
+    const activeTab = menuItems.find(item => 
+        item.path === location.pathname
+    ) || menuItems[0];
 
     return (
         <div style={{ display: "flex", minHeight: "100vh", background: "#f4f7f6" }}>
+            
             {/* 🏰 SIDEBAR */}
             <div style={sidebarStyle}>
                 <div style={{ textAlign: "center", marginBottom: "40px" }}>
                     <h2 style={{ color: "#fb4226", margin: 0 }}>ADMIN PANEL</h2>
                     <p style={{ fontSize: "0.8rem", opacity: 0.7 }}>CINEMA LUX SYSTEM</p>
                 </div>
+
                 {menuItems.map((item) => (
-                    <div key={item.id} onClick={() => setActiveTab(item.id)} style={navItemStyle(activeTab === item.id, item.color)}>
+                    <div 
+                        key={item.id} 
+                        onClick={() => navigate(item.path)} // Thay đổi URL thay vì set State
+                        style={navItemStyle(activeTab.id === item.id, item.color)}
+                    >
                         <span>{item.label}</span>
                     </div>
                 ))}
@@ -38,28 +52,42 @@ export default function Admin() {
             <div style={{ flex: 1, padding: "40px" }}>
                 <div style={contentBoxStyle}>
                     <h1 style={{ color: "#333", borderBottom: "2px solid #eee", paddingBottom: "15px", marginBottom: "30px" }}>
-                        {menuItems.find(i => i.id === activeTab)?.label}
+                        {activeTab.label}
                     </h1>
 
-                    {/* Điều hướng các Tab */}
-                    {activeTab === "dashboard" && <Dashboard />}
-                    {activeTab === "movies" && <MovieManager />}
-                    {activeTab === "rooms" && <RoomManager />}
-                    {activeTab === "showtimes" && <ShowtimeManager />} {/* ✅ Đã sửa ID thành showtimes cho khớp menu */}
-                    {activeTab === "snacks" && <SnackManager />}
-                    {activeTab === "revenue" && <RevenueManager />}
+                    {/* 🚩 ĐỊNH TUYẾN LỒNG NHAU: React sẽ nhìn URL để lôi đúng trang ra */}
+                    <Routes>
+                        <Route index element={<Dashboard />} /> {/* Mặc định khi vào /admin */}
+                        <Route path="movies" element={<MovieManager />} />
+                        <Route path="rooms" element={<RoomManager />} />
+                        <Route path="showtimes" element={<ShowtimeManager />} />
+                        <Route path="snacks" element={<SnackManager />} />
+                        <Route path="revenue" element={<RevenueManager />} />
+                        {/* <Route path="member" element={<MemberManager />} /> */}
+                    </Routes>
                 </div>
             </div>
         </div>
     );
 }
 
-// --- Styles Sidebar ---
-const sidebarStyle = { width: "280px", background: "#2c3e50", color: "white", padding: "30px 0", display: "flex", flexDirection: "column", boxShadow: "4px 0 10px rgba(0,0,0,0.1)" };
+// --- Styles Giữ nguyên phong cách của sếp nhưng tối ưu nhẹ ---
+const sidebarStyle = { 
+    width: "280px", background: "#2c3e50", color: "white", 
+    padding: "30px 0", display: "flex", flexDirection: "column", 
+    boxShadow: "4px 0 10px rgba(0,0,0,0.1)",
+    position: "sticky", top: 0, height: "100vh" // Cho sidebar đứng yên khi cuộn content
+};
+
 const navItemStyle = (isActive, color) => ({
     padding: "15px 30px", cursor: "pointer", transition: "0.3s",
     background: isActive ? "rgba(255,255,255,0.1)" : "transparent",
     borderLeft: isActive ? `5px solid ${color}` : "5px solid transparent",
-    fontWeight: isActive ? "bold" : "normal", display: "flex", alignItems: "center", gap: "15px"
+    fontWeight: isActive ? "bold" : "normal", display: "flex", alignItems: "center", gap: "15px",
+    color: isActive ? "white" : "#bdc3c7"
 });
-const contentBoxStyle = { background: "#fff", padding: "30px", borderRadius: "15px", boxShadow: "0 5px 20px rgba(0,0,0,0.05)", minHeight: "80vh" };
+
+const contentBoxStyle = { 
+    background: "#fff", padding: "30px", borderRadius: "15px", 
+    boxShadow: "0 5px 20px rgba(0,0,0,0.05)", minHeight: "80vh" 
+};
