@@ -58,7 +58,6 @@ export default function MovieDetail() {
         return `Thứ ${day + 1}`;
     };
 
-    // 🚩 Hàm xử lý link YouTube để nhúng (Embed)
     const getEmbedUrl = (url) => {
         if (!url) return null;
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -84,15 +83,10 @@ export default function MovieDetail() {
                         <span style={tagStyle}>{movie?.duration} Phút</span>
                         <span style={statusTagStyle}>{movie?.status === "now_showing" ? "Đang chiếu" : "Sắp chiếu"}</span>
                     </div>
-                    
                     <p style={descriptionStyle}>{movie?.description}</p>
                     
-                    {/* 🎬 NÚT XEM TRAILER NHANH */}
                     {movie?.trailer && (
-                        <button 
-                            onClick={() => window.open(movie.trailer, '_blank')}
-                            style={trailerBtnStyle}
-                        >
+                        <button onClick={() => window.open(movie.trailer, '_blank')} style={trailerBtnStyle}>
                             ▶ XEM TRAILER
                         </button>
                     )}
@@ -103,25 +97,6 @@ export default function MovieDetail() {
                     </div>
                 </div>
             </div>
-
-            {/* 🎥 MỤC NHÚNG TRAILER VIDEO */}
-            {movie?.trailer && getEmbedUrl(movie.trailer) && (
-                <div style={{ marginBottom: '50px' }}>
-                    <h3 style={sectionTitleStyle}><span style={accentBarStyle}></span> TRAILER</h3>
-                    <div style={videoResponsiveStyle}>
-                        <iframe
-                            width="100%"
-                            height="500"
-                            src={getEmbedUrl(movie.trailer)}
-                            title="Movie Trailer"
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                            allowFullScreen
-                            style={{ borderRadius: '12px' }}
-                        ></iframe>
-                    </div>
-                </div>
-            )}
 
             <hr style={dividerStyle} />
 
@@ -153,7 +128,6 @@ export default function MovieDetail() {
                 })}
             </div>
 
-            {/* 🎟️ LỊCH CHIẾU */}
             <div style={showtimeSectionStyle}>
                 <h3 style={sectionTitleStyle}><span style={accentBarStyle}></span> LỊCH CHIẾU</h3>
                 <div style={showtimeGridStyle}>
@@ -183,35 +157,51 @@ export default function MovieDetail() {
     );
 }
 
-// --- 🎨 STYLES MỚI CHO TRAILER ---
+// --- 🎨 PHẦN STYLE ĐÃ FIX LỖI LỆCH CHỮ ---
 
-const trailerBtnStyle = {
-    padding: "10px 20px",
-    background: "transparent",
-    color: "#fb4226",
-    border: "2px solid #fb4226",
-    borderRadius: "30px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    transition: "0.3s",
-    marginTop: "10px"
+const dateScrollerStyle = { 
+    display: "flex", 
+    gap: "12px", 
+    overflowX: "auto", 
+    padding: "10px 0", 
+    marginBottom: "30px", 
+    scrollbarWidth: "none" 
 };
 
-const videoResponsiveStyle = {
-    position: "relative",
-    paddingBottom: "56.25%", /* 16:9 */
-    height: 0,
-    overflow: "hidden",
-    maxWidth: "100%",
-    background: "#000",
-    borderRadius: "12px"
+const dateCardStyle = { 
+    minWidth: "85px", 
+    height: "75px", 
+    borderRadius: "10px", 
+    border: "2px solid", 
+    display: "flex", 
+    flexDirection: "column", 
+    cursor: "pointer", 
+    transition: "0.2s", 
+    overflow: "hidden" 
 };
 
-// --- CÁC STYLES KHÁC GIỮ NGUYÊN ---
-const dateScrollerStyle = { display: "flex", gap: "12px", overflowX: "auto", padding: "10px 0", marginBottom: "30px", scrollbarWidth: "none" };
-const dateCardStyle = { minWidth: "85px", height: "75px", borderRadius: "10px", border: "2px solid", display: "flex", flexDirection: "column", cursor: "pointer", transition: "0.2s", textAlign: "center", overflow: "hidden" };
-const dateTopStyle = { fontSize: "0.85rem", padding: "6px 0", background: "rgba(255,255,255,0.8)", fontWeight: "600" };
-const dateBottomStyle = { flex: 1, display: "flex", alignItems: "center", justifyConnection: "center", fontSize: "1rem", fontWeight: "bold" };
+const dateTopStyle = { 
+    fontSize: "0.85rem", 
+    padding: "6px 0", 
+    background: "rgba(255,255,255,0.8)", 
+    fontWeight: "600",
+    display: "flex",           // Thêm flex để căn giữa
+    justifyContent: "center",  // Căn giữa ngang
+    alignItems: "center"       // Căn giữa dọc
+};
+
+const dateBottomStyle = { 
+    flex: 1, 
+    display: "flex", 
+    alignItems: "center", 
+    justifyContent: "center",  // Đã sửa từ justifyConnection thành justifyContent ✅
+    fontSize: "1rem", 
+    fontWeight: "bold" 
+};
+
+// Các Style khác giữ nguyên...
+const trailerBtnStyle = { padding: "10px 20px", background: "transparent", color: "#fb4226", border: "2px solid #fb4226", borderRadius: "30px", fontWeight: "bold", cursor: "pointer", marginTop: "10px" };
+const videoResponsiveStyle = { position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", maxWidth: "100%", background: "#000", borderRadius: "12px" };
 const roomInfoWrapper = { marginBottom: "8px", display: "flex", flexDirection: "column", alignItems: "center" };
 const roomNameText = { fontSize: "0.8rem", color: "#888", fontWeight: "600" };
 const roomTypeBadge = { fontSize: "0.7rem", background: "#333", color: "#fff", padding: "2px 8px", borderRadius: "4px", marginTop: "4px", fontWeight: "bold" };
