@@ -37,15 +37,30 @@ function Navbar() {
     const role = localStorage.getItem("role");
     const isAdminPage = location.pathname.startsWith("/admin");
 
+    // 🚩 THÊM STATE ĐỂ HIỆN THÔNG BÁO TỰ CHẾ
+    const [notice, setNotice] = useState({ show: false, message: "" });
+
     const handleLogout = () => {
-        localStorage.clear();
-        alert("Đã đăng xuất thành công!");
-        navigate("/");
-        window.location.reload();
+        // 🏆 Hiện thông báo thay vì alert thô sơ
+        setNotice({ show: true, message: "Đang đăng xuất... Hẹn gặp lại sếp!" });
+
+        // 🕒 Đợi 1.2 giây rồi mới dọn dẹp và chuyển trang
+        setTimeout(() => {
+            localStorage.clear();
+            // Dùng href để nó tự dọn dẹp sạch sẽ và quay về trang chủ
+            window.location.href = "/";
+        }, 1200);
     };
 
     return (
         <div style={navStyle}>
+            {/* 🚩 KHUNG THÔNG BÁO ĐĂNG XUẤT (Tự biến mất) */}
+            {notice.show && (
+                <div style={logoutToastStyle}>
+                    👋 {notice.message}
+                </div>
+            )}
+
             <h2 style={logoStyle} onClick={() => navigate("/")}>CINEMA LUX</h2>
             <div style={{ display: "flex", alignItems: "center", gap: "25px" }}>
                 {isAdminPage ? (
@@ -93,17 +108,15 @@ function Footer() {
 function App() {
     return (
         <BrowserRouter>
-            <ScrollToTop /> {/* 🔥 Kích hoạt tự động cuộn lên đầu trang */}
+            <ScrollToTop />
             <div style={{ background: "#fdfcf0", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
                 <Navbar />
                 <div style={{ flex: 1 }}>
                     <Routes>
-                        {/* 🛡️ FIX LỖI 1: Sử dụng cấu trúc /* để hỗ trợ URL cho từng Tab Admin */}
                         <Route
                             path="/admin/*"
                             element={localStorage.getItem("role") === "admin" ? <Admin /> : <Navigate to="/login" />}
                         />
-                        
                         <Route path="/" element={<Movies />} />
                         <Route path="/movie/:id" element={<MovieDetail />} />
                         <Route path="/booking/:id" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
@@ -126,5 +139,19 @@ const footerStyle = { background: "#222", color: "#bbb", padding: "50px 20px", m
 const linkStyle = { color: "#333", textDecoration: "none", fontSize: "1rem", fontWeight: "500" };
 const subButtonStyle = { background: "#f4f4f4", color: "#333", border: "1px solid #ddd", padding: "6px 15px", borderRadius: "4px", cursor: "pointer", fontSize: "0.85rem", fontWeight: "500" };
 const logoutButtonStyle = { background: "#fb4226", color: "white", border: "none", padding: "7px 18px", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" };
+
+// 🚩 STYLE CHO CÁI THÔNG BÁO ĐĂNG XUẤT
+const logoutToastStyle = {
+    position: "fixed",
+    top: "80px",
+    right: "20px",
+    background: "#333",
+    color: "#fff",
+    padding: "12px 25px",
+    borderRadius: "8px",
+    fontWeight: "bold",
+    boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
+    zIndex: 2000,
+};
 
 export default App;

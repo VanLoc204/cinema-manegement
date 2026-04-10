@@ -43,8 +43,17 @@ export default function Booking() {
 
     const totalAmount = ticketTotal + snackTotal;
 
+    // 🚀 HÀM XỬ LÝ THANH TOÁN ĐÃ THÊM LOG BẮT BỆNH
     const handleConfirmPayment = async () => {
         try {
+            const userId = localStorage.getItem("userId");
+            
+            // 🔍 Kiểm tra xem có UserId không
+            if (!userId) {
+                alert("❌ Lỗi: Không tìm thấy ID người dùng. Sếp thử đăng xuất rồi đăng nhập lại nhé!");
+                return;
+            }
+
             const snackList = Object.entries(selectedSnacks)
                 .filter(([_, qty]) => qty > 0)
                 .map(([snackId, qty]) => {
@@ -54,26 +63,43 @@ export default function Booking() {
                         name: snack.name,
                         quantity: qty,
                         price: snack.price,
-                        image: snack.image // 📸 Quan trọng: Lưu ảnh vào hóa đơn
+                        image: snack.image
                     };
                 });
 
-            const res = await axios.post("/bookings/confirm", {
+            const payload = {
                 showtimeId: id,
-                userId: localStorage.getItem("userId"),
+                userId: userId,
                 seats: seats,
                 snacks: snackList,
                 totalAmount: totalAmount
-            });
+            };
+
+            // 📝 LOG DỮ LIỆU TRƯỚC KHI GỬI
+            console.log(">>> Đang gửi dữ liệu đặt vé:", payload);
+
+            const res = await axios.post("/bookings/confirm", payload);
+            
+            console.log(">>> Kết quả từ Backend:", res.data);
+            
             setBill(res.data.booking);
             setShowQR(false);
             alert("✅ Thanh toán thành công! Chúc sếp xem phim vui vẻ.");
         } catch (err) {
-            alert("❌ Lỗi lưu hóa đơn! Sếp kiểm tra lại Backend nhé.");
+            // 🚩 PHÂN TÍCH LỖI CHI TIẾT
+            console.error("❌ LỖI BACKEND TRẢ VỀ:");
+            if (err.response) {
+                console.error("Data lỗi:", err.response.data);
+                console.error("Status code:", err.response.status);
+                alert(`❌ Lỗi từ server: ${err.response.data.message || "Lỗi lưu hóa đơn"}`);
+            } else {
+                console.error("Lỗi mạng hoặc lỗi code:", err.message);
+                alert("❌ Không thể kết nối tới Server. Sếp kiểm tra lại Backend có đang chạy không nhé!");
+            }
         }
     };
 
-    // --- 🧾 GIAO DIỆN HÓA ĐƠN (Đã sửa để hiện bắp nước xịn) ---
+    // --- 🧾 GIAO DIỆN HÓA ĐƠN ---
     if (bill) return (
         <div style={billContainerStyle}>
             <div style={billBoxStyle}>
@@ -89,7 +115,6 @@ export default function Booking() {
                     <p><strong>Phòng:</strong> <span style={{ color: "#fb4226", fontWeight: "bold" }}>{bill.showtimeId?.roomId?.name || showtime?.roomId?.name}</span></p>
                     <p><strong>Vị trí ghế:</strong> <span style={{ color: "#fb4226", fontWeight: "bold", fontSize: "1.2rem" }}>{bill.seats.join(", ")}</span></p>
                     
-                    {/* 🍿 HIỂN THỊ BẮP NƯỚC TRÊN BILL */}
                     {bill.snacks && bill.snacks.length > 0 && (
                         <div style={{ marginTop: "10px", padding: "15px", background: "#fdf2f0", borderRadius: "10px", border: "1px solid #fbd9d3" }}>
                             <strong style={{ display: "block", marginBottom: "10px", color: "#d6361e", fontSize: "0.9rem" }}>🍿 ĐỒ ĂN & THỨC UỐNG:</strong>
@@ -150,7 +175,6 @@ export default function Booking() {
                 )}
             </div>
 
-            {/* 📊 TÓM TẮT ĐƠN HÀNG PHÍA BÊN PHẢI */}
             <div style={summaryBoxStyle}>
                 <h3 style={{ borderBottom: "1px solid #eee", paddingBottom: 15 }}>TÓM TẮT ĐƠN HÀNG</h3>
                 <p>Phim: <b>{showtime?.movieId?.title}</b></p>
@@ -185,7 +209,6 @@ export default function Booking() {
                 )}
             </div>
 
-            {/* 💸 MODAL QUÉT MÃ QR */}
             {showQR && (
                 <div style={modalOverlayStyle}>
                     <div style={modalContentStyle}>
@@ -204,7 +227,7 @@ export default function Booking() {
     );
 }
 
-// --- Styles giữ nguyên như sếp đã có ---
+// --- Styles ---
 const snackCardStyle = { display: "flex", alignItems: "center", border: "1px solid #eee", padding: "15px", borderRadius: "12px", background: "#fdfdfd" };
 const qtyBtnStyle = { width: "30px", height: "30px", border: "1px solid #ddd", background: "#fff", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" };
 const summaryBoxStyle = { width: 320, background: "#fff", padding: 25, borderRadius: 15, boxShadow: "0 10px 30px rgba(0,0,0,0.1)", height: "fit-content" };
