@@ -6,25 +6,71 @@ const movieSchema = new mongoose.Schema({
     required: [true, "Sếp ơi, phim phải có tên chứ!"], 
     trim: true 
   },
-  description: { type: String },
-  genre: { type: String },
-  duration: { type: Number }, // Thời lượng phim (phút)
-  
-  // 📸 POSTER PHIM: Bây giờ sẽ lưu đường dẫn file như "/uploads/movies/avengers.jpg"
-  image: { 
-    type: String, 
-    default: "/uploads/movies/default-poster.jpg" // Ảnh mặc định nếu sếp chưa kịp upload
+  description: { 
+    type: String,
+    required: [true, "Phải có mô tả phim sếp nhé!"],
+    trim: true
   },
   
-  // 🎬 TRẠNG THÁI: Sếp có thể dùng để lọc phim ở trang chủ (Đang chiếu / Sắp chiếu)
+  // 🎬 THÔNG TIN CHI TIẾT
+  director: { 
+    type: String, 
+    trim: true,
+    default: "Đang cập nhật"
+  }, 
+  cast: { 
+    type: String, 
+    trim: true,
+    default: "Đang cập nhật"
+  },    
+  genre: { 
+    type: String, 
+    trim: true,
+    required: [true, "Sếp chọn thể loại cho phim nhé!"]
+  },    
+  releaseDate: { 
+    type: Date,
+    required: [true, "Ngày khởi chiếu là bắt buộc sếp ơi!"]
+  }, 
+  duration: { 
+    type: Number, 
+    required: [true, "Phim dài bao nhiêu phút sếp nhỉ?"]
+  }, 
+  language: { 
+    type: String, 
+    trim: true,
+    default: "Tiếng Việt - Phụ đề Tiếng Anh"
+  },  
+  rated: { 
+    type: String, 
+    trim: true,
+    default: "P" // Mặc định là mọi lứa tuổi
+  },
+
+  // 📸 HÌNH ẢNH & VIDEO
+  image: { 
+    type: String, 
+    default: "/uploads/movies/default-poster.jpg" 
+  },
+  trailer: { 
+    type: String, 
+    trim: true,
+    default: "" 
+  },
+  
+  // 🎬 TRẠNG THÁI HIỂN THỊ
   status: { 
     type: String, 
-    enum: ["now_showing", "coming_soon", "ended"], // Giới hạn các lựa chọn cho chuẩn
+    enum: ["now_showing", "coming_soon", "ended"], 
     default: "now_showing" 
   },
   
-  trailer: { type: String, default: "https://www.youtube.com" },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
+}, {
+  timestamps: true // Tự động thêm updatedAt và createdAt cho sếp quản lý
 });
 
 module.exports = mongoose.model("Movie", movieSchema);

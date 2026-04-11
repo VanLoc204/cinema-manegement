@@ -42,20 +42,20 @@ export default function Dashboard() {
 
     return (
         <div style={{ paddingBottom: '40px' }}>
-            <h2 style={{ marginBottom: 30, color: "#333" }}>📊 TỔNG QUAN HỆ THỐNG</h2>
+            <h2 style={{ marginBottom: 30, color: "#333" }}>TỔNG QUAN HỆ THỐNG</h2>
 
             {/* ⚡ HÀNG 1: CÁC THẺ DOANH THU (Giữ nguyên của sếp) */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "20px" }}>
                 <div style={dashCardStyle("#2ecc71")}>
-                    <p style={cardLabel}>💰 Tổng doanh thu</p>
+                    <p style={cardLabel}>Tổng doanh thu</p>
                     <h2 style={cardValue}>{dashData.totalRevenue?.toLocaleString()}đ</h2>
                 </div>
                 <div style={dashCardStyle("#3498db")}>
-                    <p style={cardLabel}>🎟️ Doanh thu Vé</p>
+                    <p style={cardLabel}>Doanh thu Vé</p>
                     <h2 style={cardValue}>{dashData.ticketRevenue?.toLocaleString()}đ</h2>
                 </div>
                 <div style={dashCardStyle("#f39c12")}>
-                    <p style={cardLabel}>🍿 Doanh thu Bắp nước</p>
+                    <p style={cardLabel}>Doanh thu Bắp nước</p>
                     <h2 style={cardValue}>{dashData.snackRevenue?.toLocaleString()}đ</h2>
                 </div>
             </div>
@@ -85,7 +85,7 @@ export default function Dashboard() {
                 
                 {/* 1. Biểu đồ tròn: Tỷ trọng nguồn thu */}
                 <div style={whiteBoxStyle}>
-                    <h3 style={chartTitle}>🍰 Cơ cấu doanh thu</h3>
+                    <h3 style={chartTitle}>Cơ cấu doanh thu</h3>
                     <div style={{ width: '100%', height: 280 }}>
                         <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
@@ -110,7 +110,7 @@ export default function Dashboard() {
 
                 {/* 2. Biểu đồ cột: Top 5 phim đỉnh nhất */}
                 <div style={whiteBoxStyle}>
-                    <h3 style={chartTitle}>🚀 Phim có doanh thu cao nhất</h3>
+                    <h3 style={chartTitle}>Phim có doanh thu cao nhất</h3>
                     <div style={{ width: '100%', height: 280 }}>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={dashData.topMovies}>
@@ -142,7 +142,7 @@ export default function Dashboard() {
             {/* ⚡ HÀNG 4: DANH SÁCH CHI TIẾT (Giữ nguyên của sếp) */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px" }}>
                 <div style={whiteBoxStyle}>
-                    <h3 style={{ marginTop: 0, borderBottom: "1px solid #eee", paddingBottom: "15px" }}>🎬 Phim "hái ra tiền" nhất</h3>
+                    <h3 style={{ marginTop: 0, borderBottom: "1px solid #eee", paddingBottom: "15px" }}>Phim "hái ra tiền" nhất</h3>
                     {dashData.topMovies.map((m, index) => (
                         <div key={index} style={itemRowStyle}>
                             <span>{m.title}</span>
@@ -153,7 +153,7 @@ export default function Dashboard() {
                 </div>
 
                 <div style={whiteBoxStyle}>
-                    <h3 style={{ marginTop: 0, borderBottom: "1px solid #eee", paddingBottom: "15px" }}>🔔 Giao dịch mới nhất</h3>
+                    <h3 style={{ marginTop: 0, borderBottom: "1px solid #eee", paddingBottom: "15px" }}>Giao dịch mới nhất</h3>
                     {dashData.recentBookings.map((b, index) => (
                         <div key={index} style={itemRowStyle}>
                             <div style={{display: 'flex', flexDirection: 'column'}}>

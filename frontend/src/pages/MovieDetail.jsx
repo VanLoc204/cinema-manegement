@@ -68,12 +68,23 @@ export default function MovieDetail() {
         return null;
     };
 
+    const getRatedColor = (rated) => {
+        switch(rated) {
+            case 'P': return '#2ecc71';
+            case 'K': return '#3498db';
+            case 'T13': return '#f1c40f';
+            case 'T16': return '#e67e22';
+            case 'T18': return '#e74c3c';
+            default: return '#fb4226';
+        }
+    };
+
     return (
         <div style={containerStyle}>
-            {/* 🎥 HEADER 3 CỘT - TRAILER ĐÃ PHÓNG TO */}
+            {/* 🎥 HEADER 3 CỘT - ĐÃ HẠ THẤP CHIỀU CAO (Thon gọn hơn) */}
             <div style={movieHeaderStyle}>
                 
-                {/* CỘT 1: POSTER */}
+                {/* CỘT 1: POSTER (Giảm xuống 180px) */}
                 <div style={posterContainerStyle}>
                     <img
                         src={movie?.image ? `${API_URL}${movie.image}` : null}
@@ -86,19 +97,29 @@ export default function MovieDetail() {
                 {/* CỘT 2: THÔNG TIN PHIM */}
                 <div style={infoContentStyle}>
                     <h1 style={titleStyle}>{movie?.title || "Đang tải..."}</h1>
+                    
                     <div style={tagContainerStyle}>
+                        <span style={{ ...statusTagStyle, background: getRatedColor(movie?.rated) }}>
+                            {movie?.rated || "P"}
+                        </span>
                         <span style={tagStyle}>{movie?.genre}</span>
                         <span style={tagStyle}>{movie?.duration} Phút</span>
-                        <span style={statusTagStyle}>{movie?.status === "now_showing" ? "Đang chiếu" : "Sắp chiếu"}</span>
+                        <span style={{ ...tagStyle, color: '#fb4226', border: '1px solid #fb4226', background: 'none' }}>
+                            {movie?.status === "now_showing" ? "Đang chiếu" : "Sắp chiếu"}
+                        </span>
                     </div>
+
+                    <div style={detailContainerStyle}>
+                        <p style={detailItemStyle}><strong>Đạo diễn:</strong> {movie?.director || "Đang cập nhật"}</p>
+                        <p style={detailItemStyle}><strong>Diễn viên:</strong> {movie?.cast || "Đang cập nhật"}</p>
+                        <p style={detailItemStyle}><strong>Khởi chiếu:</strong> {movie?.releaseDate ? new Date(movie.releaseDate).toLocaleDateString('vi-VN') : "22/3/2026"}</p>
+                        <p style={detailItemStyle}><strong>Ngôn ngữ:</strong> {movie?.language || "Phụ đề Tiếng Việt"}</p>
+                    </div>
+
                     <p style={descriptionStyle}>{movie?.description}</p>
-                    <div style={{ marginTop: '15px', color: '#777', fontSize: '0.9rem' }}>
-                        <p><strong>🕒 Khởi chiếu:</strong> 22/3/2026</p>
-                        <p><strong>🌐 Ngôn ngữ:</strong> Phụ đề Tiếng Việt</p>
-                    </div>
                 </div>
 
-                {/* CỘT 3: TRAILER (Phóng to lên 450px) */}
+                {/* CỘT 3: TRAILER (Hạ xuống 380px để giảm chiều cao) */}
                 {movie?.trailer && getEmbedUrl(movie.trailer) && (
                     <div style={smallTrailerContainer}>
                         <div style={smallVideoWrapper}>
@@ -111,7 +132,6 @@ export default function MovieDetail() {
                                 allowFullScreen
                             ></iframe>
                         </div>
-                        
                         <div style={trailerLabelWrapper}>
                             <span style={trailerIconStyle}>▶</span>
                             <span style={trailerLabelTextStyle}>TRAILER FILM</span>
@@ -158,7 +178,6 @@ export default function MovieDetail() {
                             </div>
                         ))
                     ) : (
-                        /* 🚩 FIX CANH GIỮA Ở ĐÂY SẾP ƠI */
                         <div style={noShowtimeStyle}>Hôm nay chưa có suất chiếu sếp ơi!</div>
                     )}
                 </div>
@@ -167,50 +186,53 @@ export default function MovieDetail() {
     );
 }
 
-// --- 🎨 STYLE CHI TIẾT ---
+// --- 🎨 STYLE CHI TIẾT ĐÃ ĐƯỢC "ÉP" THẤP XUỐNG ---
 
 const containerStyle = { maxWidth: "1250px", margin: "40px auto", padding: "0 20px" };
 
 const movieHeaderStyle = { 
-    display: "flex", gap: "35px", alignItems: "flex-start", marginBottom: "40px", flexWrap: "nowrap" 
+    display: "flex", 
+    gap: "30px", 
+    alignItems: "center", 
+    marginBottom: "35px", 
+    flexWrap: "nowrap"
+    // 🛠️ Đã bỏ minHeight để khung không bị cố định quá cao
 };
 
-const posterContainerStyle = { flex: "0 0 200px" };
-const posterImageStyle = { width: "100%", borderRadius: "10px", boxShadow: "0 10px 25px rgba(0,0,0,0.1)", border: "1px solid #ddd" };
+// 🛠️ Ép Poster thấp xuống tí
+const posterContainerStyle = { flex: "0 0 180px" };
+const posterImageStyle = { width: "100%", borderRadius: "10px", boxShadow: "0 8px 20px rgba(0,0,0,0.1)", border: "1px solid #ddd" };
 
 const infoContentStyle = { flex: "1" };
-const titleStyle = { fontSize: "2.3rem", fontWeight: "900", marginBottom: "15px", color: "#222", letterSpacing: "-1px" };
-const tagContainerStyle = { display: "flex", gap: "10px", marginBottom: "20px" };
-const tagStyle = { padding: "5px 12px", background: "#eee", borderRadius: "4px", fontSize: "0.85rem", fontWeight: "bold", color: "#555" };
-const statusTagStyle = { padding: "5px 12px", background: "#fb4226", color: "#fff", borderRadius: "4px", fontWeight: "bold" };
-const descriptionStyle = { fontSize: "0.95rem", color: "#444", lineHeight: "1.8", marginBottom: "20px" };
+const titleStyle = { fontSize: "2rem", fontWeight: "900", marginBottom: "12px", color: "#222", letterSpacing: "-1px" };
+const tagContainerStyle = { display: "flex", gap: "10px", marginBottom: "15px", alignItems: 'center' };
+const tagStyle = { padding: "4px 10px", background: "#f5f5f5", borderRadius: "4px", fontSize: "0.8rem", fontWeight: "bold", color: "#666" };
+const statusTagStyle = { padding: "4px 10px", color: "#fff", borderRadius: "4px", fontWeight: "bold", fontSize: '0.8rem' };
 
-// 🚩 TĂNG CỘT NÀY LÊN 450PX
+const detailContainerStyle = { marginBottom: '15px', borderLeft: '3px solid #eee', paddingLeft: '15px' };
+const detailItemStyle = { fontSize: '0.9rem', color: '#555', margin: '4px 0' };
+
+const descriptionStyle = { fontSize: "0.9rem", color: "#444", lineHeight: "1.6", marginBottom: "15px" };
+
+// 🛠️ Thu hẹp chiều ngang trailer -> Tự động giảm chiều cao
 const smallTrailerContainer = {
-    flex: "0 0 450px", background: "#fff", padding: "12px", borderRadius: "15px", 
-    boxShadow: "0 8px 20px rgba(0,0,0,0.06)", border: "1px solid #f0f0f0"
+    flex: "0 0 380px", background: "#fff", padding: "10px", borderRadius: "12px", 
+    boxShadow: "0 5px 15px rgba(0,0,0,0.05)", border: "1px solid #f0f0f0"
 };
 
 const smallVideoWrapper = {
     position: "relative", paddingBottom: "56.25%", height: 0, overflow: "hidden", 
-    borderRadius: "10px", background: "#000"
+    borderRadius: "8px", background: "#000"
 };
 
 const iframeStyle = { position: "absolute", top: 0, left: 0, width: "100%", height: "100%", border: 0 };
+const trailerLabelWrapper = { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "10px" };
+const trailerIconStyle = { color: "#fb4226", fontSize: "0.9rem" };
+const trailerLabelTextStyle = { fontSize: "0.7rem", fontWeight: "800", color: "#222", letterSpacing: "1.2px", textTransform: "uppercase" };
 
-const trailerLabelWrapper = {
-    display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "12px"
-};
-
-const trailerIconStyle = { color: "#fb4226", fontSize: "1rem" };
-
-const trailerLabelTextStyle = {
-    fontSize: "0.75rem", fontWeight: "800", color: "#222", letterSpacing: "1.5px", textTransform: "uppercase"
-};
-
-const dividerStyle = { border: "none", borderTop: "1px solid #ddd", margin: "40px 0" };
+const dividerStyle = { border: "none", borderTop: "1px solid #ddd", margin: "35px 0" };
 const showtimeSectionStyle = { marginBottom: "60px" };
-const sectionTitleStyle = { fontSize: "1.5rem", fontWeight: "800", display: "flex", alignItems: "center", gap: "12px", marginBottom: "25px" };
+const sectionTitleStyle = { fontSize: "1.4rem", fontWeight: "800", display: "flex", alignItems: "center", gap: "12px", marginBottom: "25px" };
 const accentBarStyle = { width: "6px", height: "24px", background: "#fb4226", borderRadius: "2px" };
 const dateScrollerStyle = { display: "flex", gap: "10px", overflowX: "auto", padding: "10px 0", marginBottom: "30px", scrollbarWidth: "none" };
 const dateCardStyle = { minWidth: "85px", height: "75px", borderRadius: "10px", border: "2px solid", display: "flex", flexDirection: "column", cursor: "pointer", textAlign: "center" };
@@ -221,17 +243,5 @@ const roomNameText = { fontSize: "0.8rem", color: "#888", fontWeight: "600" };
 const roomTypeBadge = { fontSize: "0.7rem", background: "#333", color: "#fff", padding: "2px 8px", borderRadius: "4px", marginTop: "4px" };
 const showtimeItemStyle = { background: "#fff", border: "1px solid #eee", borderRadius: "12px", padding: "15px", textAlign: "center" };
 const timeBtnStyle = { width: "100%", padding: "10px", background: "#fb4226", color: "#fff", border: "none", borderRadius: "6px", fontWeight: "bold", cursor: "pointer" };
-
-// 🚩 FIX CANH GIỮA TUYỆT ĐỐI CHO GRID
-const noShowtimeStyle = { 
-    gridColumn: "1 / -1", // Chiếm hết các cột của grid
-    textAlign: "center", 
-    padding: "60px", 
-    color: "#999", 
-    border: "1px dashed #ccc", 
-    borderRadius: "15px",
-    background: "#fafafa",
-    fontSize: "1.1rem"
-};
-
+const noShowtimeStyle = { gridColumn: "1 / -1", textAlign: "center", padding: "60px", color: "#999", border: "1px dashed #ccc", borderRadius: "15px", background: "#fafafa", fontSize: "1.1rem" };
 const showtimeGridStyle = { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "20px" };

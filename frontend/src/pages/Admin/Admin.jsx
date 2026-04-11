@@ -13,13 +13,13 @@ export default function Admin() {
 
     // Danh sách menu sếp dùng
     const menuItems = [
-        { id: "dashboard", path: "/admin", label: "📊 Dashboard", color: "#3498db" },
-        { id: "movies", path: "/admin/movies", label: "🎬 Quản lý Phim", color: "#e74c3c" },
-        { id: "rooms", path: "/admin/rooms", label: "🏢 Quản lý Phòng chiếu", color: "#f1c40f" },
-        { id: "showtimes", path: "/admin/showtimes", label: "🕒 Quản lý Suất chiếu", color: "#9b59b6" },
-        { id: "snacks", path: "/admin/snacks", label: "🍿 Quản lý Bắp nước", color: "#f39c12" },
-        { id: "revenue", path: "/admin/revenue", label: "💰 Quản lý doanh thu", color: "#2ecc71" },
-        { id: "member", path: "/admin/member", label: "👥 Quản lý thành viên", color: "#2ecc71" },
+        { id: "dashboard", path: "/admin", label: "Dashboard", color: "#3498db" },
+        { id: "movies", path: "/admin/movies", label: "Quản lý Phim", color: "#e74c3c" },
+        { id: "rooms", path: "/admin/rooms", label: "Quản lý Phòng chiếu", color: "#f1c40f" },
+        { id: "showtimes", path: "/admin/showtimes", label: "Quản lý Suất chiếu", color: "#9b59b6" },
+        { id: "snacks", path: "/admin/snacks", label: "Quản lý Bắp nước", color: "#f39c12" },
+        { id: "revenue", path: "/admin/revenue", label: "Quản lý doanh thu", color: "#2ecc71" },
+        { id: "member", path: "/admin/member", label: "Quản lý thành viên", color: "#2ecc71" },
     ];
 
     // Tìm xem tab nào đang active dựa trên URL thực tế của trình duyệt
