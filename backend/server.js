@@ -48,37 +48,72 @@ app.use("/api/bookings", require("./routes/bookingRoutes"));
 app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/snacks", require("./routes/snackRoutes")); 
 
-// 📡 5. LOGIC SOCKET.IO CƠ BẢN
-io.on("connection", (socket) => {
-  console.log(`📡 [Socket] Có người vừa kết nối: ${socket.id}`);
+// 📡 5. LOGIC SOCKET.IO NÂNG CAO (REAL-TIME TRẠNG THÁI)
+// 📝 "Sổ cái" lưu trữ: { [showtimeId]: { [userId]: [mảng_ghế_đang_chọn] } }
+const activeSelections = {}; 
 
-  // A. Tham gia vào phòng riêng của suất chiếu
+io.on("connection", (socket) => {
+  console.log(`📡 [Socket] Kết nối mới: ${socket.id}`);
+
+  // A. Khi User vào phòng đặt ghế
   socket.on("join-showtime", (showtimeId) => {
     socket.join(showtimeId);
-    console.log(`👤 User ${socket.id} đã vào phòng: ${showtimeId}`);
+    // Lưu lại showtimeId vào socket để lúc disconnect biết đường mà nhả ghế
+    socket.showtimeId = showtimeId;
+
+    // 📥 Gửi ngay trạng thái hiện tại cho người mới vào
+    if (activeSelections[showtimeId]) {
+      // Gom tất cả ghế của những người đang chọn trong phòng này lại thành 1 mảng phẳng
+      const currentOtherSeats = Object.values(activeSelections[showtimeId]).flat();
+      socket.emit("initial-selections", currentOtherSeats);
+    }
+    console.log(`👤 User ${socket.id} vào phòng: ${showtimeId}`);
   });
 
-  // B. 🔥 PHẦN MỚI: Xử lý khi người dùng đang click chọn ghế (Chưa thanh toán)
+  // B. Khi User đang click chọn ghế
   socket.on("selecting-seat", (data) => {
-    // data bao gồm: { showtimeId, userId, selectedSeats }
-    // Gửi thông tin này cho TẤT CẢ mọi người trong phòng, TRỪ người vừa gửi (socket.to)
-    socket.to(data.showtimeId).emit("someone-clicking", data);
+    const { showtimeId, userId, selectedSeats } = data;
+    // Lưu userId vào socket để cleanup khi thoát
+    socket.userId = userId;
+
+    // 📝 Ghi vào sổ cái trạng thái mới nhất của User này
+    if (!activeSelections[showtimeId]) activeSelections[showtimeId] = {};
+    activeSelections[showtimeId][userId] = selectedSeats;
+
+    // Phát tín hiệu cho những người khác thấy ghế đổi màu X
+    socket.to(showtimeId).emit("someone-clicking", data);
   });
 
-  // C. Khi User thoát trang đặt ghế
+  // C. Khi User thoát trang hoặc mất kết nối (CLEANUP)
+  const handleLeave = () => {
+    const { showtimeId, userId } = socket;
+    if (showtimeId && userId && activeSelections[showtimeId]) {
+      // Xóa dữ liệu của User này trong sổ cái
+      delete activeSelections[showtimeId][userId];
+      
+      // Báo cho mọi người trong phòng là User này đã "nhả" toàn bộ ghế
+      const remainingSeats = Object.values(activeSelections[showtimeId]).flat();
+      io.to(showtimeId).emit("someone-clicking", {
+        userId: userId,
+        selectedSeats: [] // Xóa màu X trên máy người khác
+      });
+      console.log(`👋 User ${userId} đã rời/ngắt kết nối, nhả ghế phòng ${showtimeId}`);
+    }
+  };
+
   socket.on("leave-showtime", (showtimeId) => {
     socket.leave(showtimeId);
-    console.log(`👋 User ${socket.id} đã rời phòng: ${showtimeId}`);
+    handleLeave();
   });
 
   socket.on("disconnect", () => {
-    console.log("❌ [Socket] Một kết nối đã ngắt.");
+    handleLeave();
+    console.log(`❌ [Socket] Ngắt kết nối: ${socket.id}`);
   });
 });
 
 const PORT = process.env.PORT || 5000;
 
-// ⚠️ Dùng httpServer.listen để chạy cả HTTP và Socket.io
 httpServer.listen(PORT, () => {
   console.log(`🚀 Cinema Lux Server đang chạy Real-time tại port ${PORT}`);
 });
