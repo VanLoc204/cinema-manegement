@@ -14,7 +14,25 @@
   margin-bottom: 50px;
   perspective: 1000px;
 }
+/* Style cho ghế người khác đang chọn - Giống y hệt hình sếp gửi */
+.seat-item.others-selecting {
+    background-color: #ebebeb !important; /* Màu xám nhạt */
+    color: #b5b5b5 !important;           /* Màu chữ XX xám mờ */
+    border: 1px solid #d1d1d1 !important; /* Viền xám mảnh */
+    cursor: not-allowed;
+    font-family: Arial, sans-serif;
+    font-weight: 300;                    /* Cho chữ XX nó mảnh mai */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
 
+/* Legend (chú thích) cũng đổi theo luôn cho đồng bộ */
+.legend-box.others-selecting {
+    background-color: #ebebeb;
+    border: 1px solid #d1d1d1;
+}
 .screen-arc {
   width: 80%;
   height: 8px;
