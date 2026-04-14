@@ -5,41 +5,31 @@ import "./seat.css";
 export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
     const [bookedSeats, setBookedSeats] = useState([]);
     const [selected, setSelected] = useState([]);
-    // 📡 Danh sách tổng hợp tất cả ghế mà những người khác trong phòng đang chọn
     const [othersSelecting, setOthersSelecting] = useState([]);
 
     const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
     const cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
     useEffect(() => {
-        // 1. Lấy dữ liệu ghế đã thanh toán từ Database
         axios.get(`/bookings/${showtimeId}`)
             .then((res) => setBookedSeats(res.data))
             .catch(err => console.error("Lỗi lấy ghế:", err));
 
         if (socket) {
-            // 📡 2. Báo cho Server là tôi vào phòng này
             socket.emit("join-showtime", showtimeId);
 
-            // 📥 3. NHẬN TRẠNG THÁI ĐẦU TIÊN (Fix lỗi người vào sau không thấy người vào trước)
             socket.on("initial-selections", (initialSeats) => {
-                console.log("📥 Nhận danh sách ghế đang bị giữ từ những người vào trước:", initialSeats);
                 setOthersSelecting(initialSeats);
             });
 
-            // 📡 4. NGHE: Khi có người vừa thanh toán thành công
             socket.on("update-booked-seats", (updatedBookedSeats) => {
                 setBookedSeats(updatedBookedSeats);
                 setSelected((prev) => prev.filter(s => !updatedBookedSeats.includes(s.id)));
             });
 
-            // 📡 5. NGHE: Khi người khác đang click chọn ghế (Real-time liên tục)
             socket.on("someone-clicking", (data) => {
-                // Chỉ cập nhật nếu không phải chính mình
                 if (data.userId !== localStorage.getItem("userId")) {
-                    // Cập nhật lại danh sách những ghế người khác đang giữ (Server sẽ gửi mảng đã gộp)
-                    // Hoặc sếp có thể xử lý gộp mảng ở đây nếu server chỉ gửi lẻ
-                    setOthersSelecting(data.selectedSeats || []); 
+                    setOthersSelecting(data.selectedSeats || []);
                 }
             });
         }
@@ -55,7 +45,6 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
     }, [showtimeId, socket]);
 
     const toggleSeat = (seatId, row) => {
-        // 🛑 Chặn click nếu ghế đã bán hoặc người khác đang chọn
         if (bookedSeats.includes(seatId) || othersSelecting.includes(seatId)) return;
 
         let newSelection = [...selected];
@@ -91,7 +80,6 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
         setSelected(newSelection);
         onSelect(newSelection);
 
-        // 📡 PHÁT TÍN HIỆU: Gửi kèm cả showtimeId và userId để server lưu vào "Sổ cái"
         if (socket) {
             socket.emit("selecting-seat", {
                 showtimeId,
@@ -130,7 +118,6 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
                                     ${isOthersSelecting ? "others-selecting" : ""}`}
                                 onClick={() => toggleSeat(seatId, row)}
                             >
-                                {/* 🎯 HIỆN 1 DẤU X DUY NHẤT */}
                                 {isBooked || isOthersSelecting ? "X" : seatId}
                             </div>
                         );
@@ -139,13 +126,20 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
                 </div>
             ))}
 
+            {/* 🎯 PHẦN CHÚ THÍCH ĐÃ ĐƯỢC TINH GỈAN VÀ FIX MÀU */}
             <div className="legend">
-                <div className="legend-item"><div className="legend-box standard"></div> Ghế thường</div>
-                <div className="legend-item"><div className="legend-box vip"></div> Ghế VIP</div>
-                <div className="legend-item"><div className="legend-box sweetbox"></div> Sweetbox</div>
-                <div className="legend-item"><div className="legend-box selected"></div> Sếp chọn</div>
-                <div className="legend-item"><div className="legend-box others-selecting"></div> Đang bị giữ (X)</div>
-                <div className="legend-item"><div className="legend-box booked"></div> Đã bán (X)</div>
+                <div className="legend-item">
+                    <div className="legend-box" style={{ backgroundColor: "#7d7d7d" }}></div> 
+                    Ghế thường
+                </div>
+                <div className="legend-item">
+                    <div className="legend-box" style={{ backgroundColor: "#fb4226" }}></div> 
+                    Ghế VIP
+                </div>
+                <div className="legend-item">
+                    <div className="legend-box" style={{ backgroundColor: "#e91e63" }}></div> 
+                    Sweetbox
+                </div>
             </div>
         </div>
     );

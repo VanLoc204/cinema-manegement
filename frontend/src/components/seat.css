@@ -1,6 +1,6 @@
 /* Container tổng của Sơ đồ ghế */
 .booking-container {
-  background: #fdfcf0; /* Nền kem nhạt đồng bộ toàn web */
+  background: #fdfcf0;
   padding: 40px 20px;
   border-radius: 15px;
   text-align: center;
@@ -14,31 +14,13 @@
   margin-bottom: 50px;
   perspective: 1000px;
 }
-/* Style cho ghế người khác đang chọn - Giống y hệt hình sếp gửi */
-.seat-item.others-selecting {
-    background-color: #ebebeb !important; /* Màu xám nhạt */
-    color: #b5b5b5 !important;           /* Màu chữ XX xám mờ */
-    border: 1px solid #d1d1d1 !important; /* Viền xám mảnh */
-    cursor: not-allowed;
-    font-family: Arial, sans-serif;
-    font-weight: 300;                    /* Cho chữ XX nó mảnh mai */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-}
 
-/* Legend (chú thích) cũng đổi theo luôn cho đồng bộ */
-.legend-box.others-selecting {
-    background-color: #ebebeb;
-    border: 1px solid #d1d1d1;
-}
 .screen-arc {
   width: 80%;
   height: 8px;
   background: #bcbcbc;
   margin: 0 auto;
-  border-radius: 50% / 100% 100% 0 0; /* Tạo độ cong */
+  border-radius: 50% / 100% 100% 0 0;
   box-shadow: 0 15px 30px rgba(0,0,0,0.1);
 }
 
@@ -67,7 +49,7 @@
   font-size: 14px;
 }
 
-/* 🎨 Định dạng từng ô ghế */
+/* 🎨 Định dạng chung cho từng ô ghế */
 .seat-item {
   width: 34px;
   height: 30px;
@@ -78,17 +60,17 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  background: #7d7d7d; /* Màu mặc định: Xám đậm */
+  background: #7d7d7d; /* Mặc định: Xám đậm cho ghế thường */
   color: #fff;
   border: 1px solid rgba(0,0,0,0.1);
 }
 
-/* Ghế VIP (Hàng D đến G) - Màu đỏ cam Cinema Lux */
+/* Ghế VIP - Màu đỏ cam */
 .seat-item.vip {
   background-color: #fb4226;
 }
 
-/* Ghế Sweetbox (Hàng cuối) - Màu hồng tím */
+/* Ghế Sweetbox - Màu hồng tím */
 .seat-item.sweetbox {
   background-color: #e91e63;
 }
@@ -100,17 +82,23 @@
   box-shadow: 0 0 10px rgba(75, 141, 248, 0.5);
 }
 
-/* Ghế đã có người đặt - Màu xám nhạt gạch chéo */
-.seat-item.booked {
-  background-color: #e9e9e9 !important;
-  color: #bbb;
+/* 🎯 ĐỒNG BỘ 100%: Ghế đã bán và Ghế người khác đang chọn (Real-time) */
+.seat-item.booked, 
+.seat-item.others-selecting {
+  background-color: #e9e9e9 !important; /* Màu xám nhạt báo hiệu đã khóa */
+  color: #bbb !important;             /* Màu dấu X mờ giống hình sếp gửi */
+  border: 1px solid #ddd !important;
   cursor: not-allowed;
+  pointer-events: none;               /* Chặn click */
+  font-size: 14px;                    /* Cỡ chữ cho dấu X */
+  font-weight: bold;
   position: relative;
 }
 
-.seat-item.booked::after {
-  content: "✕";
-  font-size: 14px;
+/* Gỡ bỏ các ::after cũ để không bị lặp dấu X */
+.seat-item.booked::after,
+.seat-item.others-selecting::after {
+  content: none !important;
 }
 
 /* 💡 Chú thích loại ghế (Legend) */
@@ -139,4 +127,11 @@
   width: 20px;
   height: 20px;
   border-radius: 4px;
+}
+
+/* Đồng bộ legend box cho chuyên nghiệp */
+.legend-box.booked,
+.legend-box.others-selecting {
+  background-color: #e9e9e9;
+  border: 1px solid #ddd;
 }

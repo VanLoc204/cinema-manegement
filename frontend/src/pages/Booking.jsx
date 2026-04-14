@@ -155,7 +155,7 @@ export default function Booking({ socket }) {
             <div style={{ flex: 2, background: "#fff", padding: 30, borderRadius: 15, boxShadow: "0 5px 20px rgba(0,0,0,0.05)" }}>
                 {step === 1 ? (
                     <div>
-                        <h2 style={{ marginBottom: 20, textAlign: 'center' }}>🎬 CHỌN GHẾ NGỒI</h2>
+                        <h2 style={{ marginBottom: 20, textAlign: 'center' }}>CHỌN GHẾ NGỒI</h2>
                         {/* 📡 3. Truyền socket xuống cho SeatMap để lắng nghe cập nhật ghế */}
                         <SeatMap 
                             onSelect={setSeats} 
@@ -166,7 +166,7 @@ export default function Booking({ socket }) {
                     </div>
                 ) : (
                     <div>
-                        <h2 style={{ color: "#fb4226", marginBottom: 25 }}>🍿 THÊM BẮP NƯỚC CHO PHIM HAY HƠN</h2>
+                        <h2 style={{ color: "#fb4226", marginBottom: 25 }}>THÊM BẮP NƯỚC CHO PHIM HAY HƠN</h2>
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
                             {availableSnacks.map(snack => (
                                 <div key={snack._id} style={snackCardStyle}>
