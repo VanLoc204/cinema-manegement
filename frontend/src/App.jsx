@@ -64,8 +64,8 @@ function Navbar() {
             <div style={{ display: "flex", alignItems: "center", gap: "25px" }}>
                 {isAdminPage ? (
                     <>
-                        <span style={{ color: "#fb4226", fontWeight: "bold", borderRight: "1px solid #ddd", paddingRight: "20px" }}>🛠️ CHẾ ĐỘ QUẢN TRỊ</span>
-                        <Link to="/" style={linkStyle}>🏠 Quay lại Web</Link>
+                        <span style={{ color: "#fb4226", fontWeight: "bold", borderRight: "1px solid #ddd", paddingRight: "20px" }}>CHẾ ĐỘ QUẢN TRỊ</span>
+                        <Link to="/" style={linkStyle}>Quay lại Web</Link>
                         <span style={{ fontWeight: "bold" }}>Sếp: {userName}</span>
                         <button onClick={handleLogout} style={logoutButtonStyle}>Đăng xuất</button>
                     </>
@@ -78,7 +78,7 @@ function Navbar() {
                             <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
                                 <span style={{ color: "#fb4226", fontWeight: "bold" }}>Hi, {userName}!</span>
                                 {role === "admin" && (
-                                    <button style={subButtonStyle} onClick={() => navigate("/admin")}>🛡️ Quản trị</button>
+                                    <button style={subButtonStyle} onClick={() => navigate("/admin")}>Quản trị</button>
                                 )}
                                 <button style={subButtonStyle} onClick={() => navigate("/profile")}>Hồ Sơ</button>
                                 <button style={subButtonStyle} onClick={() => navigate("/history")}>Lịch sử</button>

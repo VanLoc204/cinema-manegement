@@ -1,88 +1,24 @@
 const router = require("express").Router();
-const Showtime = require("../models/Showtime");
-const Room = require("../models/Room"); 
-const Movie = require("../models/Movie"); 
-const mongoose = require("mongoose");
-const { verifyAdmin } = require("../middleware/authMiddleware"); // 👮 Import "Cảnh sát" bảo vệ
+const showtimeController = require("../controllers/showtimeController");
+const { verifyAdmin } = require("../middleware/authMiddleware");
 
-// 🕒 1. Lấy tất cả suất chiếu của một bộ phim (Khách & Admin đều xem được)
-router.get("/:movieId", async (req, res) => {
-  try {
-    const { movieId } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(movieId)) return res.status(400).json("ID phim không hợp lệ");
+// 🕒 1. Lấy suất chiếu theo phim (Khách & Admin)
+router.get("/:movieId", showtimeController.getShowtimesByMovie);
 
-    const data = await Showtime.find({ 
-      movieId: new mongoose.Types.ObjectId(movieId) 
-    }).populate("roomId"); 
-    
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi Server", error: err.message });
-  }
-});
+// 🔍 2. Lấy tất cả suất chiếu + Bộ lọc (🛡️ Chỉ Admin)
+// Lưu ý: Đặt /all/list lên TRÊN /detail/:id để tránh bị nhầm lẫn route
+router.get("/all/list", verifyAdmin, showtimeController.getAllShowtimes);
 
-// 🎟️ 2. Lấy chi tiết CỤ THỂ một suất chiếu (Khách & Admin đều xem được)
-router.get("/detail/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json("ID không hợp lệ");
-    
-    const showtime = await Showtime.findById(id).populate("movieId").populate("roomId");
-    if (!showtime) return res.status(404).json("Không tìm thấy suất chiếu");
+// 🎟️ 3. Lấy chi tiết cụ thể một suất chiếu
+router.get("/detail/:id", showtimeController.getShowtimeDetail);
 
-    res.json(showtime);
-  } catch (err) {
-    res.status(500).json("Lỗi lấy chi tiết suất chiếu");
-  }
-});
+// ➕ 4. Thêm suất chiếu mới (🛡️ Chỉ Admin)
+router.post("/", verifyAdmin, showtimeController.createShowtime);
 
-// ➕ 3. THÊM SUẤT CHIẾU MỚI (🛡️ Chỉ Admin)
-router.post("/", verifyAdmin, async (req, res) => {
-  try {
-    const { movieId, roomId, time } = req.body;
-    const newShowtime = new Showtime({ movieId, roomId, time });
-    const savedShowtime = await newShowtime.save();
-    res.status(201).json(savedShowtime);
-  } catch (err) {
-    res.status(400).json({ message: "Lỗi tạo suất chiếu", error: err.message });
-  }
-});
+// ❌ 5. Xóa suất chiếu (🛡️ Chỉ Admin)
+router.delete("/:id", verifyAdmin, showtimeController.deleteShowtime);
 
-// 🔍 4. LẤY TẤT CẢ SUẤT CHIẾU (🛡️ Chỉ Admin)
-router.get("/all/list", verifyAdmin, async (req, res) => {
-  try {
-    const allShowtimes = await Showtime.find()
-      .populate("movieId", "title")
-      .populate("roomId", "name price")
-      .sort({ time: 1 });
-    res.json(allShowtimes);
-  } catch (err) {
-    res.status(500).json("Lỗi lấy danh sách lịch chiếu");
-  }
-});
-
-// ❌ 5. XÓA SUẤT CHIẾU (🛡️ Chỉ Admin)
-router.delete("/:id", verifyAdmin, async (req, res) => {
-  try {
-    await Showtime.findByIdAndDelete(req.params.id);
-    res.json({ message: "Đã xóa lịch chiếu thành công!" });
-  } catch (err) {
-    res.status(500).json("Lỗi khi xóa lịch chiếu");
-  }
-});
-
-// ✏️ 6. CẬP NHẬT SUẤT CHIẾU (🛡️ Chỉ Admin)
-router.put("/:id", verifyAdmin, async (req, res) => {
-  try {
-    const updatedShowtime = await Showtime.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true }
-    );
-    res.json(updatedShowtime);
-  } catch (err) {
-    res.status(500).json("Lỗi cập nhật suất chiếu");
-  }
-});
+// ✏️ 6. Cập nhật suất chiếu (🛡️ Chỉ Admin)
+router.put("/:id", verifyAdmin, showtimeController.updateShowtime);
 
 module.exports = router;

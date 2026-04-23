@@ -22,17 +22,14 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173", // URL của Vite bên Frontend
+    origin: "http://localhost:5173", 
     methods: ["GET", "POST"]
   }
 });
 
-// 🚀 Gắn biến io vào app để sử dụng ở các file routes/controllers
 app.set("socketio", io);
-
 app.use(cors());
 app.use(express.json());
-
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 app.get("/", (req, res) => {
@@ -48,9 +45,9 @@ app.use("/api/bookings", require("./routes/bookingRoutes"));
 app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/snacks", require("./routes/snackRoutes")); 
 
-// 📡 5. LOGIC SOCKET.IO NÂNG CAO (REAL-TIME TRẠNG THÁI)
-// 📝 "Sổ cái" lưu trữ: { [showtimeId]: { [userId]: [mảng_ghế_đang_chọn] } }
+// 📡 5. LOGIC SOCKET.IO: REAL-TIME TRẠNG THÁI & HẸN GIỜ NHẢ GHẾ
 const activeSelections = {}; 
+const holdTimers = {}; // ⏰ Sổ tay quản lý đồng hồ đếm ngược: { userId: timerObject }
 
 io.on("connection", (socket) => {
   console.log(`📡 [Socket] Kết nối mới: ${socket.id}`);
@@ -58,62 +55,90 @@ io.on("connection", (socket) => {
   // A. Khi User vào phòng đặt ghế
   socket.on("join-showtime", (showtimeId) => {
     socket.join(showtimeId);
-    // Lưu lại showtimeId vào socket để lúc disconnect biết đường mà nhả ghế
     socket.showtimeId = showtimeId;
 
-    // 📥 Gửi ngay trạng thái hiện tại cho người mới vào
     if (activeSelections[showtimeId]) {
-      // Gom tất cả ghế của những người đang chọn trong phòng này lại thành 1 mảng phẳng
       const currentOtherSeats = Object.values(activeSelections[showtimeId]).flat();
       socket.emit("initial-selections", currentOtherSeats);
     }
-    console.log(`👤 User ${socket.id} vào phòng: ${showtimeId}`);
   });
 
-  // B. Khi User đang click chọn ghế
+  // B. Khi User click chọn ghế (Bắt đầu/Reset đếm ngược 3 phút)
   socket.on("selecting-seat", (data) => {
     const { showtimeId, userId, selectedSeats } = data;
-    // Lưu userId vào socket để cleanup khi thoát
     socket.userId = userId;
+    socket.showtimeId = showtimeId;
 
-    // 📝 Ghi vào sổ cái trạng thái mới nhất của User này
+    // 1. Reset đồng hồ nếu sếp đang chọn dở mà click thêm ghế
+    if (holdTimers[userId]) {
+      clearTimeout(holdTimers[userId]);
+      delete holdTimers[userId];
+    }
+
+    // 2. Nếu có chọn ghế, bắt đầu đếm ngược 3 phút (180.000ms)
+    if (selectedSeats.length > 0) {
+      holdTimers[userId] = setTimeout(() => {
+        console.log(`⏰ [Timeout] Hết 3 phút! Tự động nhả ghế cho user: ${userId}`);
+        
+        // Xóa trong sổ cái trạng thái
+        if (activeSelections[showtimeId]) {
+          delete activeSelections[showtimeId][userId];
+        }
+
+        // Báo cho mọi người trong phòng biết ghế này đã trống
+        io.to(showtimeId).emit("someone-clicking", {
+          userId: userId,
+          selectedSeats: []
+        });
+
+        // Báo riêng cho "khách chậm chạp" đó biết là đã hết giờ
+        socket.emit("hold-timeout", { message: "Hết 3 phút giữ ghế rồi sếp ơi, mời sếp chọn lại!" });
+        
+        delete holdTimers[userId];
+      }, 3 * 60 * 1000); 
+    }
+
+    // 3. Cập nhật sổ cái và phát tín hiệu như bình thường
     if (!activeSelections[showtimeId]) activeSelections[showtimeId] = {};
     activeSelections[showtimeId][userId] = selectedSeats;
-
-    // Phát tín hiệu cho những người khác thấy ghế đổi màu X
     socket.to(showtimeId).emit("someone-clicking", data);
   });
 
-  // C. Khi User thoát trang hoặc mất kết nối (CLEANUP)
+  // C. 🎟️ QUAN TRỌNG: Khi thanh toán thành công (Xóa đồng hồ đếm ngược)
+  socket.on("payment-success", (data) => {
+    const { userId, showtimeId } = data;
+    if (holdTimers[userId]) {
+      clearTimeout(holdTimers[userId]);
+      delete holdTimers[userId];
+      console.log(`✅ [Paid] Đã hủy đếm ngược cho user ${userId} vì đã thanh toán.`);
+    }
+    // Xóa khỏi danh sách "đang giữ" vì giờ nó đã là "đã bán" trong DB
+    if (activeSelections[showtimeId]) {
+      delete activeSelections[showtimeId][userId];
+    }
+  });
+
+  // D. Cleanup khi User rời đi
   const handleLeave = () => {
     const { showtimeId, userId } = socket;
+    if (holdTimers[userId]) {
+      clearTimeout(holdTimers[userId]);
+      delete holdTimers[userId];
+    }
     if (showtimeId && userId && activeSelections[showtimeId]) {
-      // Xóa dữ liệu của User này trong sổ cái
       delete activeSelections[showtimeId][userId];
-      
-      // Báo cho mọi người trong phòng là User này đã "nhả" toàn bộ ghế
-      const remainingSeats = Object.values(activeSelections[showtimeId]).flat();
       io.to(showtimeId).emit("someone-clicking", {
         userId: userId,
-        selectedSeats: [] // Xóa màu X trên máy người khác
+        selectedSeats: []
       });
-      console.log(`👋 User ${userId} đã rời/ngắt kết nối, nhả ghế phòng ${showtimeId}`);
     }
   };
 
-  socket.on("leave-showtime", (showtimeId) => {
-    socket.leave(showtimeId);
-    handleLeave();
-  });
-
-  socket.on("disconnect", () => {
-    handleLeave();
-    console.log(`❌ [Socket] Ngắt kết nối: ${socket.id}`);
-  });
+  socket.on("leave-showtime", handleLeave);
+  socket.on("disconnect", handleLeave);
 });
 
 const PORT = process.env.PORT || 5000;
-
 httpServer.listen(PORT, () => {
   console.log(`🚀 Cinema Lux Server đang chạy Real-time tại port ${PORT}`);
 });

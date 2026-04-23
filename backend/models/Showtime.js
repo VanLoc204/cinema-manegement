@@ -8,11 +8,39 @@ const showtimeSchema = new mongoose.Schema({
   },
   roomId: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: "Room", // ✨ Liên kết chính xác với tên Model "Room"
+    ref: "Room", 
     required: true 
   },
-  time: { type: Date, required: true },
-  // seats: Array // Bạn có thể bỏ trường này nếu quản lý ghế qua bảng Booking
+  time: { type: Date, required: true }, // Thời gian bắt đầu chiếu
+}, {
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// ✨ TRƯỜNG ẢO: Tự động xác định trạng thái chuẩn 3 giai đoạn
+showtimeSchema.virtual('status').get(function() {
+  const now = new Date();
+  const startTime = new Date(this.time);
+  
+  // 🍿 Lấy thời lượng phim (Nếu Model Movie có field duration thì dùng, không thì mặc định 120p)
+  const durationInMinutes = this.movieId?.duration || 120; 
+  const endTime = new Date(startTime.getTime() + durationInMinutes * 60000);
+
+  if (now < startTime) {
+    return "upcoming"; // 🟢 Chưa đến giờ chiếu
+  } else if (now >= startTime && now <= endTime) {
+    return "running";  // 🔵 Đang chiếu (Phim đang chạy trong rạp)
+  } else {
+    return "finished"; // 🔴 Đã chiếu xong hoàn toàn
+  }
+});
+
+// ✨ TRƯỜNG ẢO: Kiểm tra hết hạn (Chỉ hết hạn khi phim đã chiếu xong)
+showtimeSchema.virtual('isExpired').get(function() {
+  const startTime = new Date(this.time);
+  const duration = this.movieId?.duration || 120;
+  const endTime = new Date(startTime.getTime() + duration * 60000);
+  return new Date() > endTime;
 });
 
 module.exports = mongoose.model("Showtime", showtimeSchema);

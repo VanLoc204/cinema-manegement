@@ -9,11 +9,21 @@ export default function ShowtimeManager() {
     const [newShowtime, setNewShowtime] = useState({ movieId: "", roomId: "", time: "" });
     const [editingShowtime, setEditingShowtime] = useState(null);
 
-    // 1. Lấy tất cả dữ liệu cần thiết
+    // 🔍 1. States cho bộ lọc (Dùng để nhập liệu)
+    const [filterMovie, setFilterMovie] = useState("");
+    const [filterDate, setFilterDate] = useState("");
+    const [filterStatus, setFilterStatus] = useState("");
+
+    // 🎯 2. State chứa tham số thực tế khi bấm TÌM KIẾM
+    const [searchTrigger, setSearchTrigger] = useState({ movieId: "", date: "", status: "" });
+
+    // 🔄 3. Hàm lấy dữ liệu (Chỉ chạy khi searchTrigger thay đổi)
     const fetchAllData = async () => {
         try {
             const [resShowtimes, resMovies, resRooms] = await Promise.all([
-                axios.get("/showtimes/all/list"),
+                axios.get("/showtimes/all/list", {
+                    params: searchTrigger // Gửi bộ lọc lên backend
+                }),
                 axios.get("/movies"),
                 axios.get("/rooms")
             ]);
@@ -21,13 +31,22 @@ export default function ShowtimeManager() {
             setMovies(resMovies.data);
             setRooms(resRooms.data);
         } catch (err) {
-            console.error("Lỗi lấy dữ liệu suất chiếu:", err);
+            console.error("Lỗi lấy dữ liệu:", err);
         }
     };
 
     useEffect(() => {
         fetchAllData();
-    }, []);
+    }, [searchTrigger]); // Chỉ load lại khi bấm nút Tìm kiếm
+
+    // 🔍 HÀM XỬ LÝ TÌM KIẾM
+    const handleSearch = () => {
+        setSearchTrigger({
+            movieId: filterMovie,
+            date: filterDate,
+            status: filterStatus
+        });
+    };
 
     // ➕ HÀM XẾP LỊCH CHIẾU MỚI
     const handleCreateShowtime = async () => {
@@ -70,11 +89,11 @@ export default function ShowtimeManager() {
 
     return (
         <div>
-            <h2 style={{ color: "#333", marginBottom: 25 }}>🕒 QUẢN LÝ SUẤT CHIẾU</h2>
+            <h2 style={{ color: "#333", marginBottom: 25 }}>QUẢN LÝ SUẤT CHIẾU</h2>
 
             {/* ➕ FORM XẾP LỊCH MỚI */}
             <div style={cardStyle}>
-                <h3 style={{ marginTop: 0 }}>🕒 Xếp lịch chiếu mới</h3>
+                <h3 style={{ marginTop: 0 }}>Xếp lịch chiếu mới</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "15px" }}>
                     <select style={inputStyle} value={newShowtime.movieId} onChange={e => setNewShowtime({ ...newShowtime, movieId: e.target.value })}>
                         <option value="">-- Chọn Phim --</option>
@@ -92,6 +111,29 @@ export default function ShowtimeManager() {
                 </div>
             </div>
 
+            {/* 🔍 BỘ LỌC TÍCH HỢP NÚT TÌM KIẾM */}
+            <div style={filterBarStyle}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+                    <span style={{ fontWeight: "bold", color: "#555" }}>Bộ lọc:</span>
+                    
+                    <select style={{ ...inputStyle, width: "200px" }} value={filterMovie} onChange={e => setFilterMovie(e.target.value)}>
+                        <option value="">Tất cả phim</option>
+                        {movies.map(m => <option key={m._id} value={m._id}>{m.title}</option>)}
+                    </select>
+
+                    <input type="date" style={{ ...inputStyle, width: "160px" }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+
+                    <select style={{ ...inputStyle, width: "160px" }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="upcoming">Sắp chiếu</option>
+                        <option value="running">Đang chiếu</option>
+                        <option value="finished">Đã chiếu</option>
+                    </select>
+
+                    <button onClick={handleSearch} style={btnSearchStyle}>TÌM KIẾM</button>
+                </div>
+            </div>
+
             {/* 📋 BẢNG DANH SÁCH SUẤT CHIẾU */}
             <table style={tableStyle}>
                 <thead style={{ background: "#f8f9fa" }}>
@@ -99,21 +141,38 @@ export default function ShowtimeManager() {
                         <th style={thStyle}>Tên Phim</th>
                         <th style={thStyle}>Phòng</th>
                         <th style={thStyle}>Giờ chiếu</th>
+                        <th style={thStyle}>Trạng thái</th>
                         <th style={thStyle}>Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
                     {showtimes.map(s => (
-                        <tr key={s._id} style={{ borderBottom: "1px solid #eee" }}>
+                        <tr key={s._id} style={{ borderBottom: "1px solid #eee", opacity: s.status === "finished" ? 0.6 : 1 }}>
                             <td style={tdStyle}><b>{s.movieId?.title || "Phim đã xóa"}</b></td>
                             <td style={tdStyle}>{s.roomId?.name || "Phòng đã xóa"}</td>
                             <td style={tdStyle}>{new Date(s.time).toLocaleString('vi-VN')}</td>
                             <td style={tdStyle}>
-                                <button onClick={() => setEditingShowtime(s)} style={{ ...btnEditStyle, marginRight: 10 }}>Sửa</button>
-                                <button onClick={() => handleDeleteShowtime(s._id)} style={btnDeleteStyle}>Xóa</button>
+                                {s.status === "upcoming" && <span style={badgeGreenStyle}>Sắp chiếu</span>}
+                                {s.status === "running" && <span style={badgeBlueStyle}>Đang chiếu</span>}
+                                {s.status === "finished" && <span style={badgeGrayStyle}>Đã chiếu</span>}
+                            </td>
+                            <td style={tdStyle}>
+                                {s.status === "upcoming" ? (
+                                    <>
+                                        <button onClick={() => setEditingShowtime(s)} style={{ ...btnEditStyle, marginRight: 10 }}>Sửa</button>
+                                        <button onClick={() => handleDeleteShowtime(s._id)} style={btnDeleteStyle}>Xóa</button>
+                                    </>
+                                ) : (
+                                    <span style={{ color: "#999", fontSize: "0.85rem", fontStyle: "italic" }}>Không thể chỉnh sửa</span>
+                                )}
                             </td>
                         </tr>
                     ))}
+                    {showtimes.length === 0 && (
+                        <tr>
+                            <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không tìm thấy suất chiếu nào phù hợp sếp ơi!</td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
 
@@ -121,7 +180,7 @@ export default function ShowtimeManager() {
             {editingShowtime && (
                 <div style={modalOverlayStyle}>
                     <div style={modalContentStyle}>
-                        <h3 style={{ color: "#fb4226", marginTop: 0 }}>✏️ CHỈNH SỬA LỊCH CHIẾU</h3>
+                        <h3 style={{ color: "#fb4226", marginTop: 0 }}>CHỈNH SỬA LỊCH CHIẾU</h3>
                         <div style={{ display: "flex", flexDirection: "column", gap: "15px", marginTop: "20px" }}>
                             <div style={{ textAlign: "left" }}>
                                 <label style={labelStyle}>Chọn Phim:</label>
@@ -130,7 +189,6 @@ export default function ShowtimeManager() {
                                     {movies.map(m => <option key={m._id} value={m._id}>{m.title}</option>)}
                                 </select>
                             </div>
-
                             <div style={{ textAlign: "left" }}>
                                 <label style={labelStyle}>Chọn Phòng:</label>
                                 <select style={inputStyle} value={editingShowtime.roomId?._id || editingShowtime.roomId}
@@ -138,13 +196,11 @@ export default function ShowtimeManager() {
                                     {rooms.map(r => <option key={r._id} value={r._id}>{r.name}</option>)}
                                 </select>
                             </div>
-
                             <div style={{ textAlign: "left" }}>
                                 <label style={labelStyle}>Giờ chiếu mới:</label>
                                 <input type="datetime-local" style={inputStyle}
                                     onChange={e => setEditingShowtime({ ...editingShowtime, time: e.target.value })} />
                             </div>
-
                             <button onClick={handleUpdateShowtime} style={{ ...btnSubmitStyle, marginTop: 10 }}>CẬP NHẬT NGAY</button>
                             <button onClick={() => setEditingShowtime(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#888" }}>Hủy bỏ</button>
                         </div>
@@ -155,10 +211,12 @@ export default function ShowtimeManager() {
     );
 }
 
-// --- Styles (Giữ nguyên từ Admin.jsx) ---
-const cardStyle = { background: "#fdfcf0", padding: "25px", borderRadius: "12px", border: "1px solid #eee", marginBottom: "30px" };
-const inputStyle = { padding: "12px", borderRadius: "8px", border: "1px solid #ddd", outline: "none", width: '100%', boxSizing: 'border-box' };
+// --- Styles ---
+const cardStyle = { background: "#fdfcf0", padding: "25px", borderRadius: "12px", border: "1px solid #eee", marginBottom: "20px" };
+const filterBarStyle = { background: "#fff", padding: "15px 25px", borderRadius: "12px", border: "1px solid #eee", marginBottom: "20px", boxShadow: "0 2px 5px rgba(0,0,0,0.05)" };
+const inputStyle = { padding: "10px", borderRadius: "8px", border: "1px solid #ddd", outline: "none", boxSizing: 'border-box', fontSize: '0.9rem' };
 const btnSubmitStyle = { padding: "12px", background: "#fb4226", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" };
+const btnSearchStyle = { padding: "10px 25px", background: "#333", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" };
 const tableStyle = { width: "100%", borderCollapse: "collapse" };
 const thStyle = { padding: "15px", textAlign: "left", color: "#666" };
 const tdStyle = { padding: "15px", color: "#333" };
@@ -167,3 +225,7 @@ const btnEditStyle = { background: "none", border: "1px solid #3498db", color: "
 const modalOverlayStyle = { position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 };
 const modalContentStyle = { background: "#fff", padding: "30px", borderRadius: "15px", width: "400px", textAlign: "center", boxShadow: "0 10px 40px rgba(0,0,0,0.2)" };
 const labelStyle = { fontSize: "0.85rem", fontWeight: "bold", display: 'block', marginBottom: '5px' };
+
+const badgeGreenStyle = { padding: "4px 10px", background: "#e6fffa", color: "#38b2ac", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", border: "1px solid #38b2ac" };
+const badgeGrayStyle = { padding: "4px 10px", background: "#f7fafc", color: "#a0aec0", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", border: "1px solid #a0aec0" };
+const badgeBlueStyle = { padding: "4px 10px", background: "#ebf8ff", color: "#3182ce", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", border: "1px solid #3182ce" };

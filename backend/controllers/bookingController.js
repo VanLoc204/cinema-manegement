@@ -1,9 +1,10 @@
 const Booking = require("../models/Booking");
 const Movie = require("../models/Movie");
 const Room = require("../models/Room");
+const Showtime = require("../models/Showtime"); // ✨ Thêm cái này để lọc theo phim
 const mongoose = require("mongoose");
 
-// 💺 1. Lấy danh sách ghế (Fix lỗi 500 khi load trang đặt vé)
+// 💺 1. Lấy danh sách ghế (Giữ nguyên)
 exports.getOccupiedSeats = async (req, res) => {
     try {
         const { id } = req.params;
@@ -18,35 +19,24 @@ exports.getOccupiedSeats = async (req, res) => {
     }
 };
 
-// 🎟️ 2. Tạo đơn hàng (ĐÃ THÊM REAL-TIME)
+// 🎟️ 2. Tạo đơn hàng (Giữ nguyên real-time)
 exports.createBooking = async (req, res) => {
     try {
         const { showtimeId, userId, seats, snacks, totalAmount } = req.body;
-
-        // Kiểm tra ghế trùng (Double Check)
         const existing = await Booking.find({ showtimeId, seats: { $in: seats } });
         if (existing.length > 0) return res.status(400).json({ message: "Ghế đã bị đặt mất rồi!" });
 
-        // 🍿 Lưu đơn hàng (Bao gồm mảng bắp nước)
         const booking = await Booking.create({
-            showtimeId,
-            userId,
-            seats,
-            snacks: snacks || [], 
-            totalAmount,
-            status: "Paid"
+            showtimeId, userId, seats, snacks: snacks || [], totalAmount, status: "Paid"
         });
 
-        // 📡 --- PHẦN REAL-TIME MỚI THÊM ---
         const io = req.app.get("socketio"); 
         if (io) {
+            io.emit("cancel-hold-timer", { userId });
             const allBookings = await Booking.find({ showtimeId });
             const allBookedSeats = allBookings.flatMap(b => b.seats);
-            // Phát tín hiệu cập nhật ghế ngay lập tức
             io.to(showtimeId).emit("update-booked-seats", allBookedSeats);
-            console.log(`⚡ [Socket] Đã cập nhật ghế real-time cho suất chiếu: ${showtimeId}`);
         }
-        // ---------------------------------
 
         const fullBooking = await Booking.findById(booking._id)
             .populate({ path: 'showtimeId', populate: { path: 'movieId roomId' } });
@@ -57,7 +47,7 @@ exports.createBooking = async (req, res) => {
     }
 };
 
-// 📜 3. Lịch sử đặt vé
+// 📜 3. Lịch sử đặt vé (Giữ nguyên)
 exports.getUserBookings = async (req, res) => {
     try {
         const history = await Booking.find({ userId: req.params.userId })
@@ -69,15 +59,44 @@ exports.getUserBookings = async (req, res) => {
     }
 };
 
-// 📊 4. Doanh thu (GIỮ NGUYÊN 100% LOGIC CŨ)
+// 📊 4. DOANH THU (🔥 ĐÃ NÂNG CẤP BỘ LỌC)
 exports.getRevenue = async (req, res) => {
     try {
-        const bookings = await Booking.find().populate({ path: 'showtimeId', populate: { path: 'movieId' } });
+        const { movieId, date, hasSnack } = req.query; // 📥 Nhận các tham số lọc từ Frontend
+        let query = { status: "Paid" };
 
-        let totalRevenue = 0;   // Tổng tiền (Vé + Bắp)
-        let snackRevenue = 0;   // Tổng tiền Bắp nước
-        let totalTickets = 0;   // Tổng số vé
-        let totalSnacks = 0;    // Tổng số combo bắp nước
+        // 🟢 A. Lọc theo Phim
+        if (movieId) {
+            // Tìm các suất chiếu (showtime) thuộc bộ phim này
+            const showtimes = await Showtime.find({ movieId });
+            const showtimeIds = showtimes.map(s => s._id);
+            query.showtimeId = { $in: showtimeIds }; // Chỉ lấy các booking thuộc các suất chiếu đó
+        }
+
+        // 🟢 B. Lọc theo Ngày (Từ 00:00 đến 23:59 của ngày sếp chọn)
+        if (date) {
+            const start = new Date(date);
+            start.setHours(0, 0, 0, 0);
+            const end = new Date(date);
+            end.setHours(23, 59, 59, 999);
+            query.createdAt = { $gte: start, $lte: end };
+        }
+
+        // 🟢 C. Lọc theo Combo (Bắp nước)
+        if (hasSnack === "true") {
+            query["snacks.0"] = { $exists: true }; // Mảng snacks có ít nhất 1 phần tử
+        } else if (hasSnack === "false") {
+            query.snacks = { $size: 0 }; // Mảng snacks trống rỗng
+        }
+
+        // 🔍 Tìm danh sách đã lọc và tính toán
+        const bookings = await Booking.find(query)
+            .populate({ path: 'showtimeId', populate: { path: 'movieId' } });
+
+        let totalRevenue = 0;
+        let snackRevenue = 0;
+        let totalTickets = 0;
+        let totalSnacks = 0;
 
         bookings.forEach(b => {
             totalRevenue += (b.totalAmount || 0);
@@ -101,14 +120,17 @@ exports.getRevenue = async (req, res) => {
             history: bookings.sort((a, b) => b.createdAt - a.createdAt) 
         });
     } catch (err) { 
+        console.error("Lỗi báo cáo:", err);
         res.status(500).json({ message: "Lỗi tính toán doanh thu sếp ơi!" }); 
     }
 };
 
-// 📊 5. Dashboard (GIỮ NGUYÊN 100% LOGIC CŨ)
+// 📊 5. Dashboard (🔥 CẬP NHẬT CẢ BỘ LỌC ĐỂ ĐỒNG BỘ)
 exports.getDashboard = async (req, res) => {
     try {
-        const bookings = await Booking.find().populate({ path: 'showtimeId', populate: { path: 'movieId' } });
+        const bookings = await Booking.find({ status: "Paid" })
+            .populate({ path: 'showtimeId', populate: { path: 'movieId' } });
+        
         const totalMovies = await Movie.countDocuments();
         const totalRooms = await Room.countDocuments();
         
@@ -145,19 +167,11 @@ exports.getDashboard = async (req, res) => {
             .slice(0, 5);
 
         res.json({ 
-            totalRevenue, 
-            ticketRevenue, 
-            snackRevenue, 
-            totalTickets, 
-            totalSnacks, 
-            totalMovies, 
-            totalRooms, 
-            topMovies, 
-            recentBookings 
+            totalRevenue, ticketRevenue, snackRevenue, totalTickets, 
+            totalSnacks, totalMovies, totalRooms, topMovies, recentBookings 
         });
 
     } catch (err) { 
-        console.error("Lỗi Dashboard:", err);
         res.status(500).json({ message: "Lỗi Dashboard sếp ơi!" }); 
     }
 };

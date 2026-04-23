@@ -6,6 +6,9 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
     const [bookedSeats, setBookedSeats] = useState([]);
     const [selected, setSelected] = useState([]);
     const [othersSelecting, setOthersSelecting] = useState([]);
+    
+    // 🔔 State quản lý thông báo tự tắt
+    const [notification, setNotification] = useState({ show: false, message: "" });
 
     const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
     const cols = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
@@ -32,6 +35,19 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
                     setOthersSelecting(data.selectedSeats || []);
                 }
             });
+
+            // ⏰ Xử lý khi hết 3 phút giữ ghế
+            socket.on("hold-timeout", (data) => {
+                // 1. Hiện thông báo ngắn gọn
+                setNotification({ show: true, message: "Giữ ghế hơi lâu rồi sếp ơi, em nhả ra cho người khác chọn nhé!" });
+                
+                // 2. Tự động tắt thông báo sau 4 giây
+                setTimeout(() => setNotification({ show: false, message: "" }), 4000);
+
+                // 3. Reset ghế đang chọn
+                setSelected([]);
+                onSelect([]);
+            });
         }
 
         return () => {
@@ -40,6 +56,7 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
                 socket.off("initial-selections");
                 socket.off("update-booked-seats");
                 socket.off("someone-clicking");
+                socket.off("hold-timeout");
             }
         };
     }, [showtimeId, socket]);
@@ -91,6 +108,13 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
 
     return (
         <div className="booking-container">
+            {/* 📢 Thông báo tự động ẩn */}
+            {notification.show && (
+                <div className="timeout-notification">
+                    {notification.message}
+                </div>
+            )}
+
             <div className="screen-container">
                 <div className="screen-arc"></div>
                 <p className="screen-text">MÀN HÌNH</p>
@@ -126,7 +150,6 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
                 </div>
             ))}
 
-            {/* 🎯 PHẦN CHÚ THÍCH ĐÃ ĐƯỢC TINH GỈAN VÀ FIX MÀU */}
             <div className="legend">
                 <div className="legend-item">
                     <div className="legend-box" style={{ backgroundColor: "#7d7d7d" }}></div> 
