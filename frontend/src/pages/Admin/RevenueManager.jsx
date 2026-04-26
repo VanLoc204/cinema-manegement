@@ -58,7 +58,7 @@ export default function RevenueManager() {
 
     return (
         <div>
-            <h2 style={{ color: "#333", marginBottom: 30 }}>💰 BÁO CÁO CHI TIẾT TÀI CHÍNH</h2>
+            <h2 style={{ color: "#333", marginBottom: 30 }}>BÁO CÁO CHI TIẾT TÀI CHÍNH</h2>
 
             {/* 🔍 BỘ LỌC DOANH THU */}
             <div style={filterBarStyle}>

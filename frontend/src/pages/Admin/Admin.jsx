@@ -6,12 +6,13 @@ import SnackManager from "./SnackManager";
 import Dashboard from "./Dashboard";
 import ShowtimeManager from "./ShowtimeManager"; 
 import RevenueManager from "./RevenueManager";   
+import MemberManager from "./MemberManager"; // ✅ 1. ĐÃ IMPORT Ở ĐÂY
+import ReviewManager from "./ReviewManager";
 
 export default function Admin() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Danh sách menu sếp dùng
     const menuItems = [
         { id: "dashboard", path: "/admin", label: "Dashboard", color: "#3498db" },
         { id: "movies", path: "/admin/movies", label: "Quản lý Phim", color: "#e74c3c" },
@@ -19,10 +20,10 @@ export default function Admin() {
         { id: "showtimes", path: "/admin/showtimes", label: "Quản lý Suất chiếu", color: "#9b59b6" },
         { id: "snacks", path: "/admin/snacks", label: "Quản lý Bắp nước", color: "#f39c12" },
         { id: "revenue", path: "/admin/revenue", label: "Quản lý doanh thu", color: "#2ecc71" },
-        { id: "member", path: "/admin/member", label: "Quản lý thành viên", color: "#2ecc71" },
+        { id: "member", path: "/admin/member", label: "Quản lý thành viên", color: "#27ae60" },
+        { id: "reviews", path: "/admin/reviews", label: "Quản lý đánh giá", color: "#e67e22" }, // Đổi màu xíu cho khác Doanh thu
     ];
 
-    // Tìm xem tab nào đang active dựa trên URL thực tế của trình duyệt
     const activeTab = menuItems.find(item => 
         item.path === location.pathname
     ) || menuItems[0];
@@ -40,7 +41,7 @@ export default function Admin() {
                 {menuItems.map((item) => (
                     <div 
                         key={item.id} 
-                        onClick={() => navigate(item.path)} // Thay đổi URL thay vì set State
+                        onClick={() => navigate(item.path)} 
                         style={navItemStyle(activeTab.id === item.id, item.color)}
                     >
                         <span>{item.label}</span>
@@ -55,15 +56,15 @@ export default function Admin() {
                         {activeTab.label}
                     </h1>
 
-                    {/* 🚩 ĐỊNH TUYẾN LỒNG NHAU: React sẽ nhìn URL để lôi đúng trang ra */}
                     <Routes>
-                        <Route index element={<Dashboard />} /> {/* Mặc định khi vào /admin */}
+                        <Route index element={<Dashboard />} /> 
                         <Route path="movies" element={<MovieManager />} />
                         <Route path="rooms" element={<RoomManager />} />
                         <Route path="showtimes" element={<ShowtimeManager />} />
                         <Route path="snacks" element={<SnackManager />} />
                         <Route path="revenue" element={<RevenueManager />} />
-                        {/* <Route path="member" element={<MemberManager />} /> */}
+                        <Route path="member" element={<MemberManager />} />
+                        <Route path="reviews" element={<ReviewManager />} /> {/* ✅ 2. ĐÃ MỞ KHÓA Ở ĐÂY */}
                     </Routes>
                 </div>
             </div>
@@ -71,12 +72,12 @@ export default function Admin() {
     );
 }
 
-// --- Styles Giữ nguyên phong cách của sếp nhưng tối ưu nhẹ ---
+// --- Styles (Giữ nguyên của sếp) ---
 const sidebarStyle = { 
     width: "280px", background: "#2c3e50", color: "white", 
     padding: "30px 0", display: "flex", flexDirection: "column", 
     boxShadow: "4px 0 10px rgba(0,0,0,0.1)",
-    position: "sticky", top: 0, height: "100vh" // Cho sidebar đứng yên khi cuộn content
+    position: "sticky", top: 0, height: "100vh" 
 };
 
 const navItemStyle = (isActive, color) => ({

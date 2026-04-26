@@ -5,22 +5,26 @@ export default function MovieManager() {
     const [movies, setMovies] = useState([]);
     const [editingMovie, setEditingMovie] = useState(null);
     const [newMovie, setNewMovie] = useState({
-        title: "",
-        description: "",
-        director: "",
-        cast: "",
-        genre: "",
-        duration: "",
-        releaseDate: "",
-        language: "",
-        rated: "P",
-        status: "now_showing",
-        trailer: ""
+        title: "", description: "", director: "", cast: "", genre: "",
+        duration: "", releaseDate: "", language: "", rated: "P", status: "now_showing", trailer: ""
     });
 
     const [movieFile, setMovieFile] = useState(null); 
     const [preview, setPreview] = useState(null);
-    const [isImporting, setIsImporting] = useState(false); // Trạng thái đang upload Excel
+    const [isImporting, setIsImporting] = useState(false);
+
+    // 🔍 STATES CHO BỘ LỌC
+    const [searchTerm, setSearchTerm] = useState("");
+    const [filterStatus, setFilterStatus] = useState("all");
+    const [filterDate, setFilterDate] = useState("");
+
+    // 🔔 State quản lý thông báo tự tắt
+    const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+
+    const showNotify = (message, type = "success") => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
+    };
 
     const fetchMovies = () => {
         axios.get("/movies").then(res => setMovies(res.data));
@@ -30,83 +34,76 @@ export default function MovieManager() {
         fetchMovies();
     }, []);
 
-    // HÀM THÊM PHIM MỚI (THỦ CÔNG)
+    // 🎯 LOGIC LỌC PHIM
+    const filteredMovies = movies.filter(m => {
+        const matchesSearch = m.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                             m.director.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = filterStatus === "all" ? true : 
+                             filterStatus === "hidden" ? m.status === "ended" : 
+                             m.status !== "ended"; 
+        const matchesDate = filterDate ? m.releaseDate?.startsWith(filterDate) : true;
+
+        return matchesSearch && matchesStatus && matchesDate;
+    });
+
     const handleAddMovie = async (e) => {
         e.preventDefault();
-        if (!movieFile) return alert("Sếp ơi, chọn cái ảnh Poster đã!");
+        if (!movieFile) return showNotify("Sếp ơi, chọn cái ảnh Poster đã!", "error");
 
         const formData = new FormData();
-        Object.keys(newMovie).forEach(key => {
-            formData.append(key, newMovie[key]);
-        });
+        Object.keys(newMovie).forEach(key => formData.append(key, newMovie[key]));
         formData.append("image", movieFile);
 
         try {
-            await axios.post("/movies", formData, {
-                headers: { "Content-Type": "multipart/form-data" }
-            });
-            alert("Thêm phim mới thành công!");
+            await axios.post("/movies", formData, { headers: { "Content-Type": "multipart/form-data" } });
+            showNotify("✅ Thêm phim mới thành công!");
             setNewMovie({ 
                 title: "", description: "", director: "", cast: "", genre: "", 
                 duration: "", releaseDate: "", language: "", rated: "P", status: "now_showing", trailer: "" 
             });
-            setMovieFile(null);
-            setPreview(null);
-            e.target.reset();
-            fetchMovies();
+            setMovieFile(null); setPreview(null); e.target.reset(); fetchMovies();
         } catch (err) {
-            alert("Lỗi thêm phim!");
+            showNotify("❌ Lỗi thêm phim rồi sếp!", "error");
         }
     };
 
-    // HÀM CẬP NHẬT PHIM
     const handleUpdateMovie = async () => {
         try {
             const formData = new FormData();
             Object.keys(editingMovie).forEach(key => {
-                if (key !== "_id" && key !== "image") {
-                    formData.append(key, editingMovie[key]);
-                }
+                if (key !== "_id" && key !== "image") formData.append(key, editingMovie[key]);
             });
-            
             if (movieFile) formData.append("image", movieFile);
 
             await axios.put(`/movies/${editingMovie._id}`, formData, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
 
-            alert("Đã cập nhật phim thành công!");
-            setEditingMovie(null);
-            setMovieFile(null);
-            setPreview(null);
-            fetchMovies();
+            showNotify("✅ Đã cập nhật phim thành công!");
+            setEditingMovie(null); setMovieFile(null); setPreview(null); fetchMovies();
         } catch (err) {
-            alert("Lỗi cập nhật rồi sếp!");
+            showNotify("❌ Lỗi cập nhật rồi sếp!", "error");
         }
     };
 
-    // HÀM NHẬP PHIM HÀNG LOẠT TỪ EXCEL
     const handleImportExcel = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         if (!window.confirm(`Sếp có chắc muốn nhập phim từ file "${file.name}" không?`)) return;
 
         const formData = new FormData();
         formData.append("file", file); 
-
         setIsImporting(true);
         try {
             const res = await axios.post("/movies/import-excel", formData, {
                 headers: { "Content-Type": "multipart/form-data" }
             });
-            alert(`Thành công! ${res.data.message}`);
+            showNotify(`✅ Thành công! ${res.data.message}`);
             fetchMovies(); 
         } catch (err) {
-            alert("Lỗi nhập Excel: " + (err.response?.data?.message || "Sai định dạng file rồi sếp!"));
+            showNotify("❌ Lỗi nhập Excel sếp ơi!", "error");
         } finally {
-            setIsImporting(false);
-            e.target.value = null; 
+            setIsImporting(false); e.target.value = null; 
         }
     };
 
@@ -114,9 +111,10 @@ export default function MovieManager() {
         const nextStatus = movie.status === 'ended' ? 'now_showing' : 'ended';
         try {
             await axios.put(`/movies/${movie._id}`, { status: nextStatus });
+            showNotify(`✅ Đã ${nextStatus === 'ended' ? 'ẩn' : 'hiện'} phim thành công!`);
             fetchMovies();
         } catch (err) {
-            alert("Lỗi xử lý!");
+            showNotify("❌ Lỗi xử lý trạng thái!", "error");
         }
     };
 
@@ -126,32 +124,28 @@ export default function MovieManager() {
     };
 
     return (
-        <div style={{ padding: "20px" }}>
+        <div style={{ padding: "20px", position: 'relative' }}>
             
-            {/* KHU VỰC NHẬP EXCEL THÔNG MINH */}
+            {/* 📢 THÔNG BÁO TỰ TẮT */}
+            {notification.show && (
+                <div style={{ ...toastStyle, backgroundColor: notification.type === "success" ? "#2ecc71" : "#e74c3c" }}>
+                    {notification.message}
+                </div>
+            )}
+
+            {/* 🟢 1. KHU VỰC NHẬP EXCEL */}
             <div style={excelImportBoxStyle}>
                 <div>
                     <h3 style={{ margin: 0, color: "#2e7d32" }}>Nhập phim hàng loạt</h3>
-                    <p style={{ margin: "5px 0 0", fontSize: "0.85rem", color: "#666" }}>
-                        Tiết kiệm thời gian bằng cách tải file Excel lên hệ thống.
-                    </p>
+                    <p style={{ margin: "5px 0 0", fontSize: "0.85rem", color: "#666" }}>Tải file Excel lên để thêm nhanh danh sách phim.</p>
                 </div>
-                <div style={{ position: 'relative' }}>
-                    <input 
-                        type="file" 
-                        accept=".xlsx, .xls" 
-                        onChange={handleImportExcel} 
-                        style={hiddenInputStyle} 
-                        id="excel-upload"
-                        disabled={isImporting}
-                    />
-                    <label htmlFor="excel-upload" style={isImporting ? btnExcelDisabledStyle : btnExcelStyle}>
-                        {isImporting ? "ĐANG XỬ LÝ..." : "CHỌN FILE EXCEL"}
-                    </label>
-                </div>
+                <input type="file" accept=".xlsx, .xls" onChange={handleImportExcel} style={hiddenInputStyle} id="excel-upload" disabled={isImporting} />
+                <label htmlFor="excel-upload" style={isImporting ? btnExcelDisabledStyle : btnExcelStyle}>
+                    {isImporting ? "ĐANG XỬ LÝ..." : "CHỌN FILE EXCEL"}
+                </label>
             </div>
 
-            {/* FORM THÊM PHIM MỚI (THỦ CÔNG) */}
+            {/* 🔴 2. FORM THÊM PHIM MỚI */}
             <div style={cardStyle}>
                 <h3 style={{ marginTop: 0, color: "#fb4226" }}>THÊM PHIM MỚI</h3>
                 <form onSubmit={handleAddMovie} style={formStyle}>
@@ -171,7 +165,7 @@ export default function MovieManager() {
                         <option value="T18">T18 - Trên 18 tuổi</option>
                     </select>
 
-                    <input placeholder="Trailer (Youtube)" value={newMovie.trailer} style={inputStyle} onChange={e => setNewMovie({ ...newMovie, trailer: e.target.value })} />
+                    <input placeholder="Trailer (Youtube URL)" value={newMovie.trailer} style={inputStyle} onChange={e => setNewMovie({ ...newMovie, trailer: e.target.value })} />
                     
                     <select style={inputStyle} value={newMovie.status} onChange={e => setNewMovie({...newMovie, status: e.target.value})}>
                         <option value="now_showing">Đang chiếu</option>
@@ -179,7 +173,7 @@ export default function MovieManager() {
                         <option value="ended">Ngừng chiếu</option>
                     </select>
 
-                    <textarea placeholder="Mô tả phim..." value={newMovie.description} 
+                    <textarea placeholder="Mô tả nội dung phim..." value={newMovie.description} 
                         style={{ ...inputStyle, gridColumn: "span 2", minHeight: "80px" }} 
                         onChange={e => setNewMovie({ ...newMovie, description: e.target.value })} required />
 
@@ -196,7 +190,35 @@ export default function MovieManager() {
                 </form>
             </div>
 
-            {/* DANH SÁCH PHIM */}
+            {/* 🟡 3. THANH BỘ LỌC (ĐÃ DI CHUYỂN XUỐNG ĐÂY) */}
+            <div style={filterContainerStyle}>
+                <div style={{ flex: 2 }}>
+                    <input 
+                        placeholder="🔍 Tìm theo tên phim hoặc đạo diễn..." 
+                        style={inputStyle} 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div style={{ flex: 1 }}>
+                    <select style={inputStyle} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="shown">Phim đang hiện</option>
+                        <option value="hidden">Phim đã ẩn</option>
+                    </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                    <input 
+                        type="date" 
+                        style={inputStyle} 
+                        value={filterDate}
+                        onChange={(e) => setFilterDate(e.target.value)}
+                    />
+                </div>
+                <button onClick={() => { setSearchTerm(""); setFilterStatus("all"); setFilterDate(""); }} style={btnResetStyle}>LÀM MỚI</button>
+            </div>
+
+            {/* 🔵 4. DANH SÁCH PHIM */}
             <table style={tableStyle}>
                 <thead style={{ background: "#f8f9fa" }}>
                     <tr>
@@ -207,7 +229,7 @@ export default function MovieManager() {
                     </tr>
                 </thead>
                 <tbody>
-                    {movies.map(m => (
+                    {filteredMovies.length > 0 ? filteredMovies.map(m => (
                         <tr key={m._id} style={{ borderBottom: "1px solid #eee", opacity: m.status === 'ended' ? 0.6 : 1 }}>
                             <td style={tdStyle}><img src={`http://localhost:5000${m.image}`} width="50" height="70" style={{ borderRadius: 4, objectFit: 'cover' }} /></td>
                             <td style={tdStyle}><b>{m.title}</b><br/><small style={{ color: '#888' }}>{m.director}</small></td>
@@ -217,11 +239,13 @@ export default function MovieManager() {
                                 <button onClick={() => handleToggleStatus(m)} style={m.status === 'ended' ? btnShowStyle : btnHideStyle}>{m.status === 'ended' ? "Hiện" : "Ẩn"}</button>
                             </td>
                         </tr>
-                    ))}
+                    )) : (
+                        <tr><td colSpan="4" style={{ padding: "30px", textAlign: "center", color: "#999" }}>Không tìm thấy phim nào phù hợp sếp ơi!</td></tr>
+                    )}
                 </tbody>
             </table>
 
-            {/* MODAL CHỈNH SỬA */}
+            {/* MODAL CHỈNH SỬA PHIM */}
             {editingMovie && (
                 <div style={modalOverlayStyle}>
                     <div style={{ ...modalContentStyle, width: "800px" }}>
@@ -286,12 +310,15 @@ export default function MovieManager() {
     );
 }
 
-// --- Styles ---
+// --- Styles (Giữ nguyên) ---
+const toastStyle = { position: 'fixed', top: '20px', right: '20px', padding: '12px 25px', color: 'white', borderRadius: '8px', zIndex: 9999, fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' };
+const filterContainerStyle = { display: "flex", gap: "15px", marginBottom: "20px", background: "#fdfcf0", padding: "15px", borderRadius: "10px", border: "1px solid #eee", alignItems: "center" };
+const btnResetStyle = { padding: "10px 15px", background: "#333", color: "#fff", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold", fontSize: "0.8rem" };
 const excelImportBoxStyle = { background: "#e8f5e9", padding: "20px", borderRadius: "12px", border: "1px solid #c8e6c9", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" };
 const btnExcelStyle = { background: "#2e7d32", color: "white", padding: "12px 20px", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", display: "inline-block", fontSize: "0.9rem" };
 const btnExcelDisabledStyle = { ...btnExcelStyle, background: "#999", cursor: "not-allowed" };
 const hiddenInputStyle = { position: "absolute", width: "1px", height: "1px", padding: "0", margin: "-1px", overflow: "hidden", clip: "rect(0,0,0,0)", border: "0" };
-const cardStyle = { background: "#fff", padding: "25px", borderRadius: "12px", border: "1px solid #eee", marginBottom: "30px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" };
+const cardStyle = { background: "#fff", padding: "25px", borderRadius: "12px", border: "1px solid #eee", marginBottom: "20px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" };
 const formStyle = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px" };
 const inputStyle = { padding: "10px", borderRadius: "6px", border: "1px solid #ddd", outline: "none", width: '100%', boxSizing: 'border-box', fontSize: '0.9rem' };
 const inputGroup = { textAlign: 'left' };

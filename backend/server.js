@@ -14,7 +14,9 @@ require("./models/Room");
 require("./models/Showtime");
 require("./models/Booking");
 require("./models/User");
+require("./models/ProfileDetail");
 require("./models/Snack");
+require("./models/Review"); // ✨ DÒNG MỚI: Đăng ký bảng Review
 
 const app = express();
 
@@ -38,14 +40,16 @@ app.get("/", (req, res) => {
 
 // 4. SỬ DỤNG CÁC ROUTES
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/movies", require("./routes/movieRoutes"));
 app.use("/api/rooms", require("./routes/roomRoutes"));
 app.use("/api/showtimes", require("./routes/showtimeRoutes"));
 app.use("/api/bookings", require("./routes/bookingRoutes"));
 app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/snacks", require("./routes/snackRoutes")); 
+app.use("/api/reviews", require("./routes/reviewRoutes")); // ✨ DÒNG MỚI: Kết nối đường dây Review
 
-// 📡 5. LOGIC SOCKET.IO: REAL-TIME TRẠNG THÁI & HẸN GIỜ NHẢ GHẾ
+// 📡 5. LOGIC SOCKET.IO: REAL-TIME TRẠNG THÁI & HẸN GIỜ NHẢ GHẾ (GIỮ NGUYÊN)
 const activeSelections = {}; 
 const holdTimers = {}; // ⏰ Sổ tay quản lý đồng hồ đếm ngược: { userId: timerObject }
 
