@@ -229,11 +229,11 @@ export default function MovieDetail() {
                 {/* 📝 FORM VIẾT ĐÁNH GIÁ (CHỈ HIỆN KHI ĐỦ ĐIỀU KIỆN) */}
                 <div style={reviewBoxContainer}>
                     {!userId ? (
-                        <div style={lockMessageStyle}>Sếp hãy đăng nhập để chia sẻ cảm nghĩ nhé! 🍿</div>
+                        <div style={lockMessageStyle}>Sếp hãy đăng nhập để chia sẻ cảm nghĩ nhé!</div>
                     ) : hasReviewed ? (
                         <div style={{ ...lockMessageStyle, color: '#2ecc71', fontWeight: 'bold' }}>✅ Phim này sếp đã đánh giá rồi! Cảm ơn sếp nhiều.</div>
                     ) : !canReview ? (
-                        <div style={lockMessageStyle}>🔒 Chỉ dành cho khán giả đã mua vé. Sếp hãy trải nghiệm phim rồi quay lại đánh giá nhé!</div>
+                        <div style={lockMessageStyle}>Chỉ dành cho khán giả đã mua vé. Sếp hãy trải nghiệm phim rồi quay lại đánh giá nhé!</div>
                     ) : (
                         <div style={activeFormStyle}>
                             <div style={{ marginBottom: '15px' }}>

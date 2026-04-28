@@ -1,4 +1,38 @@
-body {
+/* 1. LUÔN ĐỂ @IMPORT Ở DÒNG ĐẦU TIÊN (Để né lỗi Vite/PostCSS) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+/* 2. ÁP DỤNG CHO TOÀN BỘ TRANG WEB */
+* {
   margin: 0;
-  font-family: Arial, sans-serif;
+  padding: 0;
+  box-sizing: border-box;
+  /* Ép tất cả dùng Inter để không bị lỗi chữ É, Ủ */
+  font-family: 'Inter', sans-serif !important;
+}
+
+body {
+  background-color: #fdfcf0; /* Giữ màu nền của sếp */
+  color: #333;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 3. ĐIỀU CHỈNH RIÊNG CHO TIÊU ĐỀ CHO ĐẸP */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+}
+
+/* Tùy chỉnh thanh cuộn cho chuyên nghiệp (Option) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+::-webkit-scrollbar-thumb {
+  background: #fb4226;
+  border-radius: 10px;
 }

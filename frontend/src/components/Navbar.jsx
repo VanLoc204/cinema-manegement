@@ -1,0 +1,162 @@
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
+
+export default function Navbar() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const token = localStorage.getItem("token");
+    const userName = localStorage.getItem("name") || "Khách";
+    const role = localStorage.getItem("role");
+    const isAdminPage = location.pathname.startsWith("/admin");
+
+    const [notice, setNotice] = useState({ show: false, message: "" });
+
+    const handleLogout = () => {
+        setNotice({ show: true, message: "Đang đăng xuất... Hẹn gặp lại sếp!" });
+        setTimeout(() => {
+            localStorage.clear();
+            window.location.href = "/";
+        }, 1200);
+    };
+
+    return (
+        <nav style={navStyle}>
+            {notice.show && <div style={logoutToastStyle}>👋 {notice.message}</div>}
+
+            {/* Logo với hiệu ứng chữ đậm chất Cinema */}
+            <div style={logoContainer} onClick={() => navigate("/")}>
+                <h2 style={logoStyle}>CINEMA <span style={{ color: "#333" }}>LUX</span></h2>
+            </div>
+            
+            <div style={menuContainer}>
+                {isAdminPage ? (
+                    <>
+                        <span style={adminBadge}>ADMIN MODE</span>
+                        <Link to="/" style={navLink}>Quay lại Web</Link>
+                        <button onClick={handleLogout} style={logoutBtn}>Đăng xuất</button>
+                    </>
+                ) : (
+                    <>
+                        <Link to="/" style={{...navLink, color: location.pathname === "/" ? "#fb4226" : "#333"}}>Trang chủ</Link>
+                        {!token ? (
+                            <Link to="/login" style={navLink}>Đăng nhập</Link>
+                        ) : (
+                            <div style={userGroup}>
+                                <span style={welcomeText}>Hi, <b style={{color: '#333'}}>{userName}</b>!</span>
+                                
+                                <div style={buttonGroup}>
+                                    {role === "admin" && (
+                                        <button style={actionBtn} onClick={() => navigate("/admin")}>Quản trị</button>
+                                    )}
+                                    <button 
+                                        style={{...actionBtn, borderBottom: location.pathname === "/profile" ? "2px solid #fb4226" : "none"}} 
+                                        onClick={() => navigate("/profile")}
+                                    >Hồ Sơ</button>
+                                    
+                                    <button 
+                                        style={{...actionBtn, borderBottom: location.pathname === "/history" ? "2px solid #fb4226" : "none"}} 
+                                        onClick={() => navigate("/history")}
+                                    >Vé đã mua</button>
+                                    
+                                    <button 
+                                        style={{...actionBtn, borderBottom: location.pathname === "/watched-movies" ? "2px solid #fb4226" : "none"}} 
+                                        onClick={() => navigate("/watched-movies")}
+                                    >Phim đã xem</button>
+                                </div>
+                                
+                                <button onClick={handleLogout} style={logoutBtn}>Đăng xuất</button>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </nav>
+    );
+}
+
+// --- 💄 STYLES LUXURY NAVBAR ---
+const navStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "0 60px",
+    height: "80px",
+    background: "#ffffff",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+    position: "sticky",
+    top: 0,
+    zIndex: 1000,
+    borderBottom: "1px solid #f0f0f0"
+};
+
+const logoContainer = { cursor: "pointer" };
+const logoStyle = { 
+    margin: 0, 
+    color: "#fb4226", 
+    fontWeight: "900", 
+    letterSpacing: "2px", 
+    fontSize: "1.6rem",
+    textTransform: "uppercase"
+};
+
+const menuContainer = { display: "flex", alignItems: "center", gap: "30px" };
+const navLink = { 
+    textDecoration: "none", 
+    fontSize: "0.95rem", 
+    fontWeight: "600", 
+    transition: "0.3s",
+    padding: "10px 0"
+};
+
+const userGroup = { display: "flex", alignItems: "center", gap: "20px" };
+const welcomeText = { fontSize: "0.9rem", color: "#fb4226", fontWeight: "500" };
+const buttonGroup = { display: "flex", gap: "5px", background: "#f8f9fa", padding: "5px", borderRadius: "12px" };
+
+const actionBtn = {
+    background: "transparent",
+    color: "#555",
+    border: "none",
+    padding: "8px 15px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontSize: "0.85rem",
+    fontWeight: "700",
+    transition: "0.2s",
+    outline: "none"
+};
+
+const logoutBtn = {
+    background: "#fb4226",
+    color: "white",
+    border: "none",
+    padding: "10px 22px",
+    borderRadius: "10px",
+    cursor: "pointer",
+    fontWeight: "800",
+    fontSize: "0.85rem",
+    boxShadow: "0 4px 10px rgba(251, 66, 38, 0.3)",
+    transition: "0.3s"
+};
+
+const adminBadge = {
+    background: "#333",
+    color: "#fff",
+    padding: "5px 12px",
+    borderRadius: "6px",
+    fontSize: "0.7rem",
+    fontWeight: "900",
+    letterSpacing: "1px"
+};
+
+const logoutToastStyle = {
+    position: "fixed",
+    top: "100px",
+    right: "30px",
+    background: "#333",
+    color: "#fff",
+    padding: "15px 30px",
+    borderRadius: "12px",
+    fontWeight: "bold",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+    zIndex: 2000
+};
