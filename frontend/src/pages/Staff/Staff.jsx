@@ -63,8 +63,7 @@ export default function Staff({ socket }) {
                         <Route path="pos" element={<StaffMovies />} />
                         <Route path="showtimes/:id" element={<StaffShowtimes />} />
                         <Route path="booking/:id" element={<StaffBooking socket={socket} />} />
-                        <Route path="checkin" element={<div>Chức năng Soát vé (Sếp làm sau cùng)</div>} />
-                    </Routes>
+                        <Route path="checkin" element={<StaffCheckin />} />                    </Routes>
                 </div>
             </div>
         </div>

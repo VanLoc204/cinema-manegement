@@ -30,7 +30,7 @@ exports.createBooking = async (req, res) => {
             showtimeId, userId, seats, snacks: snacks || [], totalAmount, status: "Paid"
         });
 
-        const io = req.app.get("socketio"); 
+        const io = req.app.get("socketio");
         if (io) {
             io.emit("cancel-hold-timer", { userId });
             const allBookings = await Booking.find({ showtimeId });
@@ -103,25 +103,25 @@ exports.getRevenue = async (req, res) => {
             totalTickets += (b.seats ? b.seats.length : 0);
             if (b.snacks && b.snacks.length > 0) {
                 b.snacks.forEach(s => {
-                    snackRevenue += (s.price * s.quantity); 
-                    totalSnacks += s.quantity;              
+                    snackRevenue += (s.price * s.quantity);
+                    totalSnacks += s.quantity;
                 });
             }
         });
 
         const ticketRevenue = totalRevenue - snackRevenue;
 
-        res.json({ 
-            totalRevenue, 
-            ticketRevenue, 
-            snackRevenue, 
-            totalTickets, 
-            totalSnacks, 
-            history: bookings.sort((a, b) => b.createdAt - a.createdAt) 
+        res.json({
+            totalRevenue,
+            ticketRevenue,
+            snackRevenue,
+            totalTickets,
+            totalSnacks,
+            history: bookings.sort((a, b) => b.createdAt - a.createdAt)
         });
-    } catch (err) { 
+    } catch (err) {
         console.error("Lỗi báo cáo:", err);
-        res.status(500).json({ message: "Lỗi tính toán doanh thu sếp ơi!" }); 
+        res.status(500).json({ message: "Lỗi tính toán doanh thu sếp ơi!" });
     }
 };
 
@@ -130,25 +130,25 @@ exports.getDashboard = async (req, res) => {
     try {
         const bookings = await Booking.find({ status: "Paid" })
             .populate({ path: 'showtimeId', populate: { path: 'movieId' } });
-        
+
         const totalMovies = await Movie.countDocuments();
         const totalRooms = await Room.countDocuments();
-        
-        let totalRevenue = 0;   
-        let snackRevenue = 0;   
-        let totalTickets = 0;   
-        let totalSnacks = 0;    
-        let movieSales = {};    
+
+        let totalRevenue = 0;
+        let snackRevenue = 0;
+        let totalTickets = 0;
+        let totalSnacks = 0;
+        let movieSales = {};
 
         bookings.forEach(b => {
             const amount = b.totalAmount || 0;
             totalRevenue += amount;
             totalTickets += (b.seats ? b.seats.length : 0);
-            
+
             if (b.snacks && b.snacks.length > 0) {
                 b.snacks.forEach(s => {
-                    snackRevenue += (s.price * s.quantity); 
-                    totalSnacks += s.quantity;              
+                    snackRevenue += (s.price * s.quantity);
+                    totalSnacks += s.quantity;
                 });
             }
 
@@ -166,12 +166,76 @@ exports.getDashboard = async (req, res) => {
             .sort((a, b) => b.createdAt - a.createdAt)
             .slice(0, 5);
 
-        res.json({ 
-            totalRevenue, ticketRevenue, snackRevenue, totalTickets, 
-            totalSnacks, totalMovies, totalRooms, topMovies, recentBookings 
+        res.json({
+            totalRevenue, ticketRevenue, snackRevenue, totalTickets,
+            totalSnacks, totalMovies, totalRooms, topMovies, recentBookings
         });
 
-    } catch (err) { 
-        res.status(500).json({ message: "Lỗi Dashboard sếp ơi!" }); 
+    } catch (err) {
+        res.status(500).json({ message: "Lỗi Dashboard sếp ơi!" });
+    }
+};
+
+// controllers/bookingController.js
+exports.getStaffStats = async (req, res) => {
+    try {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0); // Đầu ngày
+        const end = new Date();
+        end.setHours(23, 59, 59, 999); // Cuối ngày
+
+        const bookings = await Booking.find({
+            status: "Paid",
+            createdAt: { $gte: start, $lte: end }
+        });
+
+        let totalRevenue = 0, snackRevenue = 0, totalTickets = 0, totalSnacks = 0;
+
+        bookings.forEach(b => {
+            totalRevenue += (b.totalAmount || 0);
+            totalTickets += (b.seats ? b.seats.length : 0);
+            if (b.snacks) {
+                b.snacks.forEach(s => {
+                    snackRevenue += (s.price * s.quantity);
+                    totalSnacks += s.quantity;
+                });
+            }
+        });
+
+        res.json({
+            totalRevenue,
+            ticketRevenue: totalRevenue - snackRevenue,
+            snackRevenue,
+            totalTickets,
+            totalSnacks
+        });
+    } catch (err) {
+        res.status(500).json({ message: "Lỗi tính toán ca trực" });
+    }
+};
+
+// controllers/bookingController.js
+exports.checkInTicket = async (req, res) => {
+    try {
+        const { id } = req.params; // ID lấy từ mã QR
+
+        const booking = await Booking.findById(id).populate({
+            path: 'showtimeId',
+            populate: { path: 'movieId roomId' }
+        });
+
+        if (!booking) return res.status(404).json({ message: "Không tìm thấy vé này sếp ơi!" });
+
+        if (booking.status === "Checked-in") {
+            return res.status(400).json({ message: "Vé này đã được soát trước đó rồi!" });
+        }
+
+        // Cập nhật trạng thái
+        booking.status = "Checked-in";
+        await booking.save();
+
+        res.json({ message: "Soát vé thành công! Mời khách vào phòng.", booking });
+    } catch (err) {
+        res.status(500).json({ message: "Lỗi hệ thống khi soát vé" });
     }
 };

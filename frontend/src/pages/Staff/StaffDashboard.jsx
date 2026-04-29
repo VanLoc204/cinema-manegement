@@ -1,76 +1,45 @@
-import React from 'react';
+// Trong file StaffDashboard.jsx
+import { useEffect, useState } from "react";
+import axios from "../../api/axios";
 
 export default function StaffDashboard() {
-    // Lấy tên từ localStorage để chào sếp cho thân thiện
-    const userName = localStorage.getItem("name") || "Nhân viên";
+    const [stats, setStats] = useState({
+        totalRevenue: 0,
+        ticketRevenue: 0,
+        snackRevenue: 0,
+        totalTickets: 0,
+        totalSnacks: 0
+    });
+
+    useEffect(() => {
+        // Gọi API lấy dữ liệu thực tế của ngày hôm nay
+        axios.get("/bookings/staff-stats")
+            .then(res => {
+                setStats(res.data);
+            })
+            .catch(err => console.error("Lỗi hốt dữ liệu ca trực:", err));
+    }, []);
+
+    // Gán dữ liệu vào các thẻ Card
+    const cards = [
+        { title: "DOANH THU CA TRỰC", value: `${stats.totalRevenue.toLocaleString()}đ`, color: "#2ecc71" },
+        { title: "TIỀN VÉ", value: `${stats.ticketRevenue.toLocaleString()}đ`, color: "#3498db" },
+        { title: "TIỀN BẮP NƯỚC", value: `${stats.snackRevenue.toLocaleString()}đ`, color: "#f1c40f" },
+        { title: "VÉ ĐÃ BÁN", value: `${stats.totalTickets} Vé`, color: "#e74c3c" },
+        { title: "COMBO BẮP NƯỚC", value: `${stats.totalSnacks} Bộ`, color: "#9b59b6" },
+    ];
 
     return (
-        <div style={{ padding: '10px' }}>
-            <div style={welcomeHeader}>
-                <h1 style={{ margin: 0, fontSize: '2rem', color: '#2c3e50' }}>Chào buổi làm việc, sếp {userName}! ☕</h1>
-                <p style={{ color: '#7f8c8d', fontSize: '1.1rem' }}>Hôm nay là một ngày tuyệt vời để phục vụ khách hàng Cinema Lux.</p>
-            </div>
-
-            {/* 📊 CÁC CON SỐ THỐNG KÊ NHANH TRONG CA */}
-            <div style={statsGrid}>
-                <div style={{ ...statCard, background: 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)' }}>
-                    <p style={cardLabel}>DOANH THU CA TRỰC</p>
-                    <h2 style={cardValue}>1,450,000đ</h2>
-                    <span style={cardSub}>+15% so với hôm qua</span>
-                </div>
-                <div style={{ ...statCard, background: 'linear-gradient(135deg, #3498db 0%, #2980b9 100%)' }}>
-                    <p style={cardLabel}>VÉ ĐÃ BÁN (HÔM NAY)</p>
-                    <h2 style={cardValue}>24 Vé</h2>
-                    <span style={cardSub}>Tập trung phim: Địa Đạo</span>
-                </div>
-                <div style={{ ...statCard, background: 'linear-gradient(135deg, #f39c12 0%, #d35400 100%)' }}>
-                    <p style={cardLabel}>COMBO BẮP NƯỚC</p>
-                    <h2 style={cardValue}>12 Bộ</h2>
-                    <span style={cardSub}>Tỉ lệ đính kèm: 50%</span>
-                </div>
-            </div>
-
-            {/* 📝 GHI CHÚ NHẮC NHỞ NHÂN VIÊN */}
-            <div style={infoBox}>
-                <h3 style={{ marginTop: 0, color: '#27ae60' }}>📌 Ghi chú ca làm việc hôm nay:</h3>
-                <ul style={{ color: '#555', lineHeight: '2', fontSize: '0.95rem' }}>
-                    <li>Luôn kiểm tra lại máy in hóa đơn và giấy in nhiệt trước khi vào ca.</li>
-                    <li>Phim <b>"Địa Đạo"</b> đang có lượng khách đặt tại quầy rất đông, sếp chú ý điều phối.</li>
-                    <li>Nhắc nhở khách hàng quét mã QR để tích điểm thành viên <b>Cinema Lux</b>.</li>
-                    <li>Vệ sinh khu vực quầy POS sau mỗi đợt khách dồn dập.</li>
-                </ul>
+        <div style={{ padding: "30px" }}>
+            <h2 style={{fontWeight: '900'}}>Chào buổi làm việc, sếp staff01! ☕</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', marginTop: '30px' }}>
+                {cards.map((card, i) => (
+                    <div key={i} style={{ background: '#fff', padding: '25px', borderRadius: '15px', borderTop: `5px solid ${card.color}`, boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
+                        <p style={{ fontSize: '0.75rem', color: '#888', fontWeight: 'bold' }}>{card.title}</p>
+                        <h2 style={{ color: card.color, margin: '10px 0' }}>{card.value}</h2>
+                    </div>
+                ))}
             </div>
         </div>
     );
 }
-
-// --- 💄 STYLES DASHBOARD CỰC CHUẨN ---
-const welcomeHeader = { marginBottom: '40px' };
-
-const statsGrid = { 
-    display: 'grid', 
-    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-    gap: '25px', 
-    marginBottom: '40px' 
-};
-
-const statCard = { 
-    padding: '30px', 
-    borderRadius: '20px', 
-    color: '#fff', 
-    boxShadow: '0 8px 25px rgba(46, 204, 113, 0.2)',
-    position: 'relative',
-    overflow: 'hidden'
-};
-
-const cardLabel = { margin: 0, fontSize: '0.85rem', fontWeight: 'bold', opacity: 0.9, letterSpacing: '1px' };
-const cardValue = { margin: '15px 0 5px 0', fontSize: '2.4rem', fontWeight: '900' };
-const cardSub = { fontSize: '0.75rem', opacity: 0.8 };
-
-const infoBox = { 
-    background: '#fff', 
-    padding: '30px', 
-    borderRadius: '20px', 
-    borderLeft: '8px solid #2ecc71',
-    boxShadow: '0 5px 15px rgba(0,0,0,0.02)' 
-};
