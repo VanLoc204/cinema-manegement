@@ -106,20 +106,31 @@ exports.getAllShowtimes = async (req, res) => {
         const { movieId, date, status } = req.query;
         let query = {};
         const now = new Date();
+
         if (movieId) query.movieId = movieId;
+
         if (date) {
             const start = new Date(date); start.setHours(0, 0, 0, 0);
             const end = new Date(date); end.setHours(23, 59, 59, 999);
             query.time = { $gte: start, $lte: end };
         }
+
         if (status === "upcoming") query.time = { ...query.time, $gt: now };
         else if (status === "finished") query.time = { ...query.time, $lt: now };
 
-        const allShowtimes = await Showtime.find(query).populate("movieId", "title").populate("roomId", "name price").sort({ time: -1 });
-        res.json(allShowtimes);
-    } catch (err) { res.status(500).json("Lỗi lấy danh sách"); }
-};
+        // 🚩 LỖI NẰM Ở ĐÂY: 
+        // 1. Sếp chỉ populate "title", trong khi Frontend cần cả "image", "genre", "duration"
+        // 2. Sếp đang sort -1 (Mới nhất lên đầu), nhân viên POS cần sort 1 (Giờ sớm nhất lên đầu)
+        const allShowtimes = await Showtime.find(query)
+            .populate("movieId") // Lấy hết thông tin phim để hiện poster/thời lượng
+            .populate("roomId", "name price") 
+            .sort({ time: 1 }); // Sắp xếp theo giờ chiếu tăng dần
 
+        res.json(allShowtimes);
+    } catch (err) { 
+        res.status(500).json("Lỗi lấy danh sách: " + err.message); 
+    }
+};
 exports.deleteShowtime = async (req, res) => {
     try {
         await Showtime.findByIdAndDelete(req.params.id);

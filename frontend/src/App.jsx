@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom"; // ✅ Đã thêm useLocation
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import io from "socket.io-client";
 import Navbar from "./components/Navbar";
@@ -12,16 +12,18 @@ import Admin from "./pages/Admin/Admin";
 import TicketHistory from "./pages/TicketHistory";
 import Profile from "./pages/Profile";
 
+// 🚩 Sếp thêm dòng này vào trên cùng file App.jsx nhé
+import Staff from "./pages/Staff/Staff";
+
 // --- 🛠️ COMPONENT SỬA LỖI CUỘN TRANG ---
 function ScrollToTop() {
     const { pathname } = useLocation();
 
     useEffect(() => {
-        // Ép trình duyệt nhảy lên đầu trang ngay lập tức khi pathname thay đổi
         window.scrollTo({
             top: 0,
             left: 0,
-            behavior: 'instant' 
+            behavior: 'instant'
         });
     }, [pathname]);
 
@@ -38,27 +40,34 @@ const ProtectedRoute = ({ children }) => {
 export default function App() {
     return (
         <BrowserRouter>
-            {/* ✅ Đặt ScrollToTop ở đây để nó quản lý toàn bộ các Routes bên dưới */}
-            <ScrollToTop /> 
+            <ScrollToTop />
 
             <div style={{ background: "#fdfcf0", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
                 <Navbar />
-                <div style={{ flex: 1 }}>
+
+                {/* Vùng nội dung chính với flex: 1 để đẩy Footer xuống đáy */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: "80vh" }}>
                     <Routes>
+                        {/* --- ROUTES CHO KHÁCH HÀNG --- */}
                         <Route path="/" element={<Movies />} />
                         <Route path="/movie/:id" element={<MovieDetail />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                        
-                        {/* 🎯 Cả 2 đường dẫn đều dùng TicketHistory nhưng xử lý nội dung khác nhau */}
                         <Route path="/history" element={<ProtectedRoute><TicketHistory /></ProtectedRoute>} />
                         <Route path="/watched-movies" element={<ProtectedRoute><TicketHistory /></ProtectedRoute>} />
-                        
                         <Route path="/booking/:id" element={<ProtectedRoute><Booking socket={socket} /></ProtectedRoute>} />
+
+                        {/* --- 🚀 ROUTES CHO NHÂN VIÊN (STAFF POS) --- */}
+                        <Route
+                            path="/staff/*"
+                            element={localStorage.getItem("role") === "staff" ? <Staff socket={socket}/> : <Navigate to="/login" />}
+                        />
+                        {/* --- ROUTE CHO ADMIN --- */}
                         <Route path="/admin/*" element={localStorage.getItem("role") === "admin" ? <Admin /> : <Navigate to="/login" />} />
                     </Routes>
                 </div>
+
                 <Footer />
             </div>
         </BrowserRouter>

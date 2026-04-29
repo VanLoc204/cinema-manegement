@@ -10,13 +10,13 @@ connectDB();
 
 // 2. ĐĂNG KÝ MODELS
 require("./models/Movie");
-require("./models/Room"); 
+require("./models/Room");
 require("./models/Showtime");
 require("./models/Booking");
 require("./models/User");
 require("./models/ProfileDetail");
 require("./models/Snack");
-require("./models/Review"); // ✨ DÒNG MỚI: Đăng ký bảng Review
+require("./models/Review");
 
 const app = express();
 
@@ -24,7 +24,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173", 
+    origin: "http://localhost:5173",
     methods: ["GET", "POST"]
   }
 });
@@ -38,7 +38,7 @@ app.get("/", (req, res) => {
   res.send("Backend Cinema Lux Real-time đang nổ máy sếp ơi...");
 });
 
-// 4. SỬ DỤNG CÁC ROUTES
+// 4. SỬ DỤNG CÁC ROUTES (Sếp nhớ thêm /api vào link gọi Axios ở Frontend nhé)
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/movies", require("./routes/movieRoutes"));
@@ -46,99 +46,101 @@ app.use("/api/rooms", require("./routes/roomRoutes"));
 app.use("/api/showtimes", require("./routes/showtimeRoutes"));
 app.use("/api/bookings", require("./routes/bookingRoutes"));
 app.use("/api/payment", require("./routes/paymentRoutes"));
-app.use("/api/snacks", require("./routes/snackRoutes")); 
-app.use("/api/reviews", require("./routes/reviewRoutes")); // ✨ DÒNG MỚI: Kết nối đường dây Review
+app.use("/api/snacks", require("./routes/snackRoutes"));
+app.use("/api/reviews", require("./routes/reviewRoutes"));
 
-// 📡 5. LOGIC SOCKET.IO: REAL-TIME TRẠNG THÁI & HẸN GIỜ NHẢ GHẾ (GIỮ NGUYÊN)
-const activeSelections = {}; 
-const holdTimers = {}; // ⏰ Sổ tay quản lý đồng hồ đếm ngược: { userId: timerObject }
+// 📡 5. LOGIC SOCKET.IO: ĐÃ ĐỒNG BỘ TÊN SỰ KIỆN (_)
+const activeSelections = {};
+const holdTimers = {};
 
 io.on("connection", (socket) => {
   console.log(`📡 [Socket] Kết nối mới: ${socket.id}`);
 
   // A. Khi User vào phòng đặt ghế
-  socket.on("join-showtime", (showtimeId) => {
+  // Trong file server.js
+  socket.on("join_showtime", (showtimeId) => {
     socket.join(showtimeId);
     socket.showtimeId = showtimeId;
+    console.log(`👤 User ${socket.id} gia nhập phòng: ${showtimeId}`);
 
+    // 🚩 ĐOẠN QUAN TRỌNG: Gửi danh sách ghế đang được giữ cho người VỪA VÀO
     if (activeSelections[showtimeId]) {
+      // Gom tất cả ghế đang được giữ bởi các user khác trong phòng này thành 1 mảng
       const currentOtherSeats = Object.values(activeSelections[showtimeId]).flat();
-      socket.emit("initial-selections", currentOtherSeats);
+
+      // Chỉ gửi riêng cho cái socket vừa mới vào này thôi (socket.emit)
+      socket.emit("initial_selections", currentOtherSeats);
     }
   });
 
-  // B. Khi User click chọn ghế (Bắt đầu/Reset đếm ngược 3 phút)
-  socket.on("selecting-seat", (data) => {
+  // B. Khi User click chọn ghế (Đổi sang gạch dưới _)
+  socket.on("selecting_seat", (data) => {
     const { showtimeId, userId, selectedSeats } = data;
     socket.userId = userId;
     socket.showtimeId = showtimeId;
 
-    // 1. Reset đồng hồ nếu sếp đang chọn dở mà click thêm ghế
     if (holdTimers[userId]) {
       clearTimeout(holdTimers[userId]);
       delete holdTimers[userId];
     }
 
-    // 2. Nếu có chọn ghế, bắt đầu đếm ngược 3 phút (180.000ms)
-    if (selectedSeats.length > 0) {
+    if (selectedSeats && selectedSeats.length > 0) {
       holdTimers[userId] = setTimeout(() => {
-        console.log(`⏰ [Timeout] Hết 3 phút! Tự động nhả ghế cho user: ${userId}`);
-        
-        // Xóa trong sổ cái trạng thái
         if (activeSelections[showtimeId]) {
           delete activeSelections[showtimeId][userId];
         }
-
-        // Báo cho mọi người trong phòng biết ghế này đã trống
-        io.to(showtimeId).emit("someone-clicking", {
+        io.to(showtimeId).emit("someone_clicking", {
           userId: userId,
           selectedSeats: []
         });
-
-        // Báo riêng cho "khách chậm chạp" đó biết là đã hết giờ
-        socket.emit("hold-timeout", { message: "Hết 3 phút giữ ghế rồi sếp ơi, mời sếp chọn lại!" });
-        
+        socket.emit("hold_timeout", { message: "Hết 3 phút giữ ghế rồi sếp ơi!" });
         delete holdTimers[userId];
-      }, 3 * 60 * 1000); 
+      }, 3 * 60 * 1000);
     }
 
-    // 3. Cập nhật sổ cái và phát tín hiệu như bình thường
     if (!activeSelections[showtimeId]) activeSelections[showtimeId] = {};
     activeSelections[showtimeId][userId] = selectedSeats;
-    socket.to(showtimeId).emit("someone-clicking", data);
+
+    // Phát tín hiệu cho những người khác trong phòng
+    socket.to(showtimeId).emit("someone_clicking", data);
   });
 
-  // C. 🎟️ QUAN TRỌNG: Khi thanh toán thành công (Xóa đồng hồ đếm ngược)
-  socket.on("payment-success", (data) => {
-    const { userId, showtimeId } = data;
-    if (holdTimers[userId]) {
+  // C. 🎟️ KHI THANH TOÁN THÀNH CÔNG (Cả khách và staff đều dùng cái này)
+  socket.on("confirm_booking", (data) => {
+    const { showtimeId, seats, userId } = data;
+
+    // Hủy đếm ngược vì họ đã mua rồi
+    if (userId && holdTimers[userId]) {
       clearTimeout(holdTimers[userId]);
       delete holdTimers[userId];
-      console.log(`✅ [Paid] Đã hủy đếm ngược cho user ${userId} vì đã thanh toán.`);
     }
-    // Xóa khỏi danh sách "đang giữ" vì giờ nó đã là "đã bán" trong DB
-    if (activeSelections[showtimeId]) {
+
+    // Xóa khỏi danh sách "đang giữ"
+    if (showtimeId && userId && activeSelections[showtimeId]) {
       delete activeSelections[showtimeId][userId];
     }
+
+    // 🚩 HÉT LÊN CHO CẢ PHÒNG: "GHẾ NÀY BÁN RỒI, CẬP NHẬT ĐI!"
+    io.to(showtimeId).emit("confirm_booking", { seats });
   });
 
   // D. Cleanup khi User rời đi
   const handleLeave = () => {
     const { showtimeId, userId } = socket;
-    if (holdTimers[userId]) {
+    if (userId && holdTimers[userId]) {
       clearTimeout(holdTimers[userId]);
       delete holdTimers[userId];
     }
     if (showtimeId && userId && activeSelections[showtimeId]) {
       delete activeSelections[showtimeId][userId];
-      io.to(showtimeId).emit("someone-clicking", {
+      io.to(showtimeId).emit("someone_clicking", {
         userId: userId,
         selectedSeats: []
       });
     }
   };
 
-  socket.on("leave-showtime", handleLeave);
+  socket.on("leave_showtime", handleLeave);
   socket.on("disconnect", handleLeave);
 });
 

@@ -6,7 +6,7 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     
-    // 🚩 Thêm State để quản lý thông báo
+    // 🚩 Quản lý thông báo
     const [notice, setNotice] = useState({ show: false, message: "", type: "" });
     
     const navigate = useNavigate();
@@ -20,31 +20,40 @@ export default function Login() {
             localStorage.setItem("role", res.data.role);
             localStorage.setItem("userId", res.data.userId); 
 
-            // 🏆 Hiện thông báo thành công
+            // 🏆 Tùy biến lời chào theo chức vụ
+            let welcomeMsg = "Đăng nhập thành công! Đang vào rạp...";
+            if (res.data.role === "admin") {
+                welcomeMsg = `Chào sếp Quản trị viên! Đang vào hệ thống...`;
+            } else if (res.data.role === "staff") {
+                welcomeMsg = `Chào sếp Nhân viên! Đang chuẩn bị trạm làm việc...`;
+            }
+
             setNotice({ 
                 show: true, 
-                message: res.data.role === "admin" ? `Chào sếp Quản trị viên! Đang vào hệ thống...` : "Đăng nhập thành công! Đang vào rạp...", 
+                message: welcomeMsg, 
                 type: "success" 
             });
 
-            // 🕒 Đợi 1.5 giây cho khách kịp nhìn thông báo rồi mới chuyển trang
+            // 🕒 Điều hướng thông minh dựa trên Role
+            // Dùng window.location.href để ép trình duyệt load lại toàn bộ State (sạch bài)
             setTimeout(() => {
-                if (res.data.role === "admin") {
-                    window.location.href = "/admin"; // Dùng href để nó tự load lại Navbar luôn cho sếp
+                const role = res.data.role;
+                if (role === "admin") {
+                    window.location.href = "/admin"; 
+                } else if (role === "staff") {
+                    window.location.href = "/staff"; // 🎯 Chỉ cần về /staff là vào thẳng Dashboard nhân viên
                 } else {
-                    window.location.href = "/";
+                    window.location.href = "/"; 
                 }
             }, 1500);
 
         } catch (err) {
-            // ❌ Hiện thông báo lỗi
             setNotice({ 
                 show: true, 
                 message: "Đăng nhập thất bại: " + (err.response?.data?.message || "Sai email hoặc mật khẩu sếp ơi!"), 
                 type: "error" 
             });
             
-            // Lỗi thì sau 3 giây cho nó biến mất để khách nhập lại
             setTimeout(() => setNotice({ ...notice, show: false }), 3000);
         }
     };
@@ -52,7 +61,7 @@ export default function Login() {
     return (
         <div style={containerStyle}>
             
-            {/* 🚩 KHUNG THÔNG BÁO TỰ CHẾ (Hiện ra rồi tự mất) */}
+            {/* 🚩 TOAST THÔNG BÁO */}
             {notice.show && (
                 <div style={{
                     ...toastStyle,
@@ -67,6 +76,7 @@ export default function Login() {
 
                 <input
                     placeholder="Email của bạn"
+                    value={email}
                     onChange={e => setEmail(e.target.value)}
                     style={inputStyle}
                 />
@@ -74,6 +84,7 @@ export default function Login() {
                 <input
                     type="password"
                     placeholder="Mật khẩu"
+                    value={password}
                     onChange={e => setPassword(e.target.value)}
                     style={inputStyle}
                 />
@@ -90,8 +101,7 @@ export default function Login() {
     );
 }
 
-// --- 🎨 PHẦN STYLE ĐÃ ĐƯỢC NÂNG CẤP ---
-
+// --- 🎨 STYLE (SẾP GIỮ NGUYÊN) ---
 const containerStyle = {
     height: "90vh", display: "flex", justifyContent: "center", alignItems: "center",
     background: "linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1350&q=80')",
@@ -116,19 +126,8 @@ const buttonStyle = {
     transition: '0.3s'
 };
 
-// 🚩 STYLE CHO CÁI THÔNG BÁO (TOAST)
 const toastStyle = {
-    position: "fixed",
-    top: "20px",
-    right: "20px",
-    padding: "15px 25px",
-    color: "#fff",
-    borderRadius: "8px",
-    fontWeight: "bold",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
-    zIndex: 1000,
-    animation: "slideIn 0.5s ease-out",
-    display: "flex",
-    alignItems: "center",
-    gap: "10px"
+    position: "fixed", top: "20px", right: "20px", padding: "15px 25px", color: "#fff",
+    borderRadius: "8px", fontWeight: "bold", boxShadow: "0 5px 15px rgba(0,0,0,0.3)",
+    zIndex: 1000, display: "flex", alignItems: "center", gap: "10px"
 };

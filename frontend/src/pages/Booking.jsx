@@ -3,18 +3,27 @@ import { useParams, useNavigate } from "react-router-dom";
 import SeatMap from "../components/SeatMap";
 import axios from "../api/axios";
 
-// 📡 1. Nhận socket từ App.jsx qua Props
 export default function Booking({ socket }) { 
     const { id } = useParams();
     const navigate = useNavigate();
     const [showtime, setShowtime] = useState(null);
-    const [seats, setSeats] = useState([]); // Mảng Object: [{id, price, type},...]
+    const [seats, setSeats] = useState([]); 
     const [showQR, setShowQR] = useState(false);
     const [bill, setBill] = useState(null);
     const [step, setStep] = useState(1);
 
     const [availableSnacks, setAvailableSnacks] = useState([]);
     const [selectedSnacks, setSelectedSnacks] = useState({});
+
+    // 📡 1. THÊM MỚI: Logic vào phòng Realtime (Không xóa gì của sếp)
+    useEffect(() => {
+        if (socket && id) {
+            socket.emit("join_showtime", id);
+            return () => {
+                socket.emit("leave_showtime", id);
+            };
+        }
+    }, [socket, id]);
 
     useEffect(() => {
         axios.get(`/showtimes/detail/${id}`).then(res => {
@@ -34,24 +43,18 @@ export default function Booking({ socket }) {
         });
     };
 
-    // 💰 2. TÍNH TIỀN VÉ REAL-TIME: Cộng dồn giá của từng ghế từ SeatMap trả về
     const roomPrice = showtime?.roomId?.price || 0;
     const ticketTotal = seats.reduce((sum, s) => sum + (s.price || 0), 0);
-
     const snackTotal = Object.entries(selectedSnacks).reduce((sum, [snackId, qty]) => {
         const snack = availableSnacks.find(s => s._id === snackId);
         return sum + (snack ? snack.price * qty : 0);
     }, 0);
-
     const totalAmount = ticketTotal + snackTotal;
 
     const handleConfirmPayment = async () => {
         try {
             const userId = localStorage.getItem("userId");
-            if (!userId) {
-                alert("❌ Lỗi: Không tìm thấy ID người dùng. Hãy đăng nhập lại!");
-                return;
-            }
+            if (!userId) return alert("❌ Lỗi: Hãy đăng nhập lại!");
 
             const snackList = Object.entries(selectedSnacks)
                 .filter(([_, qty]) => qty > 0)
@@ -69,14 +72,21 @@ export default function Booking({ socket }) {
             const payload = {
                 showtimeId: id,
                 userId: userId,
-                seats: seats.map(s => s.id), // Chuyển mảng Object thành mảng ID để lưu DB
+                seats: seats.map(s => s.id),
                 snacks: snackList,
                 totalAmount: totalAmount
             };
 
             const res = await axios.post("/bookings/confirm", payload);
             
-            // ✅ Sau khi thanh toán, Backend sẽ tự phát tín hiệu socket cập nhật ghế cho các máy khác
+            // 📡 2. THÊM MỚI: Báo cho Staff và các khách khác là ghế đã CHỐT (Realtime)
+            if (socket) {
+                socket.emit("confirm_booking", { 
+                    showtimeId: id, 
+                    seats: seats.map(s => s.id) 
+                });
+            }
+
             setBill(res.data.booking);
             setShowQR(false);
             alert("✅ Thanh toán thành công! Chúc sếp xem phim vui vẻ.");
@@ -86,7 +96,7 @@ export default function Booking({ socket }) {
         }
     };
 
-    // --- 🧾 GIAO DIỆN HÓA ĐƠN XỊN ---
+    // --- 🧾 GIAO DIỆN HÓA ĐƠN XỊN (GIỮ NGUYÊN TOÀN BỘ CHI TIẾT CỦA SẾP) ---
     if (bill) return (
         <div style={billContainerStyle}>
             <div style={billBoxStyle}>
@@ -99,19 +109,13 @@ export default function Booking({ socket }) {
                     <p><strong>Mã vé:</strong> <span style={{ color: "#fb4226" }}>{bill._id.toUpperCase()}</span></p>
                     <p><strong>Khách hàng:</strong> {localStorage.getItem("name") || "Khách hàng"}</p>
                     <p><strong>Phim:</strong> <b>{showtime?.movieId?.title}</b></p>
-
-                    <p>
-                        <strong>Suất chiếu:</strong> {
-                            showtime?.time ? (
-                                <>
-                                    {new Date(showtime.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                    {" | "}
-                                    {new Date(showtime.time).toLocaleDateString('vi-VN')}
-                                </>
-                            ) : "Đang tải..."
-                        }
-                    </p>
-
+                    <p><strong>Suất chiếu:</strong> {showtime?.time ? (
+                        <>
+                            {new Date(showtime.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            {" | "}
+                            {new Date(showtime.time).toLocaleDateString('vi-VN')}
+                        </>
+                    ) : "Đang tải..."}</p>
                     <p><strong>Phòng:</strong> {showtime?.roomId?.name}</p>
                     <p><strong>Vị trí ghế:</strong> <b style={{ fontSize: "1.2rem", color: "#fb4226" }}>{bill.seats.join(", ")}</b></p>
                 </div>
@@ -156,13 +160,7 @@ export default function Booking({ socket }) {
                 {step === 1 ? (
                     <div>
                         <h2 style={{ marginBottom: 20, textAlign: 'center' }}>CHỌN GHẾ NGỒI</h2>
-                        {/* 📡 3. Truyền socket xuống cho SeatMap để lắng nghe cập nhật ghế */}
-                        <SeatMap 
-                            onSelect={setSeats} 
-                            showtimeId={id} 
-                            roomPrice={roomPrice} 
-                            socket={socket} 
-                        />
+                        <SeatMap onSelect={setSeats} showtimeId={id} roomPrice={roomPrice} socket={socket} />
                     </div>
                 ) : (
                     <div>
@@ -191,7 +189,6 @@ export default function Booking({ socket }) {
                 <h3 style={{ borderBottom: "1px solid #eee", paddingBottom: 15 }}>TÓM TẮT ĐƠN HÀNG</h3>
                 <p>Phim: <b>{showtime?.movieId?.title}</b></p>
                 <p>Phòng: <b style={{ color: "#fb4226" }}>{showtime?.roomId?.name}</b></p>
-                {/* HIỂN THỊ TÊN GHẾ TỪ MẢNG OBJECT */}
                 <p>Ghế chọn: <b style={{ color: "#fb4226" }}>{seats.map(s => s.id).join(", ") || "Chưa chọn"}</b></p>
 
                 {Object.values(selectedSnacks).some(q => q > 0) && (
@@ -237,7 +234,7 @@ export default function Booking({ socket }) {
     );
 }
 
-// --- Styles Nâng Cấp (Giữ nguyên của sếp) ---
+// --- 💄 HỆ THỐNG STYLES LUXURY (GIỮ NGUYÊN 100% CỦA SẾP) ---
 const snackCardStyle = { display: "flex", alignItems: "center", border: "1px solid #eee", padding: "15px", borderRadius: "12px", background: "#fdfdfd" };
 const qtyBtnStyle = { width: "30px", height: "30px", border: "1px solid #ddd", background: "#fff", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" };
 const summaryBoxStyle = { width: 320, background: "#fff", padding: 25, borderRadius: 15, boxShadow: "0 10px 30px rgba(0,0,0,0.1)", height: "fit-content" };
