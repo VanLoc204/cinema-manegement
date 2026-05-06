@@ -33,8 +33,8 @@ exports.createShowtime = async (req, res) => {
 
             // Công thức kiểm tra chồng lấn: (StartA < EndB) và (EndA > StartB)
             if (startTime < extEnd && endTime > extStart) {
-                return res.status(400).json({ 
-                    message: `Trùng lịch rồi sếp! Suất "${show.movieId?.title}" chiếu từ ${extStart.toLocaleTimeString()} đến ${extEnd.toLocaleTimeString()} (bao gồm 15p dọn dẹp).` 
+                return res.status(400).json({
+                    message: `Trùng lịch rồi sếp! Suất "${show.movieId?.title}" chiếu từ ${extStart.toLocaleTimeString()} đến ${extEnd.toLocaleTimeString()} (bao gồm 15p dọn dẹp).`
                 });
             }
         }
@@ -69,8 +69,8 @@ exports.updateShowtime = async (req, res) => {
             const extEnd = new Date(extStart.getTime() + (extDuration + cleanupTime) * 60000);
 
             if (startTime < extEnd && endTime > extStart) {
-                return res.status(400).json({ 
-                    message: `Không thể cập nhật! Giờ này phòng đang bận chiếu phim "${show.movieId?.title}".` 
+                return res.status(400).json({
+                    message: `Không thể cập nhật! Giờ này phòng đang bận chiếu phim "${show.movieId?.title}".`
                 });
             }
         }
@@ -88,7 +88,7 @@ exports.getShowtimesByMovie = async (req, res) => {
         const { movieId } = req.params;
         const now = new Date();
         if (!mongoose.Types.ObjectId.isValid(movieId)) return res.status(400).json("ID phim không hợp lệ");
-        const data = await Showtime.find({ movieId, time: { $gt: now } }).populate("roomId").sort({ time: 1 }); 
+        const data = await Showtime.find({ movieId, time: { $gt: now } }).populate("roomId").sort({ time: 1 });
         res.json(data);
     } catch (err) { res.status(500).json({ message: "Lỗi lấy suất chiếu", error: err.message }); }
 };
@@ -110,11 +110,16 @@ exports.getAllShowtimes = async (req, res) => {
         if (movieId) query.movieId = movieId;
 
         if (date) {
-            const start = new Date(date); start.setHours(0, 0, 0, 0);
-            const end = new Date(date); end.setHours(23, 59, 59, 999);
+            // Thay vì dùng new Date(date) trực tiếp bị dính UTC
+            // Ta khởi tạo start và end bằng cách ghép chuỗi giờ để ép nó hiểu theo giờ địa phương/hệ thống
+            const start = new Date(`${date}T00:00:00.000Z`);
+            start.setHours(start.getHours() - 7); // Trừ đi 7 tiếng để khớp với dữ liệu UTC trong DB
+
+            const end = new Date(`${date}T23:59:59.999Z`);
+            end.setHours(end.getHours() - 7);
+
             query.time = { $gte: start, $lte: end };
         }
-
         if (status === "upcoming") query.time = { ...query.time, $gt: now };
         else if (status === "finished") query.time = { ...query.time, $lt: now };
 
@@ -123,12 +128,12 @@ exports.getAllShowtimes = async (req, res) => {
         // 2. Sếp đang sort -1 (Mới nhất lên đầu), nhân viên POS cần sort 1 (Giờ sớm nhất lên đầu)
         const allShowtimes = await Showtime.find(query)
             .populate("movieId") // Lấy hết thông tin phim để hiện poster/thời lượng
-            .populate("roomId", "name price") 
+            .populate("roomId", "name price")
             .sort({ time: 1 }); // Sắp xếp theo giờ chiếu tăng dần
 
         res.json(allShowtimes);
-    } catch (err) { 
-        res.status(500).json("Lỗi lấy danh sách: " + err.message); 
+    } catch (err) {
+        res.status(500).json("Lỗi lấy danh sách: " + err.message);
     }
 };
 exports.deleteShowtime = async (req, res) => {

@@ -180,7 +180,7 @@ const smallCardStyle = (color) => ({
 });
 
 const cardLabel = { margin: 0, fontSize: "0.9rem", opacity: 0.8, fontWeight: 'bold' };
-const cardValue = { margin: "10px 0 0 0", fontSize: "1.8rem" };
+const cardValue = { margin: "10px 0 0 0", fontSize: "1.8rem", color: "#f2f1f1" };
 const smallLabel = { margin: 0, fontSize: "0.8rem", color: "#666", fontWeight: 'bold' };
 const smallValue = { margin: "5px 0 0 0", fontSize: "1.2rem", color: "#333" };
 
