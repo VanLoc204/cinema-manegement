@@ -7,18 +7,18 @@ const jwt = require("jsonwebtoken");
 exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
-    
+
     const exist = await User.findOne({ email });
     if (exist) return res.status(400).json("Email này đã được sử dụng sếp ơi!");
 
     const hash = await bcrypt.hash(password, 10);
 
     // 1. Tạo tài khoản User
-    const user = await User.create({ 
-      name, 
-      email, 
+    const user = await User.create({
+      name,
+      email,
       password: hash,
-      role: "customer" 
+      role: "customer"
     });
 
     // 2. ✨ TỰ ĐỘNG TẠO ProfileDetail rỗng cho User mới này
@@ -46,23 +46,23 @@ exports.login = async (req, res) => {
 
     // 🛡️ THÊM DÒNG NÀY: Check xem tài khoản có bị khóa không
     if (user.isActive === false) {
-        return res.status(403).json("Tài khoản của sếp đã bị khóa. Vui lòng liên hệ Admin!");
+      return res.status(403).json("Tài khoản của sếp đã bị khóa. Vui lòng liên hệ Admin!");
     }
 
     const isMatch = await bcrypt.compare(req.body.password, user.password);
     if (!isMatch) return res.status(400).json("Sai mật khẩu rồi sếp!");
 
     const token = jwt.sign(
-      { id: user._id, role: user.role }, 
-      "SECRET", 
+      { id: user._id, role: user.role },
+      "SECRET",
       { expiresIn: "1d" }
     );
 
-    res.json({ 
-      token, 
-      role: user.role, 
+    res.json({
+      token,
+      role: user.role,
       name: user.name,
-      userId: user._id 
+      userId: user._id
     });
   } catch (err) {
     res.status(500).json("Lỗi đăng nhập hệ thống");

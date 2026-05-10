@@ -61,7 +61,7 @@ export default function App() {
                         {/* --- 🚀 ROUTES CHO NHÂN VIÊN (STAFF POS) --- */}
                         <Route
                             path="/staff/*"
-                            element={localStorage.getItem("role") === "staff" ? <Staff socket={socket}/> : <Navigate to="/login" />}
+                            element={localStorage.getItem("role") === "staff" ? <Staff socket={socket} /> : <Navigate to="/login" />}
                         />
                         {/* --- ROUTE CHO ADMIN --- */}
                         <Route path="/admin/*" element={localStorage.getItem("role") === "admin" ? <Admin /> : <Navigate to="/login" />} />

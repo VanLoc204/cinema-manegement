@@ -8,6 +8,7 @@ export default function Navbar() {
     const userName = localStorage.getItem("name") || "Khách";
     const role = localStorage.getItem("role"); // 'admin', 'staff', 'customer'
     const isAdminPage = location.pathname.startsWith("/admin");
+    const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
     const [notice, setNotice] = useState({ show: false, message: "" });
 
@@ -47,14 +48,14 @@ export default function Navbar() {
                     </>
                 ) : (
                     <>
-                        {role !== "staff" && role !== "admin" && (
+                        {(role !== "staff" && role !== "admin") || isAuthPage ? (
                             <Link to="/" style={{ ...navLink, color: location.pathname === "/" ? "#fb4226" : "#333" }}>
                                 Trang chủ
                             </Link>
-                        )}
+                        ) : null}
 
-                        {!token ? (
-                            <Link to="/login" style={navLink}>Đăng nhập</Link>
+                        {!token || isAuthPage ? (
+                            <Link to="/login" style={{ ...navLink, color: location.pathname === "/login" ? "#fb4226" : "#333" }}>Đăng nhập</Link>
                         ) : (
                             <div style={userGroup}>
                                 <span style={welcomeText}>Hi, <b style={{ color: '#333' }}>{userName}</b>!</span>

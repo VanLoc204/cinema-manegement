@@ -26,9 +26,9 @@ export default function TicketHistory() {
         }
     }, [userId]);
 
-    const unusedTickets = history.filter(t => t.status === "Paid"); 
+    const unusedTickets = history.filter(t => t.status === "Paid" && new Date(t.showtimeId?.time) > now); 
     const watchedMovies = Array.from(new Set(
-        history.filter(t => t.status === "Checked-in")
+        history.filter(t => t.status === "Checked-in" || (t.status === "Paid" && new Date(t.showtimeId?.time) <= now))
                .map(t => JSON.stringify(t.showtimeId?.movieId))
     )).map(s => JSON.parse(s));
 
@@ -91,7 +91,12 @@ export default function TicketHistory() {
                                 </div>
                                 <div style={{textAlign: 'right'}}>
                                     <b style={{color: '#fb4226', fontSize: '1.1rem'}}>{ticket.totalAmount?.toLocaleString()}đ</b>
-                                    <p style={paidStatusText}>{ticket.status === "Checked-in" ? "Đã soát vé" : "Đã thanh toán"}</p>
+                                    <p style={{
+                                        ...paidStatusText, 
+                                        color: ticket.status === "Checked-in" ? "#2e7d32" : (new Date(ticket.showtimeId?.time) <= now ? "#999" : "#2e7d32")
+                                    }}>
+                                        {ticket.status === "Checked-in" ? "Đã soát vé" : (new Date(ticket.showtimeId?.time) <= now ? "Đã hết hạn" : "Đã thanh toán")}
+                                    </p>
                                 </div>
                             </div>
                         ))}
