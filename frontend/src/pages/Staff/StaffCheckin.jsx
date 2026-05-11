@@ -208,7 +208,7 @@ export default function StaffCheckin() {
                                 <div style={{ padding: '15px', background: '#f8f9fa', borderRadius: '15px', marginBottom: '20px', border: '1px solid #eee' }}>
                                     <p style={labelSmallWeb}>PHIM ĐANG CHIẾU</p>
                                     <h3 style={{ margin: '5px 0 15px 0', fontSize: '1.2rem', fontWeight: '900', color: '#000', lineHeight: '1.2' }}>{scanResult.showtimeId?.movieId?.title?.toUpperCase()}</h3>
-                                    
+
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '15px' }}>
                                         <div><p style={labelSmallWeb}>PHÒNG</p><p style={infoValueWeb}>{scanResult.showtimeId?.roomId?.name}</p></div>
                                         <div><p style={labelSmallWeb}>LOẠI</p><p style={infoValueWeb}>{scanResult.showtimeId?.roomId?.type || "Standard"}</p></div>
