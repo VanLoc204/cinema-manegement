@@ -1,52 +1,90 @@
-import { useEffect, useState } from "react";
-import { Html5QrcodeScanner } from "html5-qrcode";
+import { useEffect, useState, useRef } from "react";
+import { Html5Qrcode } from "html5-qrcode";
 import axios from "../../api/axios";
 
 export default function StaffCheckin() {
     const [scanResult, setScanResult] = useState(null);
     const [error, setError] = useState(null);
     const [loading, setLoading] = useState(false);
+    const [isScanning, setIsScanning] = useState(false);
+    // Tạo một ID duy nhất cho mỗi lần mount để tránh lỗi nhân đôi camera
+    const [readerId] = useState(`reader-${Math.random().toString(36).substr(2, 9)}`);
+    const scannerRef = useRef(null);
 
+    // Khởi tạo lõi máy quét 1 lần duy nhất
     useEffect(() => {
-        const scanner = new Html5QrcodeScanner("reader", {
-            fps: 10,
-            qrbox: { width: 220, height: 220 },
-            aspectRatio: 1.0,
-            showTorchButtonIfSupported: true
-        });
-
-        scanner.render(onScanSuccess, onScanError);
-
-        async function onScanSuccess(decodedText) {
-            setLoading(true);
-            try {
-                const res = await axios.patch(`/bookings/checkin/${decodedText}`);
-                setScanResult(res.data.booking);
-                setError(null);
-                new Audio("https://www.soundjay.com/buttons/beep-07a.mp3").play();
-            } catch (err) {
-                const msg = err.response?.data?.message || "Vé không hợp lệ hoặc đã sử dụng!";
-                setError(msg);
-                setScanResult(null);
-            } finally {
-                setLoading(false);
-            }
-        }
-
-        function onScanError(err) { }
+        const html5QrCode = new Html5Qrcode(readerId);
+        scannerRef.current = html5QrCode;
 
         return () => {
-            try {
-                scanner.clear();
-            } catch (e) {
-                console.warn("Scanner cleanup warning", e);
+            if (scannerRef.current?.isScanning) {
+                scannerRef.current.stop().catch(() => {});
             }
         };
-    }, []);
+    }, [readerId]);
+
+    const startScanning = async () => {
+        if (!scannerRef.current) return;
+        setIsScanning(true);
+        setError(null);
+        
+        try {
+            await scannerRef.current.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 },
+                onScanSuccess,
+                onScanError
+            );
+        } catch (err) {
+            console.error("Lỗi Camera:", err);
+            setIsScanning(false);
+        }
+    };
+
+    const stopScanning = async () => {
+        if (scannerRef.current?.isScanning) {
+            await scannerRef.current.stop();
+            setIsScanning(false);
+        }
+    };
+
+    const onScanSuccess = async (decodedText) => {
+        await stopScanning();
+        setLoading(true);
+        try {
+            const res = await axios.patch(`/bookings/checkin/${decodedText}`);
+            setScanResult(res.data.booking);
+            setError(null);
+            new Audio("https://www.soundjay.com/buttons/beep-07a.mp3").play();
+        } catch (err) {
+            const msg = err.response?.data?.message || "Vé không hợp lệ!";
+            setError(msg);
+            setScanResult(null);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const onScanError = () => {};
+
+    const handleFileScan = async (e) => {
+        const file = e.target.files[0];
+        if (!file || !scannerRef.current) return;
+        setLoading(true);
+        try {
+            const decodedText = await scannerRef.current.scanFile(file, true);
+            await onScanSuccess(decodedText);
+        } catch (err) {
+            setError("Không tìm thấy mã QR trong ảnh!");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleReset = () => {
         setScanResult(null);
         setError(null);
+        setIsScanning(true);
     };
 
     const handlePrint = () => {
@@ -157,13 +195,67 @@ export default function StaffCheckin() {
                             SOÁT VÉ QR SYSTEM
                         </h2>
                         <div style={scannerContainerStyle}>
-                            <div id="reader" style={{ border: 'none !important' }}></div>
-                            <div className="scan-line"></div>
+                            {/* Vùng Camera */}
+                            <div id={readerId} style={{ display: isScanning ? 'block' : 'none', width: '100%' }}></div>
+                            
+                            {/* Giao diện Standby giống hệt thư viện gốc */}
+                            {!isScanning && (
+                                <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+                                    <div style={{ marginBottom: '20px' }}>
+                                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="1.5">
+                                            <rect x="5" y="2" width="14" height="20" rx="2" />
+                                            <path d="M12 18h.01" />
+                                            <path d="M9 7h6v6H9z" />
+                                            <path d="M9 10h6M12 7v6" />
+                                        </svg>
+                                    </div>
+                                    <button 
+                                        onClick={startScanning}
+                                        style={{ 
+                                            background: '#f8f9fa', 
+                                            border: '1px solid #ddd', 
+                                            padding: '8px 16px', 
+                                            borderRadius: '4px', 
+                                            fontSize: '13px', 
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            color: '#333'
+                                        }}
+                                    >
+                                        MỞ CAMERA QUÉT VÉ
+                                    </button>
+                                    <div style={{ marginTop: '15px' }}>
+                                        <label htmlFor="qr-file-input" style={{ color: '#007bff', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}>
+                                            Quét từ tệp hình ảnh
+                                        </label>
+                                        <input 
+                                            id="qr-file-input" 
+                                            type="file" 
+                                            accept="image/*" 
+                                            style={{ display: 'none' }} 
+                                            onChange={handleFileScan}
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {isScanning && (
+                                <div style={{ marginTop: '15px' }}>
+                                    <button 
+                                        onClick={stopScanning}
+                                        style={{ background: '#fb4226', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}
+                                    >
+                                        DỪNG QUÉT
+                                    </button>
+                                </div>
+                            )}
                             <div style={{ marginTop: '15px', color: '#666', fontSize: '0.85rem', fontWeight: '600' }}>
                                 {loading ? (
                                     <span className="shimmer" style={{ color: '#fb4226' }}>ĐANG XÁC THỰC...</span>
                                 ) : (
-                                    <span style={{ color: '#2ecc71' }}>● HỆ THỐNG SẴN SÀNG</span>
+                                    <span style={{ color: isScanning ? '#2ecc71' : '#999' }}>
+                                        {isScanning ? '● HỆ THỐNG SẴN SÀNG' : '● CAMERA ĐANG TẮT'}
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -173,9 +265,9 @@ export default function StaffCheckin() {
                 {/* BÊN PHẢI: CHI TIẾT VÉ */}
                 <div style={webCardStyle}>
                     {error && (
-                        <div className="fade-in" style={{ ...statusBanner, background: 'linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%)', color: '#e74c3c', border: '1px solid #ffccd5', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                        <div className="fade-in" style={{ ...statusBanner, background: 'linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%)', color: '#e74c3c', border: '1px solid #ffccd5', textAlign: 'center' }}>
                             <b style={{ fontSize: '0.9rem' }}>THẤT BẠI: {error}</b>
-                            <button onClick={handleReset} style={{ ...resetBtnStyleWeb, padding: '6px 15px', fontSize: '0.75rem', background: '#e74c3c' }}>QUÉT LẠI</button>
+                            <div style={{ fontSize: '0.75rem', fontWeight: '800', marginTop: '5px' }}>VUI LÒNG QUÉT LẠI</div>
                         </div>
                     )}
                     {scanResult && !error && (
@@ -235,8 +327,7 @@ export default function StaffCheckin() {
                             </div>
 
                             <div className="no-print" style={{ display: 'flex', gap: '10px', padding: '0 20px 20px 20px' }}>
-                                <button onClick={handlePrint} style={printBtnStyleWeb}>IN VÉ GIẤY</button>
-                                <button onClick={handleReset} style={resetBtnStyleWeb}>HOÀN TẤT</button>
+                                <button onClick={handlePrint} style={{ ...printBtnStyleWeb, width: '100%' }}>IN VÉ GIẤY</button>
                             </div>
                         </div>
                     ) : (
@@ -260,6 +351,8 @@ export default function StaffCheckin() {
                 .pulse-icon { animation: pulse 2.5s infinite ease-in-out; }
                 .shimmer { animation: shimmer 1.5s infinite ease-in-out; }
                 #reader__scan_region { border: none !important; }
+                /* FIX lỗi nhân đôi camera và lấp đầy khung hình */
+                #reader video { width: 100% !important; height: 100% !important; object-fit: cover !important; display: block !important; }
                 #reader__dashboard_section_csr button { background: #fb4226 !important; color: white !important; border: none !important; padding: 8px 15px !important; border-radius: 8px !important; font-weight: 800 !important; cursor: pointer !important; text-transform: uppercase !important; font-size: 10px !important; }
             `}</style>
         </div>
