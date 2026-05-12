@@ -63,7 +63,7 @@ exports.getUserBookings = async (req, res) => {
 exports.getRevenue = async (req, res) => {
     try {
         const { movieId, date, hasSnack } = req.query; // 📥 Nhận các tham số lọc từ Frontend
-        let query = { status: "Paid" };
+        let query = { status: { $in: ["Paid", "Checked-in"] } };
 
         // 🟢 A. Lọc theo Phim
         if (movieId) {
@@ -128,7 +128,7 @@ exports.getRevenue = async (req, res) => {
 // 📊 5. Dashboard (🔥 CẬP NHẬT CẢ BỘ LỌC ĐỂ ĐỒNG BỘ)
 exports.getDashboard = async (req, res) => {
     try {
-        const bookings = await Booking.find({ status: "Paid" })
+        const bookings = await Booking.find({ status: { $in: ["Paid", "Checked-in"] } })
             .populate({ path: 'showtimeId', populate: { path: 'movieId' } });
 
         const totalMovies = await Movie.countDocuments();
@@ -185,7 +185,7 @@ exports.getStaffStats = async (req, res) => {
         end.setHours(23, 59, 59, 999); // Cuối ngày
 
         const bookings = await Booking.find({
-            status: "Paid",
+            status: { $in: ["Paid", "Checked-in"] },
             createdAt: { $gte: start, $lte: end }
         });
 
