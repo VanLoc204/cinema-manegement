@@ -81,17 +81,17 @@ export default function RevenueManager() {
             {/* 📊 CÁC THẺ DOANH THU (Tự động cập nhật theo filter) */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "25px" }}>
                 <div style={revenueCardStyle("#2ecc71")}>
-                    <p style={labelStyle}>💰 TỔNG DOANH THU</p>
+                    <p style={labelStyle}>TỔNG DOANH THU</p>
                     <h2 style={valueStyle}>{revenueData.totalRevenue?.toLocaleString()}đ</h2>
                     <p style={subLabelStyle}>Tổng cộng (Vé + Bắp)</p>
                 </div>
                 <div style={revenueCardStyle("#3498db")}>
-                    <p style={labelStyle}>🎟️ DOANH THU VÉ</p>
+                    <p style={labelStyle}>DOANH THU VÉ</p>
                     <h2 style={valueStyle}>{revenueData.ticketRevenue?.toLocaleString()}đ</h2>
                     <p style={subLabelStyle}>Tiền bán vé xem phim</p>
                 </div>
                 <div style={revenueCardStyle("#f39c12")}>
-                    <p style={labelStyle}>🍿 DOANH THU BẮP NƯỚC</p>
+                    <p style={labelStyle}>DOANH THU BẮP NƯỚC</p>
                     <h2 style={valueStyle}>{revenueData.snackRevenue?.toLocaleString()}đ</h2>
                     <p style={subLabelStyle}>Tiền bán combo bắp nước</p>
                 </div>
@@ -110,7 +110,7 @@ export default function RevenueManager() {
             </div>
 
             {/* 📋 NHẬT KÝ GIAO DỊCH (Đã fix Hydration Error) */}
-            <h3 style={{ marginBottom: 20 }}>🕒 Nhật ký giao dịch gần đây</h3>
+            <h3 style={{ marginBottom: 20 }}>Nhật ký giao dịch gần đây</h3>
             <div style={{background: '#fff', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 5px 15px rgba(0,0,0,0.05)'}}>
                 <table style={tableStyle}>
                     <thead>

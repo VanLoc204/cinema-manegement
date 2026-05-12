@@ -23,9 +23,9 @@ export default function Login() {
             // 🏆 Tùy biến lời chào theo chức vụ
             let welcomeMsg = "Đăng nhập thành công! Đang vào rạp...";
             if (res.data.role === "admin") {
-                welcomeMsg = `Chào sếp Quản trị viên! Đang vào hệ thống...`;
+                welcomeMsg = `Chào Quản trị viên! Đang vào hệ thống...`;
             } else if (res.data.role === "staff") {
-                welcomeMsg = `Chào sếp Nhân viên! Đang chuẩn bị trạm làm việc...`;
+                welcomeMsg = `Chào Nhân viên! Đang chuẩn bị trạm làm việc...`;
             }
 
             setNotice({ 
@@ -67,7 +67,7 @@ export default function Login() {
                     ...toastStyle,
                     backgroundColor: notice.type === "success" ? "#28a745" : "#dc3545"
                 }}>
-                    {notice.type === "success" ? "✅" : "❌"} {notice.message}
+                    {notice.type === "success" ? "" : ""} {notice.message}
                 </div>
             )}
 

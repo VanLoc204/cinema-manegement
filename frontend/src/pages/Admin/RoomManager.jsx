@@ -66,10 +66,10 @@ export default function RoomManager() {
 
     return (
         <div>
-            <h2 style={{ color: "#333", marginBottom: 25 }}>🏢 QUẢN LÝ PHÒNG CHIẾU & GIÁ VÉ</h2>
+            <h2 style={{ color: "#333", marginBottom: 25 }}>QUẢN LÝ PHÒNG CHIẾU & GIÁ VÉ</h2>
 
             <div style={cardStyle}>
-                <h4 style={{ marginTop: 0 }}>➕ Tạo phòng mới</h4>
+                <h4 style={{ marginTop: 0 }}>Tạo phòng mới</h4>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "15px" }}>
                     <input placeholder="Tên phòng" style={inputStyle} value={newRoom.name} onChange={e => setNewRoom({ ...newRoom, name: e.target.value })} />
                     <select style={inputStyle} value={newRoom.type} onChange={e => setNewRoom({ ...newRoom, type: e.target.value })}>

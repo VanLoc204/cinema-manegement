@@ -31,7 +31,7 @@ export default function StaffDashboard() {
 
     return (
         <div style={{ padding: "30px" }}>
-            <h2 style={{fontWeight: '900'}}>Chào buổi làm việc, sếp staff01! ☕</h2>
+            <h2 style={{fontWeight: '900'}}>Chào buổi làm việc, staff01!</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', marginTop: '30px' }}>
                 {cards.map((card, i) => (
                     <div key={i} style={{ background: '#fff', padding: '25px', borderRadius: '15px', borderTop: `5px solid ${card.color}`, boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>

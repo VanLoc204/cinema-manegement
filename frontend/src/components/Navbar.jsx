@@ -13,7 +13,7 @@ export default function Navbar() {
     const [notice, setNotice] = useState({ show: false, message: "" });
 
     const handleLogout = () => {
-        setNotice({ show: true, message: "Đang đăng xuất... Hẹn gặp lại sếp Lộc!" });
+        setNotice({ show: true, message: "Đang đăng xuất..." });
         setTimeout(() => {
             localStorage.clear();
             window.location.href = "/";
@@ -33,7 +33,7 @@ export default function Navbar() {
 
     return (
         <nav style={navStyle}>
-            {notice.show && <div style={logoutToastStyle}>👋 {notice.message}</div>}
+            {notice.show && <div style={logoutToastStyle}>{notice.message}</div>}
 
             <div style={logoContainer} onClick={handleLogoClick}>
                 <h2 style={logoStyle}>CINEMA <span style={{ color: "#333" }}>LUX</span></h2>

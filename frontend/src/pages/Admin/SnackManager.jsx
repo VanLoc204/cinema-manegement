@@ -39,12 +39,12 @@ export default function SnackManager() {
                 await axios.put(`/snacks/${editingSnack._id}`, formData, {
                     headers: { "Content-Type": "multipart/form-data" }
                 });
-                alert("✅ Cập nhật thành công!");
+                alert("Cập nhật thành công!");
             } else {
                 await axios.post("/snacks", formData, {
                     headers: { "Content-Type": "multipart/form-data" }
                 });
-                alert("✅ Thêm bắp nước mới thành công!");
+                alert("Thêm bắp nước mới thành công!");
             }
 
             // Reset form và file input sau khi thành công
@@ -71,7 +71,7 @@ export default function SnackManager() {
     return (
         <div>
             <div style={cardStyle}>
-                <h3 style={{ marginTop: 0 }}>{editingSnack ? "✏️ Sửa bắp nước" : "➕ Thêm bắp nước mới"}</h3>
+                <h3 style={{ marginTop: 0 }}>{editingSnack ? "✏️ Sửa bắp nước" : "Thêm bắp nước mới"}</h3>
                 <form onSubmit={handleSaveSnack} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px" }}>
                     <input placeholder="Tên món" style={inputStyle}
                         value={editingSnack ? editingSnack.name : newSnack.name}

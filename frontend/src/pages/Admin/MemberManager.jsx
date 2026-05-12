@@ -68,7 +68,7 @@ export default function MemberManager() {
         <div style={{ padding: "20px" }}>
             {notification.show && <div style={toastStyle}>{notification.message}</div>}
             
-            <h2 style={{ color: "#333", marginBottom: 25 }}>👥 QUẢN LÝ THÀNH VIÊN</h2>
+            <h2 style={{ color: "#333", marginBottom: 25 }}>QUẢN LÝ THÀNH VIÊN</h2>
 
             {/* ➕ KHU VỰC TẠO NHANH */}
             <div style={cardStyle}>
