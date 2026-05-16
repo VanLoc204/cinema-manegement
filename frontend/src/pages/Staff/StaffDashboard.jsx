@@ -1,6 +1,15 @@
 // Trong file StaffDashboard.jsx
 import { useEffect, useState } from "react";
 import axios from "../../api/axios";
+import { 
+    FaWallet, 
+    FaTicketAlt, 
+    FaCoffee, 
+    FaUsers, 
+    FaChartLine,
+    FaRegClock,
+    FaUserCircle
+} from "react-icons/fa";
 
 export default function StaffDashboard() {
     const [stats, setStats] = useState({
@@ -10,35 +19,238 @@ export default function StaffDashboard() {
         totalTickets: 0,
         totalSnacks: 0
     });
+    const [currentTime, setCurrentTime] = useState(new Date());
 
     useEffect(() => {
-        // Gọi API lấy dữ liệu thực tế của ngày hôm nay
+        // Cập nhật giờ thực tế mỗi phút
+        const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+        
+        // Gọi API lấy dữ liệu thực tế
         axios.get("/bookings/staff-stats")
             .then(res => {
                 setStats(res.data);
             })
             .catch(err => console.error("Lỗi hốt dữ liệu ca trực:", err));
+            
+        return () => clearInterval(timer);
     }, []);
 
-    // Gán dữ liệu vào các thẻ Card
+    const staffName = localStorage.getItem("name") || "Nhân viên";
+
+    // Cấu hình các thẻ thông tin
     const cards = [
-        { title: "DOANH THU CA TRỰC", value: `${stats.totalRevenue.toLocaleString()}đ`, color: "#2ecc71" },
-        { title: "TIỀN VÉ", value: `${stats.ticketRevenue.toLocaleString()}đ`, color: "#3498db" },
-        { title: "TIỀN BẮP NƯỚC", value: `${stats.snackRevenue.toLocaleString()}đ`, color: "#f1c40f" },
-        { title: "VÉ ĐÃ BÁN", value: `${stats.totalTickets} Vé`, color: "#e74c3c" },
-        { title: "COMBO BẮP NƯỚC", value: `${stats.totalSnacks} Bộ`, color: "#9b59b6" },
+        { 
+            title: "DOANH THU CA TRỰC", 
+            value: `${stats.totalRevenue.toLocaleString()}đ`, 
+            icon: <FaWallet />, 
+            color: "#10b981", 
+            bg: "#ecfdf5",
+            desc: "Tổng thu hôm nay"
+        },
+        { 
+            title: "TIỀN VÉ", 
+            value: `${stats.ticketRevenue.toLocaleString()}đ`, 
+            icon: <FaTicketAlt />, 
+            color: "#3b82f6", 
+            bg: "#eff6ff",
+            desc: "Doanh thu bán vé"
+        },
+        { 
+            title: "TIỀN BẮP NƯỚC", 
+            value: `${stats.snackRevenue.toLocaleString()}đ`, 
+            icon: <FaCoffee />, 
+            color: "#f59e0b", 
+            bg: "#fffbeb",
+            desc: "Doanh thu dịch vụ"
+        },
+        { 
+            title: "VÉ ĐÃ BÁN", 
+            value: `${stats.totalTickets}`, 
+            icon: <FaUsers />, 
+            color: "#ef4444", 
+            bg: "#fef2f2",
+            desc: "Khách hàng đã đặt"
+        },
+        { 
+            title: "BẮP NƯỚC ĐÃ BÁN", 
+            value: `${stats.totalSnacks}`, 
+            icon: <FaChartLine />, 
+            color: "#8b5cf6", 
+            bg: "#f5f3ff",
+            desc: "Số lượng combo"
+        },
     ];
 
     return (
-        <div style={{ padding: "30px" }}>
-            <h2 style={{fontWeight: '900'}}>Chào buổi làm việc, staff01!</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px', marginTop: '30px' }}>
+        <div style={{ 
+            padding: "40px", 
+            background: "#f8fafc", 
+            minHeight: "100vh",
+            fontFamily: "'Inter', sans-serif"
+        }}>
+            {/* --- HEADER --- */}
+            <div style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                marginBottom: '40px'
+            }}>
+                <div>
+                    <h1 style={{ 
+                        fontSize: '1.8rem', 
+                        fontWeight: '900', 
+                        color: '#1e293b',
+                        margin: 0,
+                        letterSpacing: '-0.5px'
+                    }}>
+                        Chào buổi làm việc, {staffName}! 
+                    </h1>
+                    <p style={{ color: '#64748b', marginTop: '5px', fontSize: '0.95rem' }}>
+                        Chúc bạn có một ca trực thật hiệu quả và vui vẻ.
+                    </p>
+                </div>
+
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '20px',
+                    background: '#fff',
+                    padding: '10px 20px',
+                    borderRadius: '12px',
+                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
+                }}>
+                    <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontWeight: 'bold', color: '#1e293b' }}>
+                            {currentTime.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </div>
+                        <div style={{ fontSize: '0.85rem', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px' }}>
+                            <FaRegClock /> {currentTime.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                    </div>
+                    <div style={{ fontSize: '2.5rem', color: '#3b82f6', opacity: 0.8 }}>
+                        <FaUserCircle />
+                    </div>
+                </div>
+            </div>
+
+            {/* --- STATS GRID --- */}
+            <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', 
+                gap: '25px' 
+            }}>
                 {cards.map((card, i) => (
-                    <div key={i} style={{ background: '#fff', padding: '25px', borderRadius: '15px', borderTop: `5px solid ${card.color}`, boxShadow: '0 10px 25px rgba(0,0,0,0.05)' }}>
-                        <p style={{ fontSize: '0.75rem', color: '#888', fontWeight: 'bold' }}>{card.title}</p>
-                        <h2 style={{ color: card.color, margin: '10px 0' }}>{card.value}</h2>
+                    <div 
+                        key={i} 
+                        style={{ 
+                            background: '#fff', 
+                            padding: '30px', 
+                            borderRadius: '20px', 
+                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.04)',
+                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            border: '1px solid #f1f5f9'
+                        }}
+                        onMouseEnter={(e) => {
+                            e.currentTarget.style.transform = 'translateY(-5px)';
+                            e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0,0,0,0.1)';
+                        }}
+                        onMouseLeave={(e) => {
+                            e.currentTarget.style.transform = 'translateY(0)';
+                            e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0,0,0,0.04)';
+                        }}
+                    >
+                        {/* Biểu tượng trang trí mờ phía sau */}
+                        <div style={{
+                            position: 'absolute',
+                            right: '-10px',
+                            bottom: '-10px',
+                            fontSize: '5rem',
+                            color: card.color,
+                            opacity: 0.05,
+                            transform: 'rotate(-15px)'
+                        }}>
+                            {card.icon}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '20px' }}>
+                            <div style={{ 
+                                background: card.bg, 
+                                color: card.color, 
+                                width: '50px', 
+                                height: '50px', 
+                                borderRadius: '14px',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                fontSize: '1.4rem'
+                            }}>
+                                {card.icon}
+                            </div>
+                            <span style={{ 
+                                fontSize: '0.85rem', 
+                                color: '#64748b', 
+                                fontWeight: '700',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.5px'
+                            }}>
+                                {card.title}
+                            </span>
+                        </div>
+
+                        <h2 style={{ 
+                            color: '#1e293b', 
+                            margin: '0 0 5px 0', 
+                            fontSize: '1.75rem', 
+                            fontWeight: '800' 
+                        }}>
+                            {card.value}
+                        </h2>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#94a3b8' }}>
+                            {card.desc}
+                        </p>
                     </div>
                 ))}
+            </div>
+
+            {/* --- QUICK ACTION SECTION --- */}
+            <div style={{ marginTop: '40px' }}>
+                <div style={{ 
+                    background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+                    borderRadius: '24px',
+                    padding: '40px',
+                    color: '#fff',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <div>
+                        <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800' }}>Trạm Soát Vé Nhanh</h3>
+                        <p style={{ margin: '10px 0 0 0', opacity: 0.8 }}>Sử dụng QR Code để quét vé cho khách vào phòng chiếu nhanh chóng.</p>
+                    </div>
+                    <button 
+                        onClick={() => window.location.href = '/staff/checkin'}
+                        style={{
+                            background: '#fff',
+                            color: '#1e293b',
+                            padding: '15px 35px',
+                            borderRadius: '14px',
+                            border: 'none',
+                            fontWeight: 'bold',
+                            fontSize: '1rem',
+                            cursor: 'pointer',
+                            transition: '0.3s'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+                    >
+                        Mở Máy Quét QR
+                    </button>
+                </div>
             </div>
         </div>
     );

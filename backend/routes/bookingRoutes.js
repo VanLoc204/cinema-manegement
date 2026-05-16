@@ -2,7 +2,7 @@ const router = require("express").Router();
 const bookingController = require("../controllers/bookingController");
 const { verifyAdmin, verifyToken } = require("../middleware/authMiddleware");
 // routes/bookingRoutes.js
-router.get("/staff-stats", bookingController.getStaffStats);
+router.get("/staff-stats", verifyToken, bookingController.getStaffStats);
 // 🎯 1. Lấy danh sách ghế đã đặt (Dùng để hiển thị sơ đồ ghế lúc mới load)
 // API: GET /api/bookings/:id
 router.get("/:id", bookingController.getOccupiedSeats);
