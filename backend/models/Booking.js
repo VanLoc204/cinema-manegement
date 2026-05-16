@@ -14,7 +14,7 @@ const bookingSchema = new mongoose.Schema({
       quantity: { type: Number, default: 1 },
       price: { type: Number },
       // 📸 THÊM DÒNG NÀY: Lưu đường dẫn ảnh upload (/uploads/abc.jpg)
-      image: { type: String } 
+      image: { type: String }
     }
   ],
 

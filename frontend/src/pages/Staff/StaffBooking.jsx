@@ -331,4 +331,4 @@ const snackCardStyle = { display: "flex", alignItems: "center", border: "1px sol
 const qtyBtnStyle = { width: "25px", height: "25px", border: "1px solid #ddd", background: "#fff", cursor: "pointer" };
 const summaryBoxStyle = { width: 300, background: "#fff", padding: 20, borderRadius: 15, boxShadow: "0 10px 30px rgba(0,0,0,0.1)", height: "fit-content" };
 const btnStyle = { width: "100%", padding: 12, background: "#fb4226", color: "#fff", border: "none", borderRadius: 8, fontWeight: "bold", cursor: "pointer" };
-const billContainerStyle = { display: "flex", justifyContent: "center", alignItems: "center", padding: "50px 0", background: "#f5f5f5", minHeight: "100vh" };
+const billContainerStyle = { display: "flex", justifyContent: "center", alignItems: "center", padding: "50px 0", background: "#f5f5f5", minHeight: "100vh" };
