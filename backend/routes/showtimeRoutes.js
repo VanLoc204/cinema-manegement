@@ -19,7 +19,14 @@ router.get("/:movieId", showtimeController.getShowtimesByMovie);
 
 // --- CÁC ROUTE THAY ĐỔI DỮ LIỆU (Chỉ Admin) ---
 router.post("/", verifyAdmin, showtimeController.createShowtime);
-router.delete("/:id", verifyAdmin, showtimeController.deleteShowtime);
 router.put("/:id", verifyAdmin, showtimeController.updateShowtime);
+
+// 🤖 ROUTE ĐẶC BIỆT KÍCH HOẠT AI ĐỀ XUẤT (Chỉ Admin)
+router.post("/ai/generate", verifyAdmin, showtimeController.generateAiSchedule);
+router.post("/ai/approve", verifyAdmin, showtimeController.approveAiSchedule);
+router.delete("/ai/drafts", verifyAdmin, showtimeController.deleteAiDrafts);
+
+// Đẩy delete /:id xuống dưới cùng để không bị nuốt route /ai/drafts
+router.delete("/:id", verifyAdmin, showtimeController.deleteShowtime);
 
 module.exports = router;

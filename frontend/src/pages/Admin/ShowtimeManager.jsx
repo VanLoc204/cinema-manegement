@@ -5,17 +5,31 @@ export default function ShowtimeManager() {
     const [showtimes, setShowtimes] = useState([]);
     const [movies, setMovies] = useState([]);
     const [rooms, setRooms] = useState([]);
-    
+
     const [newShowtime, setNewShowtime] = useState({ movieId: "", roomId: "", time: "" });
     const [editingShowtime, setEditingShowtime] = useState(null);
 
+    // 🤖 AI States
+    const [aiDates, setAiDates] = useState({ start: "", end: "" });
+    const [isAiLoading, setIsAiLoading] = useState(false);
+
+    // Lấy chuỗi ngày hôm nay theo giờ địa phương (YYYY-MM-DD)
+    const getLocalToday = () => {
+        const today = new Date();
+        const offset = today.getTimezoneOffset() * 60000;
+        return new Date(today.getTime() - offset).toISOString().split('T')[0];
+    };
+
     // 🔍 1. States cho bộ lọc (Dùng để nhập liệu)
     const [filterMovie, setFilterMovie] = useState("");
-    const [filterDate, setFilterDate] = useState("");
+    const [filterDate, setFilterDate] = useState(getLocalToday());
     const [filterStatus, setFilterStatus] = useState("");
 
     // 🎯 2. State chứa tham số thực tế khi bấm TÌM KIẾM
-    const [searchTrigger, setSearchTrigger] = useState({ movieId: "", date: "", status: "" });
+    const [searchTrigger, setSearchTrigger] = useState({ movieId: "", date: getLocalToday(), status: "" });
+
+    // 🎨 State chế độ xem (Bảng / POS)
+    const [viewMode, setViewMode] = useState("table");
 
     // 🔄 3. Hàm lấy dữ liệu (Chỉ chạy khi searchTrigger thay đổi)
     const fetchAllData = async () => {
@@ -41,9 +55,12 @@ export default function ShowtimeManager() {
 
     // 🔍 HÀM XỬ LÝ TÌM KIẾM
     const handleSearch = () => {
+        const finalDate = filterDate ? filterDate : getLocalToday();
+        if (!filterDate) setFilterDate(finalDate); // Nếu lỡ xóa trắng thì gán lại trên UI
+        
         setSearchTrigger({
             movieId: filterMovie,
-            date: filterDate,
+            date: finalDate,
             status: filterStatus
         });
     };
@@ -55,11 +72,11 @@ export default function ShowtimeManager() {
         }
         try {
             await axios.post("/showtimes", newShowtime);
-            alert("✅ Đã xếp lịch thành công!");
+            alert("Đã xếp lịch thành công!");
             setNewShowtime({ movieId: "", roomId: "", time: "" });
             fetchAllData();
         } catch (err) {
-            alert("❌ Lỗi khi xếp lịch!");
+            alert("Lỗi khi xếp lịch!");
         }
     };
 
@@ -67,11 +84,11 @@ export default function ShowtimeManager() {
     const handleUpdateShowtime = async () => {
         try {
             await axios.put(`/showtimes/${editingShowtime._id}`, editingShowtime);
-            alert("✅ Đã cập nhật lịch chiếu thành công!");
+            alert("Đã cập nhật lịch chiếu thành công!");
             setEditingShowtime(null);
             fetchAllData();
         } catch (err) {
-            alert("❌ Lỗi cập nhật rồi sếp!");
+            alert("Lỗi cập nhật rồi sếp!");
         }
     };
 
@@ -82,7 +99,47 @@ export default function ShowtimeManager() {
                 await axios.delete(`/showtimes/${id}`);
                 fetchAllData();
             } catch (err) {
-                alert("❌ Lỗi khi xóa lịch chiếu!");
+                alert("Lỗi khi xóa lịch chiếu!");
+            }
+        }
+    };
+
+    // 🤖 HÀM CHẠY AI
+    const handleRunAI = async () => {
+        if (!aiDates.start || !aiDates.end) return alert("Sếp phải chọn từ ngày nào đến ngày nào nhé!");
+        setIsAiLoading(true);
+        try {
+            const res = await axios.post("/showtimes/ai/generate", { startDate: aiDates.start, endDate: aiDates.end });
+            alert(`${res.data.message}\nĐã tạo ${res.data.generatedCount} suất chiếu.`);
+            fetchAllData();
+        } catch (err) {
+            alert(err.response?.data?.message || "Lỗi chạy AI");
+        }
+        setIsAiLoading(false);
+    };
+
+    // ✅ HÀM DUYỆT AI
+    const handleApproveAI = async () => {
+        if (window.confirm("Sếp có chắc muốn duyệt toàn bộ bản nháp này để công bố cho khách hàng?")) {
+            try {
+                await axios.post("/showtimes/ai/approve");
+                alert("Đã duyệt và xuất bản lịch chiếu thành công!");
+                fetchAllData();
+            } catch (err) {
+                alert("Lỗi duyệt lịch");
+            }
+        }
+    };
+
+    // ❌ HÀM HỦY BẢN NHÁP AI
+    const handleDeleteDrafts = async () => {
+        if (window.confirm("Sếp không ưng ý và muốn xóa tất cả bản nháp này?")) {
+            try {
+                const res = await axios.delete("/showtimes/ai/drafts");
+                alert(res.data.message || "Đã xóa bản nháp thành công!");
+                fetchAllData();
+            } catch (err) {
+                alert("Lỗi xóa bản nháp");
             }
         }
     };
@@ -111,11 +168,37 @@ export default function ShowtimeManager() {
                 </div>
             </div>
 
+            {/* 🤖 HỆ THỐNG AI ĐỀ XUẤT */}
+            <div style={{ ...cardStyle, background: "#f0f8ff", borderColor: "#cce5ff" }}>
+                <h3 style={{ marginTop: 0, color: "#0056b3" }}>Hệ thống AI Đề Xuất Lịch Chiếu</h3>
+                <div style={{ display: "flex", gap: "15px", alignItems: "center", flexWrap: "wrap" }}>
+                    <label style={{ fontWeight: "bold", color: "#333" }}>Từ ngày:</label>
+                    <input type="date" style={inputStyle} value={aiDates.start} onChange={e => setAiDates({ ...aiDates, start: e.target.value })} />
+                    <label style={{ fontWeight: "bold", color: "#333" }}>Đến ngày:</label>
+                    <input type="date" style={inputStyle} value={aiDates.end} onChange={e => setAiDates({ ...aiDates, end: e.target.value })} />
+
+                    <button onClick={handleRunAI} disabled={isAiLoading} style={{ ...btnSubmitStyle, background: "#0056b3" }}>
+                        {isAiLoading ? "AI ĐANG XỬ LÝ (CHỜ XÍU)..." : "TỰ ĐỘNG XẾP LỊCH (AI)"}
+                    </button>
+
+                    {showtimes.some(s => s.isDraft) && (
+                        <div style={{ display: "flex", gap: "10px" }}>
+                            <button onClick={handleDeleteDrafts} style={{ ...btnSubmitStyle, background: "#dc3545", margin: 0 }}>
+                                HỦY TẤT CẢ BẢN NHÁP
+                            </button>
+                            <button onClick={handleApproveAI} style={{ ...btnSubmitStyle, background: "#28a745", margin: 0 }}>
+                                DUYỆT TẤT CẢ BẢN NHÁP
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
             {/* 🔍 BỘ LỌC TÍCH HỢP NÚT TÌM KIẾM */}
             <div style={filterBarStyle}>
                 <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
                     <span style={{ fontWeight: "bold", color: "#555" }}>Bộ lọc:</span>
-                    
+
                     <select style={{ ...inputStyle, width: "200px" }} value={filterMovie} onChange={e => setFilterMovie(e.target.value)}>
                         <option value="">Tất cả phim</option>
                         {movies.map(m => <option key={m._id} value={m._id}>{m.title}</option>)}
@@ -131,11 +214,17 @@ export default function ShowtimeManager() {
                     </select>
 
                     <button onClick={handleSearch} style={btnSearchStyle}>TÌM KIẾM</button>
+                    
+                    <div style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
+                        <button onClick={() => setViewMode("table")} style={{ ...btnViewStyle, background: viewMode === "table" ? "#333" : "#ddd", color: viewMode === "table" ? "#fff" : "#333" }}>📋 Dạng Bảng</button>
+                        <button onClick={() => setViewMode("pos")} style={{ ...btnViewStyle, background: viewMode === "pos" ? "#fb4226" : "#ddd", color: viewMode === "pos" ? "#fff" : "#333" }}>🎫 Dạng POS</button>
+                    </div>
                 </div>
             </div>
 
-            {/* 📋 BẢNG DANH SÁCH SUẤT CHIẾU */}
-            <table style={tableStyle}>
+            {/* 📋 HIỂN THỊ DANH SÁCH SUẤT CHIẾU */}
+            {viewMode === "table" ? (
+                <table style={tableStyle}>
                 <thead style={{ background: "#f8f9fa" }}>
                     <tr>
                         <th style={thStyle}>Tên Phim</th>
@@ -147,7 +236,11 @@ export default function ShowtimeManager() {
                 </thead>
                 <tbody>
                     {showtimes.map(s => (
-                        <tr key={s._id} style={{ borderBottom: "1px solid #eee", opacity: s.status === "finished" ? 0.6 : 1 }}>
+                        <tr key={s._id} style={{
+                            borderBottom: "1px solid #eee",
+                            background: s.isDraft ? "#fff3cd" : "transparent",
+                            opacity: s.status === "finished" ? 0.6 : 1
+                        }}>
                             <td style={tdStyle}><b>{s.movieId?.title || "Phim đã xóa"}</b></td>
                             <td style={tdStyle}>{s.roomId?.name || "Phòng đã xóa"}</td>
                             <td style={tdStyle}>{new Date(s.time).toLocaleString('vi-VN')}</td>
@@ -155,6 +248,7 @@ export default function ShowtimeManager() {
                                 {s.status === "upcoming" && <span style={badgeGreenStyle}>Sắp chiếu</span>}
                                 {s.status === "running" && <span style={badgeBlueStyle}>Đang chiếu</span>}
                                 {s.status === "finished" && <span style={badgeGrayStyle}>Đã chiếu</span>}
+                                {s.isDraft && <span style={{ ...badgeBlueStyle, background: "#ffc107", color: "#856404", borderColor: "#ffeeba", marginLeft: 8 }}>🤖 Bản nháp AI</span>}
                             </td>
                             <td style={tdStyle}>
                                 {s.status === "upcoming" ? (
@@ -175,6 +269,37 @@ export default function ShowtimeManager() {
                     )}
                 </tbody>
             </table>
+            ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "30px", marginTop: "20px" }}>
+                    {Object.values(showtimes.reduce((acc, curr) => {
+                        const movieId = curr.movieId?._id;
+                        if (!movieId) return acc;
+                        if (!acc[movieId]) acc[movieId] = { movie: curr.movieId, showtimes: [] };
+                        acc[movieId].showtimes.push(curr);
+                        return acc;
+                    }, {})).map(group => (
+                        <div key={group.movie._id} style={{ display: "flex", gap: "25px", background: "#fff", padding: "25px", borderRadius: "15px", boxShadow: "0 5px 20px rgba(0,0,0,0.05)" }}>
+                            <img src={`http://localhost:5000${group.movie.image}`} alt={group.movie.title} style={{ width: "130px", height: "190px", objectFit: "cover", borderRadius: "10px" }} />
+                            <div>
+                                <h3 style={{ margin: "0 0 8px 0", color: "#1a1a1a", fontSize: "1.5rem" }}>{group.movie.title}</h3>
+                                <p style={{ margin: "0 0 20px 0", color: "#666", fontSize: "0.95rem" }}>{group.movie.genre} | {group.movie.duration} Phút</p>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px" }}>
+                                    {group.showtimes.map(st => (
+                                        <div key={st._id} style={{ padding: "12px 18px", background: st.isDraft ? "#fff3cd" : "#fff", border: st.isDraft ? "1px solid #ffeeba" : "1px solid #eee", borderRadius: "12px", textAlign: "center", minWidth: "80px", position: "relative", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+                                            <div style={{ fontWeight: "900", fontSize: "1.2rem", color: st.isDraft ? "#856404" : "#1a1a1a" }}>{new Date(st.time).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}</div>
+                                            <div style={{ fontSize: "0.85rem", color: st.isDraft ? "#856404" : "#fb4226", fontWeight: "800", marginTop: "5px" }}>{st.roomId?.name}</div>
+                                            {st.isDraft && <span style={{ position: "absolute", top: "-10px", right: "-10px", background: "#dc3545", color: "#fff", fontSize: "0.7rem", padding: "3px 8px", borderRadius: "12px", fontWeight: "bold" }}>Bản nháp AI</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {showtimes.length === 0 && (
+                        <div style={{ textAlign: "center", padding: "40px", color: "#999", background: "#fff", borderRadius: "15px" }}>Không có suất chiếu nào.</div>
+                    )}
+                </div>
+            )}
 
             {/* 🟦 MODAL SỬA SUẤT CHIẾU */}
             {editingShowtime && (
@@ -229,3 +354,4 @@ const labelStyle = { fontSize: "0.85rem", fontWeight: "bold", display: 'block', 
 const badgeGreenStyle = { padding: "4px 10px", background: "#e6fffa", color: "#38b2ac", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", border: "1px solid #38b2ac" };
 const badgeGrayStyle = { padding: "4px 10px", background: "#f7fafc", color: "#a0aec0", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", border: "1px solid #a0aec0" };
 const badgeBlueStyle = { padding: "4px 10px", background: "#ebf8ff", color: "#3182ce", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", border: "1px solid #3182ce" };
+const btnViewStyle = { padding: "10px 15px", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", transition: "0.2s" };

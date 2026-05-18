@@ -88,7 +88,11 @@ exports.getShowtimesByMovie = async (req, res) => {
         const { movieId } = req.params;
         const now = new Date();
         if (!mongoose.Types.ObjectId.isValid(movieId)) return res.status(400).json("ID phim không hợp lệ");
-        const data = await Showtime.find({ movieId, time: { $gt: now } }).populate("roomId").sort({ time: 1 });
+        const data = await Showtime.find({ 
+            movieId, 
+            time: { $gt: now },
+            isDraft: { $ne: true } // 🛡️ Chặn không cho khách hàng thấy bản nháp
+        }).populate("roomId").sort({ time: 1 });
         res.json(data);
     } catch (err) { res.status(500).json({ message: "Lỗi lấy suất chiếu", error: err.message }); }
 };
@@ -123,6 +127,11 @@ exports.getAllShowtimes = async (req, res) => {
         if (status === "upcoming") query.time = { ...query.time, $gt: now };
         else if (status === "finished") query.time = { ...query.time, $lt: now };
 
+        // 🛡️ CHẶN BẢN NHÁP: Nếu không phải Admin gọi (không gọi qua route /all/list) thì tuyệt đối không trả về bản nháp
+        if (!req.originalUrl.includes("/all/list")) {
+            query.isDraft = { $ne: true };
+        }
+
         // 🚩 LỖI NẰM Ở ĐÂY: 
         // 1. Sếp chỉ populate "title", trong khi Frontend cần cả "image", "genre", "duration"
         // 2. Sếp đang sort -1 (Mới nhất lên đầu), nhân viên POS cần sort 1 (Giờ sớm nhất lên đầu)
@@ -141,4 +150,65 @@ exports.deleteShowtime = async (req, res) => {
         await Showtime.findByIdAndDelete(req.params.id);
         res.json({ message: "Đã xóa thành công!" });
     } catch (err) { res.status(500).json("Lỗi xóa"); }
+};
+
+// 🤖 8. API KÍCH HOẠT HỆ THỐNG AI ĐỀ XUẤT LỊCH CHIẾU
+const scheduleAI = require("../ai/scheduleAI");
+
+exports.generateAiSchedule = async (req, res) => {
+    try {
+        const { startDate, endDate } = req.body;
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ message: "Sếp phải chọn khoảng ngày để AI chạy nhé!" });
+        }
+
+        // 1. Dọn dẹp bản nháp cũ của AI (nếu sếp lỡ bấm nhiều lần)
+        await Showtime.deleteMany({ isDraft: true });
+
+        // 2. Kích hoạt AI Engine
+        const result = await scheduleAI.runSmartScheduling(startDate, endDate);
+
+        // 3. Chuẩn bị dữ liệu để insert vào DB
+        const showtimesToInsert = result.bestSchedule.map(s => ({
+            movieId: s.movieId,
+            roomId: s.roomId,
+            time: s.time,
+            isDraft: true,
+            isAiSuggested: true
+        }));
+
+        // Lưu toàn bộ bản nháp vào Database
+        await Showtime.insertMany(showtimesToInsert);
+
+        // Trả kết quả báo cáo của AI về cho Frontend hiển thị "bắt mắt"
+        res.json({
+            message: "✅ AI đã tiến hóa và xếp xong lịch chiếu tối ưu nhất!",
+            generatedCount: showtimesToInsert.length,
+            aiAnalysis: result.clustersSummary
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Lỗi AI chạy sai: " + err.message });
+    }
+};
+
+// ✅ 9. API DUYỆT BẢN NHÁP AI (PUBLISH)
+exports.approveAiSchedule = async (req, res) => {
+    try {
+        await Showtime.updateMany({ isDraft: true }, { isDraft: false });
+        res.json({ message: "Đã duyệt và xuất bản toàn bộ lịch chiếu AI!" });
+    } catch (err) {
+        res.status(500).json({ message: "Lỗi duyệt lịch: " + err.message });
+    }
+};
+
+// ❌ 10. API HỦY BỎ TẤT CẢ BẢN NHÁP AI (KHI ADMIN KHÔNG ƯNG Ý)
+exports.deleteAiDrafts = async (req, res) => {
+    try {
+        const result = await Showtime.deleteMany({ isDraft: true });
+        res.json({ message: `Đã xóa sạch ${result.deletedCount} suất chiếu nháp do AI tạo!` });
+    } catch (err) {
+        res.status(500).json({ message: "Lỗi xóa bản nháp: " + err.message });
+    }
 };

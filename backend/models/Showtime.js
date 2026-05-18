@@ -12,6 +12,8 @@ const showtimeSchema = new mongoose.Schema({
     required: true 
   },
   time: { type: Date, required: true }, // Thời gian bắt đầu chiếu
+  isDraft: { type: Boolean, default: false }, // 🤖 Bản nháp AI (User không thấy)
+  isAiSuggested: { type: Boolean, default: false } // Đánh dấu lịch này là do AI tạo ra
 }, {
   toJSON: { virtuals: true },
   toObject: { virtuals: true }

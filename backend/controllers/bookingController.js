@@ -125,46 +125,87 @@ exports.getRevenue = async (req, res) => {
     }
 };
 
-// 📊 5. Dashboard (🔥 CẬP NHẬT CẢ BỘ LỌC ĐỂ ĐỒNG BỘ)
+// 📊 5. Dashboard (🔥 CẬP NHẬT CHUẨN ENTERPRISE - AGGREGATION PIPELINE)
 exports.getDashboard = async (req, res) => {
     try {
-        const bookings = await Booking.find({ status: { $in: ["Paid", "Checked-in"] } })
-            .populate({ path: 'showtimeId', populate: { path: 'movieId' } });
-
         const totalMovies = await Movie.countDocuments();
         const totalRooms = await Room.countDocuments();
 
-        let totalRevenue = 0;
-        let snackRevenue = 0;
-        let totalTickets = 0;
-        let totalSnacks = 0;
-        let movieSales = {};
-
-        bookings.forEach(b => {
-            const amount = b.totalAmount || 0;
-            totalRevenue += amount;
-            totalTickets += (b.seats ? b.seats.length : 0);
-
-            if (b.snacks && b.snacks.length > 0) {
-                b.snacks.forEach(s => {
-                    snackRevenue += (s.price * s.quantity);
-                    totalSnacks += s.quantity;
-                });
+        // 1. NHỜ MONGODB TÍNH TOÁN DỮ LIỆU (Thay vì kéo hết về Node.js)
+        const aggregateResult = await Booking.aggregate([
+            { $match: { status: { $in: ["Paid", "Checked-in"] } } },
+            // JOIN với bảng showtimes
+            {
+                $lookup: {
+                    from: "showtimes",
+                    localField: "showtimeId",
+                    foreignField: "_id",
+                    as: "showtime"
+                }
+            },
+            { $unwind: { path: "$showtime", preserveNullAndEmptyArrays: true } },
+            // JOIN với bảng movies để lấy tên phim
+            {
+                $lookup: {
+                    from: "movies",
+                    localField: "showtime.movieId",
+                    foreignField: "_id",
+                    as: "movie"
+                }
+            },
+            { $unwind: { path: "$movie", preserveNullAndEmptyArrays: true } },
+            // GOM NHÓM TÍNH TỔNG THEO TỪNG BỘ PHIM
+            {
+                $group: {
+                    _id: { $ifNull: ["$movie.title", "Phim đã xóa"] }, // Nhóm theo tên phim
+                    movieRevenue: { $sum: { $ifNull: ["$totalAmount", 0] } }, // Tổng doanh thu phim đó
+                    movieTickets: { $sum: { $size: { $ifNull: ["$seats", []] } } }, // Tổng vé
+                    // Dùng $reduce để tính tổng tiền bắp nước trong mảng snacks của từng vé
+                    movieSnacksRevenue: {
+                        $sum: {
+                            $reduce: {
+                                input: { $ifNull: ["$snacks", []] },
+                                initialValue: 0,
+                                in: { $add: ["$$value", { $multiply: ["$$this.price", "$$this.quantity"] }] }
+                            }
+                        }
+                    },
+                    // Tính tổng số lượng combo đã mua
+                    movieSnacksCount: {
+                        $sum: {
+                            $reduce: {
+                                input: { $ifNull: ["$snacks", []] },
+                                initialValue: 0,
+                                in: { $add: ["$$value", "$$this.quantity"] }
+                            }
+                        }
+                    }
+                }
             }
+        ]);
 
-            const title = b.showtimeId?.movieId?.title || "Phim đã xóa";
-            movieSales[title] = (movieSales[title] || 0) + amount;
+        // 2. TỔNG HỢP KẾT QUẢ TỪ AGGREGATION (Chỉ chạy lặp đúng 12 lần thay vì 14.000 lần)
+        let totalRevenue = 0, snackRevenue = 0, totalTickets = 0, totalSnacks = 0;
+        const topMovies = [];
+
+        aggregateResult.forEach(item => {
+            totalRevenue += item.movieRevenue;
+            totalTickets += item.movieTickets;
+            snackRevenue += item.movieSnacksRevenue;
+            totalSnacks += item.movieSnacksCount;
+            topMovies.push({ title: item._id, revenue: item.movieRevenue });
         });
 
         const ticketRevenue = totalRevenue - snackRevenue;
-        const topMovies = Object.entries(movieSales)
-            .map(([title, revenue]) => ({ title, revenue }))
-            .sort((a, b) => b.revenue - a.revenue)
-            .slice(0, 5);
+        
+        // Sắp xếp và lấy 5 phim doanh thu cao nhất
+        topMovies.sort((a, b) => b.revenue - a.revenue).splice(5);
 
-        const recentBookings = [...bookings]
-            .sort((a, b) => b.createdAt - a.createdAt)
-            .slice(0, 5);
+        // 3. LẤY 5 GIAO DỊCH GẦN NHẤT (Cực kỳ nhanh vì có limit)
+        const recentBookings = await Booking.find({ status: { $in: ["Paid", "Checked-in"] } })
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .populate({ path: 'showtimeId', populate: { path: 'movieId' } });
 
         res.json({
             totalRevenue, ticketRevenue, snackRevenue, totalTickets,
@@ -172,6 +213,7 @@ exports.getDashboard = async (req, res) => {
         });
 
     } catch (err) {
+        console.error("Lỗi Dashboard:", err);
         res.status(500).json({ message: "Lỗi Dashboard sếp ơi!" });
     }
 };
