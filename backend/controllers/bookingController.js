@@ -197,7 +197,7 @@ exports.getDashboard = async (req, res) => {
         });
 
         const ticketRevenue = totalRevenue - snackRevenue;
-        
+
         // Sắp xếp và lấy 5 phim doanh thu cao nhất
         topMovies.sort((a, b) => b.revenue - a.revenue).splice(5);
 

@@ -11,6 +11,19 @@ export default function Register() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    // 🚨 Kiểm tra định dạng Email bằng Regex (Bản nghiêm ngặt chuẩn Gmail)
+    const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email)) {
+      setNotice({ 
+        show: true, 
+        message: "Email không hợp lệ", 
+        type: "error" 
+      });
+      setTimeout(() => setNotice({ ...notice, show: false }), 3000);
+      return; // Chặn đứng, không gửi request lên Backend
+    }
+
     try {
       // 🚀 Gọi API đăng ký
       await axios.post("/auth/register", formData);
@@ -29,7 +42,7 @@ export default function Register() {
       // ❌ Hiện thông báo lỗi từ Backend (Ví dụ: Email đã tồn tại)
       setNotice({ 
         show: true, 
-        message: "Lỗi: " + (err.response?.data || "Đăng ký thất bại rồi sếp ơi!"), 
+        message: err.response?.data || "Đăng ký thất bại rồi sếp ơi!", 
         type: "error" 
       });
       
@@ -47,7 +60,7 @@ export default function Register() {
           ...toastStyle,
           backgroundColor: notice.type === "success" ? "#28a745" : "#dc3545"
         }}>
-          {notice.type === "success" ? "✅" : "❌"} {notice.message}
+          {notice.message}
         </div>
       )}
 

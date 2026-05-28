@@ -1,18 +1,18 @@
 import { useState, useEffect } from "react";
 import axios from "../../api/axios";
 // 📈 Import bộ thư viện biểu đồ xịn xò
-import { 
+import {
     PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
-    BarChart, Bar, XAxis, YAxis, CartesianGrid 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from 'recharts';
 
 export default function Dashboard() {
     const [dashData, setDashData] = useState({
         totalRevenue: 0,
-        ticketRevenue: 0, 
-        snackRevenue: 0,  
+        ticketRevenue: 0,
+        snackRevenue: 0,
         totalTickets: 0,
-        totalSnacks: 0,   
+        totalSnacks: 0,
         totalMovies: 0,
         totalRooms: 0,
         topMovies: [],
@@ -38,7 +38,7 @@ export default function Dashboard() {
         { name: 'Bắp nước', value: dashData.snackRevenue || 0 },
     ];
     // Màu sắc thương hiệu: Xanh Lux và Vàng Popcorn
-    const COLORS = ['#3498db', '#f39c12']; 
+    const COLORS = ['#3498db', '#f39c12'];
 
     return (
         <div style={{ paddingBottom: '40px' }}>
@@ -82,18 +82,18 @@ export default function Dashboard() {
 
             {/* 📉 HÀNG 3: KHU VỰC BIỂU ĐỒ (Ý tưởng mới cho sếp) */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "30px", marginBottom: "40px" }}>
-                
+
                 {/* 1. Biểu đồ tròn: Tỷ trọng nguồn thu */}
                 <div style={whiteBoxStyle}>
                     <h3 style={chartTitle}>Cơ cấu doanh thu</h3>
                     <div style={{ width: '100%', height: 280 }}>
                         <ResponsiveContainer width="100%" height={300}>
                             <PieChart>
-                                <Pie 
-                                    data={pieData} 
-                                    innerRadius={60} 
-                                    outerRadius={85} 
-                                    paddingAngle={5} 
+                                <Pie
+                                    data={pieData}
+                                    innerRadius={60}
+                                    outerRadius={85}
+                                    paddingAngle={5}
                                     dataKey="value"
                                     stroke="none"
                                 >
@@ -102,7 +102,7 @@ export default function Dashboard() {
                                     ))}
                                 </Pie>
                                 <Tooltip formatter={(value) => value.toLocaleString() + 'đ'} />
-                                <Legend verticalAlign="bottom" height={36}/>
+                                <Legend verticalAlign="bottom" height={36} />
                             </PieChart>
                         </ResponsiveContainer>
                     </div>
@@ -115,23 +115,23 @@ export default function Dashboard() {
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={dashData.topMovies}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
-                                <XAxis 
-                                    dataKey="title" 
-                                    fontSize={11} 
-                                    tick={{fill: '#666'}} 
-                                    axisLine={false} 
+                                <XAxis
+                                    dataKey="title"
+                                    fontSize={11}
+                                    tick={{ fill: '#666' }}
+                                    axisLine={false}
                                     interval={0}
                                 />
                                 <YAxis hide />
-                                <Tooltip 
-                                    formatter={(value) => value.toLocaleString() + 'đ'} 
-                                    cursor={{fill: '#fcfcfc'}} 
+                                <Tooltip
+                                    formatter={(value) => value.toLocaleString() + 'đ'}
+                                    cursor={{ fill: '#fcfcfc' }}
                                 />
-                                <Bar 
-                                    dataKey="revenue" 
-                                    fill="#fb4226" 
-                                    radius={[8, 8, 0, 0]} 
-                                    barSize={45} 
+                                <Bar
+                                    dataKey="revenue"
+                                    fill="#fb4226"
+                                    radius={[8, 8, 0, 0]}
+                                    barSize={45}
                                 />
                             </BarChart>
                         </ResponsiveContainer>
@@ -156,7 +156,7 @@ export default function Dashboard() {
                     <h3 style={{ marginTop: 0, borderBottom: "1px solid #eee", paddingBottom: "15px" }}>Giao dịch mới nhất</h3>
                     {dashData.recentBookings.map((b, index) => (
                         <div key={index} style={itemRowStyle}>
-                            <div style={{display: 'flex', flexDirection: 'column'}}>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
                                 <span>{b.showtimeId?.movieId?.title || "Phim đã xóa"}</span>
                                 <span style={{ fontSize: "0.75rem", color: "#888" }}>{new Date(b.createdAt).toLocaleString('vi-VN')}</span>
                             </div>

@@ -8,15 +8,23 @@ exports.register = async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    const exist = await User.findOne({ email });
-    if (exist) return res.status(400).json("Email này đã được sử dụng sếp ơi!");
+    // 🚨 Kiểm tra định dạng Email ở Backend (Bản nghiêm ngặt chuẩn Gmail)
+    const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json("Email không hợp lệ");
+    }
+
+    const cleanEmail = email.toLowerCase();
+
+    const exist = await User.findOne({ email: cleanEmail });
+    if (exist) return res.status(400).json("Email đã tồn tại");
 
     const hash = await bcrypt.hash(password, 10);
 
     // 1. Tạo tài khoản User
     const user = await User.create({
       name,
-      email,
+      email: cleanEmail,
       password: hash,
       role: "customer"
     });
@@ -41,7 +49,15 @@ exports.register = async (req, res) => {
 // 🔑 ĐĂNG NHẬP (Giữ nguyên vì đã rất ổn rồi)
 exports.login = async (req, res) => {
   try {
-    const user = await User.findOne({ email: req.body.email });
+    const cleanEmail = req.body.email.trim().toLowerCase();
+
+    // 🚨 Kiểm tra định dạng Email chuẩn bằng Regex ở Backend (Bản nghiêm ngặt chuẩn Gmail)
+    const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return res.status(400).json("Định dạng Email không hợp lệ sếp ơi!");
+    }
+
+    const user = await User.findOne({ email: cleanEmail });
     if (!user) return res.status(400).json("Email không tồn tại sếp ơi!");
 
     // 🛡️ THÊM DÒNG NÀY: Check xem tài khoản có bị khóa không

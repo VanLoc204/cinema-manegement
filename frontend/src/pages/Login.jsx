@@ -12,8 +12,22 @@ export default function Login() {
     const navigate = useNavigate();
 
     const handleLogin = async () => {
+        const cleanEmail = email.trim().toLowerCase();
+
+        // 🚨 Kiểm tra định dạng Email chuẩn bằng Regex (Bản nghiêm ngặt chuẩn Gmail)
+        const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(cleanEmail)) {
+            setNotice({ 
+                show: true, 
+                message: "Định dạng Email không hợp lệ sếp ơi!", 
+                type: "error" 
+            });
+            setTimeout(() => setNotice({ ...notice, show: false }), 3000);
+            return; // Chặn lại không cho gửi request lên Backend
+        }
+
         try {
-            const res = await axios.post("/auth/login", { email, password });
+            const res = await axios.post("/auth/login", { email: cleanEmail, password });
             
             localStorage.setItem("token", res.data.token);
             localStorage.setItem("name", res.data.name); 

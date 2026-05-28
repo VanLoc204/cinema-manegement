@@ -65,6 +65,24 @@ export default function ShowtimeManager() {
         });
     };
 
+    // ◀ Giảm 1 ngày & tự tìm kiếm luôn
+    const handlePrevDay = () => {
+        const baseDate = filterDate ? new Date(filterDate) : new Date();
+        baseDate.setDate(baseDate.getDate() - 1);
+        const prevDateStr = baseDate.toISOString().split("T")[0];
+        setFilterDate(prevDateStr);
+        setSearchTrigger(prev => ({ ...prev, date: prevDateStr }));
+    };
+
+    // ▶ Tăng 1 ngày & tự tìm kiếm luôn
+    const handleNextDay = () => {
+        const baseDate = filterDate ? new Date(filterDate) : new Date();
+        baseDate.setDate(baseDate.getDate() + 1);
+        const nextDateStr = baseDate.toISOString().split("T")[0];
+        setFilterDate(nextDateStr);
+        setSearchTrigger(prev => ({ ...prev, date: nextDateStr }));
+    };
+
     // ➕ HÀM XẾP LỊCH CHIẾU MỚI
     const handleCreateShowtime = async () => {
         if (!newShowtime.movieId || !newShowtime.roomId || !newShowtime.time) {
@@ -204,7 +222,11 @@ export default function ShowtimeManager() {
                         {movies.map(m => <option key={m._id} value={m._id}>{m.title}</option>)}
                     </select>
 
-                    <input type="date" style={{ ...inputStyle, width: "160px" }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+                    <div style={{ display: "flex", gap: "5px", alignItems: "center" }}>
+                        <button onClick={handlePrevDay} style={btnArrowStyle} title="Ngày trước">◀</button>
+                        <input type="date" style={{ ...inputStyle, width: "160px" }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+                        <button onClick={handleNextDay} style={btnArrowStyle} title="Ngày sau">▶</button>
+                    </div>
 
                     <select style={{ ...inputStyle, width: "160px" }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
                         <option value="">Tất cả trạng thái</option>
@@ -355,3 +377,18 @@ const badgeGreenStyle = { padding: "4px 10px", background: "#e6fffa", color: "#3
 const badgeGrayStyle = { padding: "4px 10px", background: "#f7fafc", color: "#a0aec0", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", border: "1px solid #a0aec0" };
 const badgeBlueStyle = { padding: "4px 10px", background: "#ebf8ff", color: "#3182ce", borderRadius: "20px", fontSize: "0.75rem", fontWeight: "bold", border: "1px solid #3182ce" };
 const btnViewStyle = { padding: "10px 15px", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", transition: "0.2s" };
+const btnArrowStyle = {
+    padding: "10px 14px",
+    background: "#fff",
+    color: "#333",
+    border: "1px solid #ddd",
+    borderRadius: "8px",
+    cursor: "pointer",
+    fontWeight: "bold",
+    fontSize: "0.85rem",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.2s",
+    boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
+};
