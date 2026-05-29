@@ -9,7 +9,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import MovieDetail from "./pages/MovieDetail";
 import Admin from "./pages/Admin/Admin";
-import TicketHistory from "./pages/TicketHistory";
 import Profile from "./pages/Profile";
 
 // 🚩 Sếp thêm dòng này vào trên cùng file App.jsx nhé
@@ -54,8 +53,10 @@ export default function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
                         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-                        <Route path="/history" element={<ProtectedRoute><TicketHistory /></ProtectedRoute>} />
-                        <Route path="/watched-movies" element={<ProtectedRoute><TicketHistory /></ProtectedRoute>} />
+                        <Route path="/history" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                        <Route path="/watched-movies" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                        <Route path="/membership" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                        <Route path="/vouchers" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                         <Route path="/booking/:id" element={<ProtectedRoute><Booking socket={socket} /></ProtectedRoute>} />
 
                         {/* --- 🚀 ROUTES CHO NHÂN VIÊN (STAFF POS) --- */}

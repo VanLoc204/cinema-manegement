@@ -71,22 +71,13 @@ export default function Navbar() {
                                         null
                                     ) : (
                                         /* 3. ROLE CUSTOMER */
-                                        <>
-                                            <button
-                                                style={{ ...actionBtn, borderBottom: location.pathname === "/profile" ? "2px solid #fb4226" : "none" }}
-                                                onClick={() => navigate("/profile")}
-                                            >Hồ Sơ</button>
-
-                                            <button
-                                                style={{ ...actionBtn, borderBottom: location.pathname === "/history" ? "2px solid #fb4226" : "none" }}
-                                                onClick={() => navigate("/history")}
-                                            >Vé đã mua</button>
-
-                                            <button
-                                                style={{ ...actionBtn, borderBottom: location.pathname === "/watched-movies" ? "2px solid #fb4226" : "none" }}
-                                                onClick={() => navigate("/watched-movies")}
-                                            >Phim đã xem</button>
-                                        </>
+                                        <button
+                                            style={{ 
+                                                ...actionBtn, 
+                                                borderBottom: ["/profile", "/history", "/watched-movies", "/membership", "/vouchers"].includes(location.pathname) ? "2px solid #fb4226" : "none" 
+                                            }}
+                                            onClick={() => navigate("/profile")}
+                                        >Tài khoản của tôi</button>
                                     )}
                                 </div>
 

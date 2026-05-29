@@ -19,8 +19,11 @@ const bookingSchema = new mongoose.Schema({
   ],
 
   totalAmount: Number,
+  appliedVoucher: { type: String },
+  discountAmount: { type: Number, default: 0 },
+  appliedVoucherQty: { type: Number, default: 1 },
   status: { type: String, default: "Success" },
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("Booking", bookingSchema);
+module.exports = mongoose.model("Booking", bookingSchema);

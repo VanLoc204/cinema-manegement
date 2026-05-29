@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const ProfileDetail = require("../models/ProfileDetail");
+const Booking = require("../models/Booking");
 const bcrypt = require("bcrypt");
 
 // 🔍 1. Lấy danh sách (Admin)
@@ -29,11 +30,74 @@ exports.adminCreateUser = async (req, res) => {
 // 👁️ 3. Lấy chi tiết (Dùng chung cho cả trang Profile và Admin sửa)
 exports.getUserDetail = async (req, res) => {
     try {
-        const user = await User.findById(req.params.id).select("-password");
-        let profile = await ProfileDetail.findOne({ userId: req.params.id });
-        if (!profile) profile = await ProfileDetail.create({ userId: req.params.id, fullName: user.name });
-        res.json({ ...user._doc, ...profile._doc }); // Gộp dữ liệu trả về 1 cục cho Frontend dễ dùng
-    } catch (err) { res.status(500).json("Lỗi lấy thông tin"); }
+        const userId = req.params.id;
+        
+        // 🏆 TÍNH TOÁN HẠNG THÀNH VIÊN REALTIME AN TOÀN BẢO MẬT Ở BACKEND (RESET TỰ ĐỘNG HÀNG NĂM)
+        const currentYear = new Date().getFullYear();
+        const bookings = await Booking.find({ 
+            userId, 
+            status: { $in: ["Paid", "Checked-in"] } 
+        });
+
+        const totalSpent = bookings
+            .filter(t => {
+                const ticketDate = t.createdAt ? new Date(t.createdAt) : new Date();
+                return ticketDate.getFullYear() === currentYear;
+            })
+            .reduce((sum, t) => sum + (t.totalAmount || 0), 0);
+
+        let calculatedTier = "NORMAL";
+        let nextTierLimit = 2500000;
+        let spentNeeded = 2500000;
+        let percentToNext = 0;
+        let pointsRate = 0.05;
+
+        if (totalSpent >= 6000000) {
+            calculatedTier = "PLATINUM";
+            pointsRate = 0.10;
+            nextTierLimit = 6000000;
+            spentNeeded = 0;
+            percentToNext = 100;
+        } else if (totalSpent >= 2500000) {
+            calculatedTier = "VIP";
+            pointsRate = 0.07;
+            nextTierLimit = 6000000;
+            spentNeeded = 6000000 - totalSpent;
+            percentToNext = Math.min(100, Math.floor(((totalSpent - 2500000) / (6000000 - 2500000)) * 100));
+        } else {
+            calculatedTier = "NORMAL";
+            pointsRate = 0.05;
+            nextTierLimit = 2500000;
+            spentNeeded = 2500000 - totalSpent;
+            percentToNext = Math.min(100, Math.floor((totalSpent / 2500000) * 100));
+        }
+
+        const calculatedPoints = Math.floor(totalSpent * pointsRate);
+
+        // Cập nhật lại User model trong Database làm Single Source of Truth
+        const user = await User.findByIdAndUpdate(userId, {
+            membershipTier: calculatedTier,
+            yearlySpending: totalSpent,
+            luxPoints: calculatedPoints
+        }, { new: true }).select("-password");
+
+        let profile = await ProfileDetail.findOne({ userId });
+        if (!profile) profile = await ProfileDetail.create({ userId, fullName: user.name });
+        
+        // Trả về kèm toàn bộ tính toán tiến trình thăng hạng chuẩn xác
+        res.json({ 
+            ...user._doc, 
+            ...profile._doc,
+            _id: user._id.toString(), // 🚩 Đảm bảo _id trả về là ID của User chứ không bị ghi đè bởi ID của Profile
+            nextTierLimit,
+            spentNeeded,
+            percentToNext,
+            pointsRate
+        }); // Gộp dữ liệu trả về 1 cục cho Frontend dễ dùng
+    } catch (err) { 
+        console.error("Lỗi lấy chi tiết user:", err);
+        res.status(500).json("Lỗi lấy thông tin"); 
+    }
 };
 
 // ✏️ 4. Cập nhật tổng lực (Cập nhật cả 2 bảng)
@@ -54,4 +118,31 @@ exports.updateUserDetailed = async (req, res) => {
 
         res.json("Cập nhật thông tin thành công!");
     } catch (err) { res.status(500).json("Lỗi cập nhật"); }
+};
+
+// 🔍 Tìm kiếm khách hàng bằng Email hoặc Số điện thoại (Sử dụng cho POS)
+exports.findCustomer = async (req, res) => {
+    try {
+        const { keyword } = req.query;
+        if (!keyword) return res.status(400).json("Vui lòng cung cấp SĐT hoặc Email!");
+
+        // Tìm trong ProfileDetail theo phone trước
+        const profile = await ProfileDetail.findOne({ phone: keyword });
+        let user;
+        if (profile) {
+            user = await User.findById(profile.userId).select("-password");
+        } else {
+            // Hoặc tìm trong User theo email
+            user = await User.findOne({ email: keyword }).select("-password");
+        }
+
+        if (!user) return res.status(404).json("Không tìm thấy khách hàng này!");
+
+        // Lấy thông tin chi tiết đầy đủ (bao gồm hạng thành viên và tiến trình tích lũy)
+        req.params.id = user._id.toString();
+        return exports.getUserDetail(req, res);
+    } catch (err) {
+        console.error("Lỗi tìm kiếm khách hàng:", err);
+        res.status(500).json("Lỗi hệ thống khi tìm kiếm!");
+    }
 };

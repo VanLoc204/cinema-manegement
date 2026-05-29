@@ -22,13 +22,72 @@ exports.getOccupiedSeats = async (req, res) => {
 // 🎟️ 2. Tạo đơn hàng (Giữ nguyên real-time)
 exports.createBooking = async (req, res) => {
     try {
-        const { showtimeId, userId, seats, snacks, totalAmount } = req.body;
+        const { showtimeId, userId, seats, snacks, totalAmount, appliedVoucher, discountAmount } = req.body;
         const existing = await Booking.find({ showtimeId, seats: { $in: seats } });
         if (existing.length > 0) return res.status(400).json({ message: "Ghế đã bị đặt mất rồi!" });
 
+        let appliedVoucherQty = 0;
+        if (appliedVoucher) {
+            const upperCode = appliedVoucher.toUpperCase();
+            const tierCodes = {
+                "PLAT-SWEETBOX-2D": 4, "PLAT-VIP-2D": 4, "PLAT-STANDARD-2D": 6, "PLAT-BIRTHDAY-COMBO": 2,
+                "VIP-SWEETBOX-2D": 2, "VIP-VIP-2D": 2, "VIP-STANDARD-2D": 2, "VIP-BIRTHDAY-COMBO": 1
+            };
+            if (tierCodes[upperCode]) {
+                const usedBookings = await Booking.find({
+                    userId,
+                    appliedVoucher: upperCode,
+                    status: { $in: ["Paid", "Checked-in"] }
+                });
+                const totalUsed = usedBookings.reduce((sum, b) => sum + (b.appliedVoucherQty || 1), 0);
+                const remaining = Math.max(0, tierCodes[upperCode] - totalUsed);
+                if (upperCode.includes("BIRTHDAY-COMBO")) {
+                    appliedVoucherQty = remaining > 0 ? 1 : 0;
+                } else if (upperCode.includes("SWEETBOX-2D")) {
+                    const sweetboxCount = seats.filter(sId => sId.charAt(0).toUpperCase() === "I").length;
+                    const sweetboxVouchersNeeded = Math.ceil(sweetboxCount / 2);
+                    appliedVoucherQty = Math.min(sweetboxVouchersNeeded, remaining);
+                } else if (upperCode.includes("VIP-2D")) {
+                    const vipCount = seats.filter(sId => ["D", "E", "F", "G"].includes(sId.charAt(0).toUpperCase())).length;
+                    appliedVoucherQty = Math.min(vipCount, remaining);
+                } else if (upperCode.includes("STANDARD-2D")) {
+                    const standardCount = seats.filter(sId => !["D", "E", "F", "G", "I"].includes(sId.charAt(0).toUpperCase())).length;
+                    appliedVoucherQty = Math.min(standardCount, remaining);
+                } else {
+                    appliedVoucherQty = Math.min(seats.length, remaining);
+                }
+            } else {
+                appliedVoucherQty = 1;
+            }
+        }
+
         const booking = await Booking.create({
-            showtimeId, userId, seats, snacks: snacks || [], totalAmount, status: "Paid"
+            showtimeId, userId, seats, snacks: snacks || [], totalAmount, status: "Paid",
+            appliedVoucher, discountAmount: discountAmount || 0,
+            appliedVoucherQty: appliedVoucher ? (appliedVoucherQty || 1) : 0
         });
+
+        // 🎟️ Đánh dấu voucher đã sử dụng
+        if (appliedVoucher) {
+            const Voucher = require("../models/Voucher");
+            const voucher = await Voucher.findOne({ code: appliedVoucher.toUpperCase() });
+            if (voucher) {
+                const userIndex = voucher.assignedUsers.findIndex(
+                    au => au.userId.toString() === userId.toString()
+                );
+                if (userIndex !== -1) {
+                    voucher.assignedUsers[userIndex].used = true;
+                    voucher.assignedUsers[userIndex].usedAt = new Date();
+                } else {
+                    voucher.assignedUsers.push({
+                        userId,
+                        used: true,
+                        usedAt: new Date()
+                    });
+                }
+                await voucher.save();
+            }
+        }
 
         const io = req.app.get("socketio");
         if (io) {

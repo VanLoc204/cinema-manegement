@@ -18,6 +18,7 @@ require("./models/User");
 require("./models/ProfileDetail");
 require("./models/Snack");
 require("./models/Review");
+require("./models/Voucher");
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use("/api/bookings", require("./routes/bookingRoutes"));
 app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/snacks", require("./routes/snackRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
+app.use("/api/vouchers", require("./routes/voucherRoutes"));
 
 // 📡 5. LOGIC SOCKET.IO: ĐÃ ĐỒNG BỘ TÊN SỰ KIỆN (_)
 const activeSelections = {};

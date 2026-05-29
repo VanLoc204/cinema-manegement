@@ -8,6 +8,7 @@ import ShowtimeManager from "./ShowtimeManager";
 import RevenueManager from "./RevenueManager";   
 import MemberManager from "./MemberManager"; // ✅ 1. ĐÃ IMPORT Ở ĐÂY
 import ReviewManager from "./ReviewManager";
+import VoucherManager from "./VoucherManager";
 
 export default function Admin() {
     const navigate = useNavigate();
@@ -22,6 +23,7 @@ export default function Admin() {
         { id: "revenue", path: "/admin/revenue", label: "Quản lý doanh thu", color: "#2ecc71" },
         { id: "member", path: "/admin/member", label: "Quản lý thành viên", color: "#27ae60" },
         { id: "reviews", path: "/admin/reviews", label: "Quản lý đánh giá", color: "#e67e22" }, // Đổi màu xíu cho khác Doanh thu
+        { id: "vouchers", path: "/admin/vouchers", label: "Quản lý Voucher", color: "#fb4226" },
     ];
 
     const activeTab = menuItems.find(item => 
@@ -65,6 +67,7 @@ export default function Admin() {
                         <Route path="revenue" element={<RevenueManager />} />
                         <Route path="member" element={<MemberManager />} />
                         <Route path="reviews" element={<ReviewManager />} /> {/* ✅ 2. ĐÃ MỞ KHÓA Ở ĐÂY */}
+                        <Route path="vouchers" element={<VoucherManager />} />
                     </Routes>
                 </div>
             </div>
