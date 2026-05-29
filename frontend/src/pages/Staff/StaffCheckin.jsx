@@ -97,39 +97,41 @@ export default function StaffCheckin() {
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800;900&display=swap');
                         body { 
-                            margin: 0; padding: 25px; 
+                            margin: 0; padding: 20px; 
                             font-family: 'Be Vietnam Pro', sans-serif; 
                             color: #1a1a1a;
-                            width: 380px; 
-                            min-height: 82vh; 
+                            width: 385px; 
+                            height: 96vh;
+                            box-sizing: border-box;
                             display: flex;
                             flex-direction: column;
+                            justify-content: space-between;
                             overflow: hidden;
                             background: #fff;
                         }
-                        .header-banner { background: #fb4226; color: #fff; padding: 18px 10px; text-align: center; border-radius: 12px; margin-bottom: 20px; }
-                        .header-brand { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
+                        .header-banner { background: #fb4226; color: #fff; padding: 12px 10px; text-align: center; border-radius: 10px; }
+                        .header-brand { font-size: 20px; font-weight: 900; letter-spacing: 2px; }
                         .header-sub { font-size: 8px; opacity: 0.8; font-weight: 600; margin-top: 3px; }
-                        .id-section { text-align: center; margin-bottom: 20px; }
-                        .label-id { font-size: 10px; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-                        .booking-id { font-size: 30px; font-weight: 900; color: #000; margin: 3px 0; letter-spacing: 1px; }
-                        .divider { border-top: 2px dashed #eee; margin: 12px 0; }
-                        .movie-info { margin-bottom: 15px; }
-                        .movie-title { font-size: 20px; font-weight: 900; line-height: 1.2; color: #000; margin-bottom: 12px; }
-                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-                        .info-item .label { font-size: 9px; color: #999; font-weight: 800; text-transform: uppercase; margin-bottom: 3px; }
-                        .info-item .value { font-size: 14px; font-weight: 700; color: #333; }
-                        .seats-area { margin-top: 12px; padding: 10px; background: #fff5f5; border-radius: 8px; border-left: 4px solid #fb4226; }
+                        .id-section { text-align: center; margin: 10px 0; }
+                        .label-id { font-size: 9px; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+                        .booking-id { font-size: 26px; font-weight: 900; color: #000; margin: 2px 0; letter-spacing: 1px; }
+                        .divider { border-top: 2px dashed #eee; margin: 8px 0; }
+                        .movie-info { margin-bottom: 5px; }
+                        .movie-title { font-size: 16px; font-weight: 900; line-height: 1.2; color: #000; margin-bottom: 8px; }
+                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+                        .info-item .label { font-size: 9px; color: #999; font-weight: 800; text-transform: uppercase; margin-bottom: 2px; }
+                        .info-item .value { font-size: 13px; font-weight: 700; color: #333; }
+                        .seats-area { margin-top: 8px; padding: 8px; background: #fff5f5; border-radius: 6px; border-left: 4px solid #fb4226; }
                         .seats-label { font-size: 9px; color: #fb4226; font-weight: 800; margin-bottom: 2px; }
-                        .seats-value { font-size: 18px; font-weight: 900; color: #fb4226; }
-                        .snacks-section { margin-top: 15px; }
-                        .snack-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; font-weight: 600; color: #444; }
-                        .total-area { margin-top: 15px; display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 2px solid #000; }
-                        .total-label { font-size: 13px; font-weight: 800; color: #000; }
-                        .total-value { font-size: 22px; font-weight: 900; color: #000; }
-                        .footer { margin-top: auto; text-align: center; padding-top: 20px; }
-                        .footer-msg { font-weight: 800; font-size: 11px; color: #000; letter-spacing: 0.2px; }
-                        .footer-time { font-size: 9px; color: #999; margin-top: 4px; font-weight: 600; }
+                        .seats-value { font-size: 16px; font-weight: 900; color: #fb4226; }
+                        .snacks-section { margin-top: 8px; }
+                        .snack-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; font-weight: 600; color: #444; }
+                        .total-area { margin-top: 8px; display: flex; justify-content: space-between; align-items: center; padding-top: 10px; border-top: 2px solid #000; }
+                        .total-label { font-size: 12px; font-weight: 800; color: #000; }
+                        .total-value { font-size: 20px; font-weight: 900; color: #000; }
+                        .footer { text-align: center; padding-top: 10px; border-top: 1px dashed #eee; margin-top: auto; }
+                        .footer-msg { font-weight: 800; font-size: 10px; color: #000; letter-spacing: 0.2px; }
+                        .footer-time { font-size: 8px; color: #999; margin-top: 3px; font-weight: 600; }
                         @page { margin: 0; size: auto; }
                     </style>
                 </head>
@@ -157,9 +159,14 @@ export default function StaffCheckin() {
                             <div class="divider"></div>
                             <div class="label-id" style="margin-bottom: 8px;">CONCESSIONS</div>
                             ${scanResult.snacks.map(s => `
-                                <div class="snack-row"><span>${s.name} x${s.quantity}</span><span>${(s.price * s.quantity).toLocaleString()}đ</span></div>
+                                <div class="snack-row"><span>${s.name} x${s.quantity}</span><span>${s.price === 0 ? "Quà tặng" : (s.price * s.quantity).toLocaleString() + 'đ'}</span></div>
                             `).join('')}
                         </div>
+                    ` : ''}
+                    ${scanResult.appliedVoucher ? `
+                        <div class="divider"></div>
+                        <div class="snack-row" style="color: #777; font-size: 11px; font-weight: 500;"><span>Voucher đã dùng:</span><span style="text-transform: uppercase;">${scanResult.appliedVoucher}</span></div>
+                        <div class="snack-row" style="color: #777; font-size: 11px; font-weight: 500;"><span>Giảm giá voucher:</span><span>${scanResult.discountAmount > 0 ? '-' + scanResult.discountAmount.toLocaleString() + 'đ' : 'Quà tặng'}</span></div>
                     ` : ''}
                     <div class="total-area"><div class="total-label">TOTAL AMOUNT</div><div class="total-value">${scanResult.totalAmount?.toLocaleString()}đ</div></div>
                     <div class="footer"><div class="footer-msg">CHÚC SẾP XEM PHIM VUI VẺ TẠI CINEMA LUX!</div><div class="footer-time">Printed at: ${new Date().toLocaleString('vi-VN')}</div></div>
@@ -170,7 +177,8 @@ export default function StaffCheckin() {
         const iframe = document.createElement('iframe');
         iframe.style.position = 'fixed';
         iframe.style.right = '0'; iframe.style.bottom = '0';
-        iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = 'none';
+        iframe.style.width = '0'; iframe.style.height = '0';
+        iframe.style.border = 'none';
         document.body.appendChild(iframe);
 
         const doc = iframe.contentWindow.document;
@@ -314,12 +322,28 @@ export default function StaffCheckin() {
                                         {scanResult.snacks.map((s, i) => (
                                             <div key={i} style={snackRowWeb}>
                                                 <span>{s.name} x{s.quantity}</span>
-                                                <b>{(s.price * s.quantity).toLocaleString()}đ</b>
+                                                <b>{s.price === 0 ? 'Quà tặng' : `${(s.price * s.quantity).toLocaleString()}đ`}</b>
                                             </div>
                                         ))}
                                     </div>
                                 )}
 
+                                {scanResult.appliedVoucher && (
+                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", color: "#777", fontSize: "0.85rem", marginTop: "15px" }}>
+                                        <span>Voucher đã dùng:</span>
+                                        <span style={{ textTransform: "uppercase", fontWeight: "700" }}>{scanResult.appliedVoucher}</span>
+                                    </div>
+                                )}
+                                {(scanResult.discountAmount > 0 || (scanResult.appliedVoucher && scanResult.appliedVoucher.includes("BIRTHDAY-COMBO")) || scanResult.snacks?.some(s => s.price === 0)) && (
+                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", color: "#777", fontSize: "0.85rem" }}>
+                                        <span>Giảm giá voucher:</span>
+                                        <span style={{ fontWeight: "700", color: "#fb4226" }}>
+                                            {scanResult.discountAmount > 0 
+                                                ? `-${scanResult.discountAmount.toLocaleString()}đ` 
+                                                : "Quà tặng"}
+                                        </span>
+                                    </div>
+                                )}
                                 <div style={{ borderTop: '2px solid #1a1a1a', marginTop: '20px', paddingTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <span style={{ fontSize: '0.9rem', fontWeight: '800', color: '#888' }}>TỔNG THANH TOÁN</span>
                                     <b style={{ color: '#000', fontSize: '1.6rem', fontWeight: '900' }}>{scanResult.totalAmount?.toLocaleString()}đ</b>

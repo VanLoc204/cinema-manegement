@@ -147,6 +147,23 @@ export default function TicketHistory() {
                                 </div>
                             )}
 
+                            {selectedTicket.appliedVoucher && (
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px", color: "#777", fontSize: "0.85rem", marginTop: "15px" }}>
+                                    <span>Voucher đã dùng:</span>
+                                    <span style={{ textTransform: "uppercase", fontWeight: "700" }}>{selectedTicket.appliedVoucher}</span>
+                                </div>
+                            )}
+                            {(selectedTicket.discountAmount > 0 || (selectedTicket.appliedVoucher && selectedTicket.appliedVoucher.includes("BIRTHDAY-COMBO")) || selectedTicket.snacks?.some(s => s.price === 0)) && (
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", color: "#777", fontSize: "0.85rem" }}>
+                                    <span>Giảm giá voucher:</span>
+                                    <span style={{ fontWeight: "700", color: "#fb4226" }}>
+                                        {selectedTicket.discountAmount > 0 
+                                            ? `-${selectedTicket.discountAmount.toLocaleString()}đ` 
+                                            : "Quà tặng"}
+                                    </span>
+                                </div>
+                            )}
+
                             <hr style={simpleLine}/>
                             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                                 <span style={{fontSize: '0.85rem', color: '#999', fontWeight: 'bold'}}>TỔNG TIỀN</span>
