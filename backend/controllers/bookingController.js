@@ -3,6 +3,7 @@ const Movie = require("../models/Movie");
 const Room = require("../models/Room");
 const Showtime = require("../models/Showtime"); // ✨ Thêm cái này để lọc theo phim
 const mongoose = require("mongoose");
+const emailService = require("../utils/emailService");
 
 // 💺 1. Lấy danh sách ghế (Giữ nguyên)
 exports.getOccupiedSeats = async (req, res) => {
@@ -98,9 +99,23 @@ exports.createBooking = async (req, res) => {
         }
 
         const fullBooking = await Booking.findById(booking._id)
-            .populate({ path: 'showtimeId', populate: { path: 'movieId roomId' } });
+            .populate({ path: 'showtimeId', populate: { path: 'movieId roomId' } })
+            .populate('userId', 'email name');
 
-        res.json({ message: "Thanh toán thành công!", booking: fullBooking });
+        // Gửi email xác nhận chạy ngầm
+        if (fullBooking && fullBooking.userId && fullBooking.userId.email) {
+            emailService.sendBookingConfirmation(fullBooking.userId.email, {
+                bookingId: fullBooking._id,
+                showtime: fullBooking.showtimeId,
+                seats: fullBooking.seats,
+                snacks: fullBooking.snacks,
+                totalAmount: fullBooking.totalAmount,
+                discountAmount: fullBooking.discountAmount,
+                appliedVoucher: fullBooking.appliedVoucher
+            }).catch(e => console.error("Email error:", e));
+        }
+
+        res.json({ message: "Thanh toán thành công! Thông tin vé đã được gửi về email của bạn.", booking: fullBooking });
     } catch (err) {
         res.status(500).json({ message: "Lỗi lưu hóa đơn: " + err.message });
     }

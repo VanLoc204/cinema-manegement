@@ -11,6 +11,12 @@ export default function Booking({ socket }) {
     const [showQR, setShowQR] = useState(false);
     const [bill, setBill] = useState(null);
     const [step, setStep] = useState(1);
+    const [toastData, setToastData] = useState(null);
+
+    const showToast = (title, desc, type = "success") => {
+        setToastData({ title, desc, type });
+        setTimeout(() => setToastData(null), 5000);
+    };
 
     const [availableSnacks, setAvailableSnacks] = useState([]);
     const [selectedSnacks, setSelectedSnacks] = useState({});
@@ -179,7 +185,7 @@ export default function Booking({ socket }) {
     const handleConfirmPayment = async () => {
         try {
             const userId = localStorage.getItem("userId");
-            if (!userId) return alert("❌ Lỗi: Hãy đăng nhập lại!");
+            if (!userId) return showToast("Lỗi đăng nhập", "Hãy đăng nhập lại!", "error");
 
             const snackList = Object.entries(selectedSnacks)
                 .filter(([_, qty]) => qty > 0)
@@ -232,17 +238,45 @@ export default function Booking({ socket }) {
 
             setBill(res.data.booking);
             setShowQR(false);
-            alert("✅ Thanh toán thành công! Chúc sếp xem phim vui vẻ.");
+            showToast("Thanh toán thành công", "Thông tin vé chi tiết đã được gửi về email của bạn.", "success");
         } catch (err) {
             console.error("Lỗi đặt vé:", err);
-            alert("❌ Có lỗi xảy ra khi lưu hóa đơn.");
+            showToast("Lỗi hệ thống", "Có lỗi xảy ra khi lưu hóa đơn.", "error");
         }
     };
 
     // --- 🧾 GIAO DIỆN HÓA ĐƠN XỊN (GIỮ NGUYÊN TOÀN BỘ CHI TIẾT CỦA SẾP VÀ TRANG TRÍ VOUCHER) ---
+    
+    const toastElement = toastData && (
+        <div style={{
+            position: "fixed",
+            top: "80px",
+            right: "30px",
+            background: "#333333",
+            color: "#ffffff",
+            padding: "16px 24px",
+            borderRadius: "10px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+            zIndex: 9999,
+            textAlign: "left",
+            minWidth: "280px",
+            maxWidth: "350px",
+            animation: "fadeInRight 0.3s ease-out"
+        }}>
+            <h2 style={{ margin: "0 0 6px 0", fontSize: "1rem", fontWeight: "bold", color: toastData.type === "success" ? "#4ade80" : "#f87171" }}>
+                {toastData.title}
+            </h2>
+            <p style={{ margin: 0, fontSize: "0.85rem", fontWeight: "normal", opacity: 0.9 }}>
+                {toastData.desc}
+            </p>
+        </div>
+    );
+
     if (bill) return (
-        <div style={billContainerStyle}>
-            <div style={billBoxStyle}>
+        <>
+            {toastElement}
+            <div style={billContainerStyle}>
+                <div style={billBoxStyle}>
                 <div style={{ textAlign: "center", marginBottom: 20 }}>
                     <h2 style={{ color: "#fb4226", margin: 0, letterSpacing: "2px" }}>CINEMA LUX</h2>
                     <p style={{ fontSize: "0.75rem", color: "#888", marginTop: "5px" }}>HÓA ĐƠN ĐẶT VÉ ĐIỆN TỬ</p>
@@ -314,12 +348,15 @@ export default function Booking({ socket }) {
 
                 <button onClick={() => navigate("/")} style={{ ...btnStyle, marginTop: 25 }}>Quay về Trang chủ</button>
             </div>
-        </div>
+            </div>
+        </>
     );
 
     return (
-        <div style={{ padding: "40px", display: "flex", justifyContent: "center", gap: 30, background: "#fdfcf0", minHeight: "100vh" }}>
-            <div style={{ flex: 2, background: "#fff", padding: 30, borderRadius: 15, boxShadow: "0 5px 20px rgba(0,0,0,0.05)" }}>
+        <>
+            {toastElement}
+            <div style={{ padding: "40px", display: "flex", justifyContent: "center", gap: 30, background: "#fdfcf0", minHeight: "100vh" }}>
+                <div style={{ flex: 2, background: "#fff", padding: 30, borderRadius: 15, boxShadow: "0 5px 20px rgba(0,0,0,0.05)" }}>
                 {step === 1 ? (
                     <div>
                         <h2 style={{ marginBottom: 20, textAlign: 'center' }}>CHỌN GHẾ NGỒI</h2>
@@ -597,6 +634,7 @@ export default function Booking({ socket }) {
                 </div>
             )}
         </div>
+        </>
     );
 }
 
