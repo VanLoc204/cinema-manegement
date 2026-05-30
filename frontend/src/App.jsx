@@ -10,6 +10,7 @@ import Register from "./pages/Register";
 import MovieDetail from "./pages/MovieDetail";
 import Admin from "./pages/Admin/Admin";
 import Profile from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
 
 // 🚩 Sếp thêm dòng này vào trên cùng file App.jsx nhé
 import Staff from "./pages/Staff/Staff";
@@ -52,6 +53,7 @@ export default function App() {
                         <Route path="/movie/:id" element={<MovieDetail />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                         <Route path="/history" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                         <Route path="/watched-movies" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

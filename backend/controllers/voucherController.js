@@ -46,7 +46,7 @@ exports.updateVoucher = async (req, res) => {
             discountValue,
             minSpend: minSpend || 0,
             expiryDate: new Date(expiryDate)
-        }, { new: true });
+        }, { returnDocument: 'after' });
 
         if (!updated) return res.status(404).json({ message: "Không tìm thấy Voucher này!" });
         res.json({ message: "Cập nhật Voucher thành công!", voucher: updated });

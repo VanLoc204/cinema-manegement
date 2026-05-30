@@ -16,6 +16,8 @@ export default function Profile() {
         birthday: "",
         address: "",
         phone: "",
+        email: "",
+        gender: "Khác",
         membershipTier: "NORMAL",
         yearlySpending: 0,
         luxPoints: 0,
@@ -24,11 +26,15 @@ export default function Profile() {
         percentToNext: 0,
         pointsRate: 0.05
     });
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [passwordData, setPasswordData] = useState({ oldPassword: "", newPassword: "", confirmPassword: "" });
+    const [showPasswords, setShowPasswords] = useState({ old: false, new: false, confirm: false });
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showAllHistory, setShowAllHistory] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const now = new Date();
     const API_URL = "http://localhost:5000";
@@ -55,6 +61,8 @@ export default function Profile() {
                             birthday: userRes.data.birthday ? userRes.data.birthday.split('T')[0] : "",
                             address: userRes.data.address || "",
                             phone: userRes.data.phone || "",
+                            email: userRes.data.email || "",
+                            gender: userRes.data.gender || "Khác",
                             membershipTier: userRes.data.membershipTier || "NORMAL",
                             yearlySpending: userRes.data.yearlySpending || 0,
                             luxPoints: userRes.data.luxPoints || 0,
@@ -79,13 +87,66 @@ export default function Profile() {
 
     // --- 💾 2. SAVE PROFILE HANDLER ---
     const handleSave = async () => {
+        let errors = {};
+
+        // 🚨 1. Kiểm tra Họ và Tên (Chỉ chứa chữ cái và khoảng trắng)
+        if (info.fullName) {
+            const nameRegex = /^[\p{L}\s]{2,50}$/u;
+            if (!nameRegex.test(info.fullName)) {
+                errors.fullName = "Chỉ nhập chữ cái và khoảng trắng!";
+            }
+        }
+
+        // 🚨 2. Kiểm tra Số điện thoại (Bắt đầu bằng 0, đúng 10 số)
+        if (info.phone) {
+            const phoneRegex = /^0\d{9}$/;
+            if (!phoneRegex.test(info.phone)) {
+                errors.phone = "SĐT gồm 10 chữ số và bắt đầu bằng 0!";
+            }
+        }
+
+        // 🚨 3. Kiểm tra Ngày sinh (Không được lớn hơn ngày hiện tại)
+        if (info.birthday) {
+            const today = new Date();
+            const birthDate = new Date(info.birthday);
+            if (birthDate > today) {
+                errors.birthday = "Ngày sinh không được trước ngày hiện tại!";
+            }
+        }
+
+        setFieldErrors(errors);
+
+        if (Object.keys(errors).length > 0) {
+            return; // Stop if there are validation errors
+        }
+
+        if (isChangingPassword) {
+            if (!passwordData.oldPassword) {
+                return showNotify("Vui lòng nhập mật khẩu hiện tại!", "error");
+            }
+            if (passwordData.newPassword !== passwordData.confirmPassword) {
+                return showNotify("Mật khẩu nhập lại không khớp!", "error");
+            }
+            if (passwordData.newPassword !== "123456") {
+                const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/;
+                if (!passwordRegex.test(passwordData.newPassword)) {
+                    return showNotify("Mật khẩu 8-15 ký tự, có chữ HOA, chữ thường, số & ký tự đặc biệt!", "error");
+                }
+            }
+        }
+
         try {
-            await axios.put(`/users/update/${userId}`, info);
+            const updatePayload = {
+                ...info,
+                ...(isChangingPassword ? { oldPassword: passwordData.oldPassword, newPassword: passwordData.newPassword } : {})
+            };
+            await axios.put(`/users/update/${userId}`, updatePayload);
             localStorage.setItem("name", info.fullName || info.name);
-            showNotify("Đã cập nhật hồ sơ của sếp thành công!");
+            showNotify("Đã cập nhật hồ sơ thành công");
             setTimeout(() => window.location.reload(), 1200);
         } catch (err) {
-            showNotify("Lỗi lưu thông tin rồi sếp ơi!", "error");
+            const errorMsg = err.response?.data?.message || err.response?.data || "Lỗi lưu thông tin rồi sếp ơi!";
+            showNotify(typeof errorMsg === 'string' ? errorMsg : "Lỗi lưu thông tin!", "error");
         }
     };
 
@@ -114,6 +175,19 @@ export default function Profile() {
             </div>
         );
     }
+
+    // --- ICONS ---
+    const EyeIcon = ({ show }) => show ? (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+    ) : (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+        </svg>
+    );
 
     return (
         <div style={{ background: "#fdfcf0", minHeight: "100vh", padding: "40px 20px" }}>
@@ -197,23 +271,90 @@ export default function Profile() {
 
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Họ và tên đầy đủ:</label>
-                                    <input type="text" value={info.fullName} style={inputStyle} onChange={e => setInfo({...info, fullName: e.target.value})} placeholder="Họ và tên" />
+                                    <input type="text" value={info.fullName} style={{...inputStyle, borderColor: fieldErrors.fullName ? "red" : "#ddd"}} onChange={e => {setInfo({...info, fullName: e.target.value}); setFieldErrors({...fieldErrors, fullName: ""})}} placeholder="Họ và tên" />
+                                    {fieldErrors.fullName && <span style={{color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block"}}>{fieldErrors.fullName}</span>}
                                 </div>
 
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Ngày sinh:</label>
-                                    <input type="date" value={info.birthday} style={inputStyle} onChange={e => setInfo({...info, birthday: e.target.value})} />
+                                    <input type="date" value={info.birthday} style={{...inputStyle, borderColor: fieldErrors.birthday ? "red" : "#ddd"}} onChange={e => {setInfo({...info, birthday: e.target.value}); setFieldErrors({...fieldErrors, birthday: ""})}} />
+                                    {fieldErrors.birthday && <span style={{color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block"}}>{fieldErrors.birthday}</span>}
                                 </div>
 
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Số điện thoại:</label>
-                                    <input type="text" value={info.phone} style={inputStyle} onChange={e => setInfo({...info, phone: e.target.value})} placeholder="Số điện thoại" />
+                                    <input type="text" value={info.phone} style={{...inputStyle, borderColor: fieldErrors.phone ? "red" : "#ddd"}} onChange={e => {setInfo({...info, phone: e.target.value}); setFieldErrors({...fieldErrors, phone: ""})}} placeholder="Số điện thoại" />
+                                    {fieldErrors.phone && <span style={{color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block"}}>{fieldErrors.phone}</span>}
+                                </div>
+
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>Giới tính:</label>
+                                    <div style={{ display: "flex", gap: "15px", padding: "12px 0" }}>
+                                        <label style={{ cursor: "pointer", fontSize: "0.95rem" }}>
+                                            <input type="radio" value="Nam" checked={info.gender === "Nam"} onChange={e => setInfo({...info, gender: e.target.value})} style={{ marginRight: "5px" }} /> Nam
+                                        </label>
+                                        <label style={{ cursor: "pointer", fontSize: "0.95rem" }}>
+                                            <input type="radio" value="Nữ" checked={info.gender === "Nữ"} onChange={e => setInfo({...info, gender: e.target.value})} style={{ marginRight: "5px" }} /> Nữ
+                                        </label>
+                                        <label style={{ cursor: "pointer", fontSize: "0.95rem" }}>
+                                            <input type="radio" value="Khác" checked={info.gender === "Khác"} onChange={e => setInfo({...info, gender: e.target.value})} style={{ marginRight: "5px" }} /> Khác
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div style={inputGroup}>
+                                    <label style={labelStyle}>Địa chỉ email:</label>
+                                    <input type="email" value={info.email} readOnly style={{...inputStyle, background: "#f0f0f0", color: "#888", cursor: "not-allowed"}} title="Không thể thay đổi email" />
                                 </div>
 
                                 <div style={{ ...inputGroup, gridColumn: "span 2" }}>
                                     <label style={labelStyle}>Địa chỉ nơi ở:</label>
                                     <input type="text" value={info.address} style={inputStyle} onChange={e => setInfo({...info, address: e.target.value})} placeholder="Địa chỉ của sếp" />
                                 </div>
+
+                                <div style={{ ...inputGroup, gridColumn: "span 2", marginTop: "10px", marginBottom: "10px" }}>
+                                    <label style={{ display: "flex", alignItems: "center", cursor: "pointer", fontSize: "0.95rem", color: "#444", fontWeight: "600" }}>
+                                        <input 
+                                            type="checkbox" 
+                                            checked={isChangingPassword} 
+                                            onChange={e => setIsChangingPassword(e.target.checked)} 
+                                            style={{ marginRight: "10px", width: "18px", height: "18px", accentColor: "#fb4226", cursor: "pointer" }} 
+                                        />
+                                        Tôi muốn thay đổi mật khẩu
+                                    </label>
+                                </div>
+
+                                {isChangingPassword && (
+                                    <>
+                                        <div style={{ ...inputGroup, gridColumn: "span 2" }}>
+                                            <label style={labelStyle}>Mật khẩu hiện tại <span style={{color: "#fb4226"}}>*</span></label>
+                                            <div style={{ position: "relative" }}>
+                                                <input type={showPasswords.old ? "text" : "password"} value={passwordData.oldPassword} style={{...inputStyle, paddingRight: "45px"}} onChange={e => setPasswordData({...passwordData, oldPassword: e.target.value})} placeholder="Nhập mật khẩu hiện tại" autoComplete="new-password" />
+                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({...showPasswords, old: !showPasswords.old})}>
+                                                    <EyeIcon show={showPasswords.old} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={inputGroup}>
+                                            <label style={labelStyle}>Mật khẩu mới <span style={{color: "#fb4226"}}>*</span></label>
+                                            <div style={{ position: "relative" }}>
+                                                <input type={showPasswords.new ? "text" : "password"} value={passwordData.newPassword} style={{...inputStyle, paddingRight: "45px"}} onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})} placeholder="Nhập mật khẩu mới" autoComplete="new-password" />
+                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}>
+                                                    <EyeIcon show={showPasswords.new} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={inputGroup}>
+                                            <label style={labelStyle}>Nhập lại mật khẩu mới <span style={{color: "#fb4226"}}>*</span></label>
+                                            <div style={{ position: "relative" }}>
+                                                <input type={showPasswords.confirm ? "text" : "password"} value={passwordData.confirmPassword} style={{...inputStyle, paddingRight: "45px"}} onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})} placeholder="Nhập lại mật khẩu mới" autoComplete="new-password" />
+                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}>
+                                                    <EyeIcon show={showPasswords.confirm} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </div>
 
                             <button onClick={handleSave} style={btnSaveStyle}>
@@ -457,6 +598,7 @@ const formGrid = { display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px 3
 const inputGroup = { marginBottom: "5px", textAlign: 'left' };
 const labelStyle = { display: "block", marginBottom: "8px", fontWeight: "800", color: "#444", fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.5px" };
 const inputStyle = { width: "100%", padding: "12px 18px", borderRadius: "12px", border: "1px solid #ddd", outline: "none", fontSize: "0.95rem", boxSizing: "border-box", transition: "0.3s", background: "#fafafa", fontFamily: "'Inter', sans-serif" };
+const eyeBtnStyle = { position: "absolute", right: "15px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" };
 const btnSaveStyle = { width: "100%", padding: "16px", background: "#fb4226", color: "#fff", border: "none", borderRadius: "14px", fontWeight: "900", cursor: "pointer", fontSize: "0.95rem", boxShadow: "0 5px 25px rgba(251, 66, 38, 0.35)", marginTop: "35px", letterSpacing: "1px", transition: "0.3s" };
 const toastStyle = { position: 'fixed', top: '25px', right: '25px', color: '#fff', padding: '15px 30px', borderRadius: '12px', zIndex: 9999, fontWeight: 'bold', boxShadow: '0 8px 25px rgba(0,0,0,0.15)', fontSize: '0.9rem', letterSpacing: '0.5px', fontFamily: "'Inter', sans-serif" };
 

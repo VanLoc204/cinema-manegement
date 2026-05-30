@@ -6,6 +6,7 @@ const profileDetailSchema = new mongoose.Schema({
   birthday: { type: String, default: "" },
   address: { type: String, default: "" },
   phone: { type: String, default: "" },
+  gender: { type: String, enum: ["Nam", "Nữ", "Khác"], default: "Khác" },
   updatedAt: { type: Date, default: Date.now }
 });
 

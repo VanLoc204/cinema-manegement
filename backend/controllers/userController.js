@@ -103,17 +103,61 @@ exports.getUserDetail = async (req, res) => {
 // ✏️ 4. Cập nhật tổng lực (Cập nhật cả 2 bảng)
 exports.updateUserDetailed = async (req, res) => {
     try {
-        const { name, email, role, fullName, birthday, address, phone } = req.body;
+        const { name, email, role, fullName, birthday, address, phone, gender, oldPassword, newPassword } = req.body;
         const userId = req.params.id;
+        // 🚨 1. Kiểm tra Họ và Tên (Chỉ chứa chữ cái và khoảng trắng)
+        if (fullName) {
+            const nameRegex = /^[\p{L}\s]{2,50}$/u;
+            if (!nameRegex.test(fullName)) {
+                return res.status(400).json({ message: "Chỉ nhập chữ cái và khoảng trắng!" });
+            }
+        }
 
-        // Update bảng User (Tên đăng nhập, Email, Quyền)
-        await User.findByIdAndUpdate(userId, { name, email, role });
+        // 🚨 2. Kiểm tra Số điện thoại (Bắt đầu bằng 0, đúng 10 số)
+        if (phone) {
+            const phoneRegex = /^0\d{9}$/;
+            if (!phoneRegex.test(phone)) {
+                return res.status(400).json({ message: "SĐT gồm 10 chữ số và bắt đầu bằng 0!" });
+            }
+        }
 
-        // Update bảng ProfileDetail (Họ tên thật, SĐT, Địa chỉ...)
+        // 🚨 3. Kiểm tra Ngày sinh (Không được lớn hơn ngày hiện tại)
+        if (birthday) {
+            const today = new Date();
+            const birthDate = new Date(birthday);
+            if (birthDate > today) {
+                return res.status(400).json({ message: "Ngày sinh không được trước ngày hiện tại" });
+            }
+        }
+
+        // Xử lý đổi mật khẩu nếu có
+        if (oldPassword && newPassword) {
+            const userForAuth = await User.findById(userId);
+            if (!userForAuth) return res.status(404).json({ message: "Không tìm thấy người dùng!" });
+
+            const isMatch = await bcrypt.compare(oldPassword, userForAuth.password);
+            if (!isMatch) {
+                return res.status(400).json({ message: "Mật khẩu hiện tại không chính xác!" });
+            }
+            if (newPassword !== "123456") {
+                const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/;
+                if (!passwordRegex.test(newPassword)) {
+                    return res.status(400).json({ message: "Mật khẩu 8-15 ký tự, có chữ HOA, chữ thường, số & ký tự đặc biệt!" });
+                }
+            }
+            
+            const hash = await bcrypt.hash(newPassword, 10);
+            await User.findByIdAndUpdate(userId, { name, email, role, password: hash });
+        } else {
+            // Update bảng User (Tên đăng nhập, Email, Quyền)
+            await User.findByIdAndUpdate(userId, { name, email, role });
+        }
+
+        // Update bảng ProfileDetail (Họ tên thật, SĐT, Địa chỉ, Giới tính...)
         await ProfileDetail.findOneAndUpdate(
             { userId },
-            { fullName, birthday, address, phone },
-            { upsert: true }
+            { fullName, birthday, address, phone, gender },
+            { upsert: true, returnDocument: 'after' }
         );
 
         res.json("Cập nhật thông tin thành công!");

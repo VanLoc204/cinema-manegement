@@ -110,3 +110,25 @@ exports.sendBookingConfirmation = async (userEmail, bookingData) => {
         console.error("Lỗi khi gửi email xác nhận đặt vé:", error);
     }
 };
+
+// 📧 GỬI MÃ XÁC THỰC OTP QUA EMAIL
+exports.sendOTP = async (email, otp) => {
+    const mailOptions = {
+        from: `"Cinema Lux" <${process.env.EMAIL_USER}>`,
+        to: email,
+        subject: "Mã xác thực đăng ký - Cinema Lux",
+        html: `
+            <div style="font-family: Arial, sans-serif; max-width: 500px; margin: auto; padding: 30px; border: 1px solid #ddd; border-radius: 10px; text-align: center;">
+                <h2 style="color: #E50914;">Cinema Lux</h2>
+                <p>Mã xác thực của bạn là:</p>
+                <div style="font-size: 2.5rem; font-weight: bold; letter-spacing: 8px; color: #E50914; margin: 20px 0; padding: 15px; background: #f9f9f9; border-radius: 8px;">${otp}</div>
+                <p style="color: #888; font-size: 0.9rem;">Mã có hiệu lực trong <strong>60 giây</strong>. Không chia sẻ mã này cho bất kỳ ai.</p>
+                <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                <p style="color: #aaa; font-size: 0.8rem;">Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email.</p>
+            </div>
+        `,
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`📧 Đã gửi mã OTP tới ${email}`);
+};
