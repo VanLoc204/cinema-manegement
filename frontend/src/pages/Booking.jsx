@@ -45,11 +45,17 @@ export default function Booking({ socket }) {
     useEffect(() => {
         axios.get(`/showtimes/detail/${id}`).then(res => {
             setShowtime(res.data);
+        }).catch(err => {
+            console.error("Lỗi lấy chi tiết suất chiếu:", err);
+            showToast("Lỗi tải dữ liệu", "Không thể tải dữ liệu, vui lòng thử lại", "error");
         });
 
         axios.get("/snacks").then(res => {
             setAvailableSnacks(res.data);
-        }).catch(err => console.error("Lỗi lấy danh sách bắp nước:", err));
+        }).catch(err => {
+            console.error("Lỗi lấy danh sách bắp nước:", err);
+            showToast("Lỗi tải dữ liệu", "Không thể tải dữ liệu, vui lòng thử lại", "error");
+        });
     }, [id]);
 
     // Tải thông tin tài khoản, lịch sử đặt vé và ví voucher cá nhân để xử lý đồng bộ

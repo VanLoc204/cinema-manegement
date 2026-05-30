@@ -420,7 +420,7 @@ export default function Profile() {
 
                                 {(showAllHistory ? history : unusedTickets).length === 0 && (
                                     <div style={{ textAlign: "center", padding: "60px 20px", color: "#ccc" }}>
-                                        <p style={{ margin: 0, fontStyle: "italic", fontSize: "0.9rem" }}>Sếp chưa có giao dịch nào ở mục này.</p>
+                                        <p style={{ margin: 0, fontStyle: "italic", fontSize: "0.9rem" }}>Chưa có lịch sử đặt vé</p>
                                     </div>
                                 )}
                             </div>

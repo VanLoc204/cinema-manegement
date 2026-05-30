@@ -16,7 +16,10 @@ export default function SeatMap({ showtimeId, roomPrice, onSelect, socket }) {
         // 1. Lấy dữ liệu ghế đã bán từ Database (Dữ liệu cứng)
         axios.get(`/bookings/${showtimeId}`)
             .then((res) => setBookedSeats(res.data))
-            .catch(err => console.error("Lỗi lấy ghế:", err));
+            .catch(err => {
+                console.error("Lỗi lấy ghế:", err);
+                alert("Không thể tải dữ liệu, vui lòng thử lại");
+            });
 
         if (socket) {
             // 🚩 2. Gia nhập phòng suất chiếu

@@ -340,10 +340,10 @@ exports.checkInTicket = async (req, res) => {
             populate: { path: 'movieId roomId' }
         });
 
-        if (!booking) return res.status(404).json({ message: "Không tìm thấy vé này sếp ơi!" });
+        if (!booking) return res.status(404).json({ message: "Vé không hợp lệ" });
 
         if (booking.status === "Checked-in") {
-            return res.status(400).json({ message: "Vé này đã được soát trước đó rồi!" });
+            return res.status(400).json({ message: "Vé đã sử dụng" });
         }
 
         // Cập nhật trạng thái

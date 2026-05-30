@@ -61,7 +61,10 @@ export default function MovieDetail() {
 
                 setCanReview(isEligible);
             }
-        } catch (err) { console.error("Lỗi sếp ơi:", err); }
+        } catch (err) {
+            console.error("Lỗi sếp ơi:", err);
+            alert("Không thể tải dữ liệu, vui lòng thử lại");
+        }
     };
 
     useEffect(() => {
@@ -208,7 +211,7 @@ export default function MovieDetail() {
                                 </button>
                             </div>
                         ))
-                    ) : <div style={noShowtimeStyle}>Hôm nay chưa có suất chiếu sếp ơi!</div>}
+                    ) : <div style={noShowtimeStyle}>Chưa có suất chiếu</div>}
                 </div>
             </div>
 

@@ -137,8 +137,7 @@ export default function StaffMovies() {
                         </div>
                     )) : (
                         <div style={emptyStyle}>
-                            <p style={{ fontSize: '3rem', margin: 0 }}>🍿</p>
-                            <p>Không có suất chiếu khả dụng sếp ơi!</p>
+                            <p>Hôm nay chưa có suất chiếu</p>
                         </div>
                     )}
                 </div>

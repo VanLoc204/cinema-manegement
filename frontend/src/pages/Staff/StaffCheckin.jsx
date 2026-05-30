@@ -57,7 +57,7 @@ export default function StaffCheckin() {
             setError(null);
             new Audio("https://www.soundjay.com/buttons/beep-07a.mp3").play();
         } catch (err) {
-            const msg = err.response?.data?.message || "Vé không hợp lệ!";
+            const msg = err.response?.data?.message || "Vé không hợp lệ";
             setError(msg);
             setScanResult(null);
         } finally {
