@@ -36,10 +36,6 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.get("/", (req, res) => {
-  res.send("Backend Cinema Lux Real-time đang nổ máy sếp ơi...");
-});
-
 // 4. SỬ DỤNG CÁC ROUTES (Sếp nhớ thêm /api vào link gọi Axios ở Frontend nhé)
 app.use("/api/auth", require("./routes/authRoutes"));
 app.use("/api/users", require("./routes/userRoutes"));
@@ -51,6 +47,12 @@ app.use("/api/payment", require("./routes/paymentRoutes"));
 app.use("/api/snacks", require("./routes/snackRoutes"));
 app.use("/api/reviews", require("./routes/reviewRoutes"));
 app.use("/api/vouchers", require("./routes/voucherRoutes"));
+
+// 🌟 4.5. SERVE FRONTEND STATIC FILES IN PRODUCTION (Ngrok public link)
+app.use(express.static(path.join(__dirname, "../frontend/dist")));
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
+});
 
 // 📡 5. LOGIC SOCKET.IO: ĐÃ ĐỒNG BỘ TÊN SỰ KIỆN (_)
 const activeSelections = {};
@@ -66,13 +68,9 @@ io.on("connection", (socket) => {
     socket.showtimeId = showtimeId;
     console.log(`👤 User ${socket.id} gia nhập phòng: ${showtimeId}`);
 
-    // 🚩 ĐOẠN QUAN TRỌNG: Gửi danh sách ghế đang được giữ cho người VỪA VÀO
+    // 🚩 ĐOẠN QUAN TRỌNG: Gửi danh sách ghế đang được giữ cho người VỪA VÀO dưới dạng object đầy đủ
     if (activeSelections[showtimeId]) {
-      // Gom tất cả ghế đang được giữ bởi các user khác trong phòng này thành 1 mảng
-      const currentOtherSeats = Object.values(activeSelections[showtimeId]).flat();
-
-      // Chỉ gửi riêng cho cái socket vừa mới vào này thôi (socket.emit)
-      socket.emit("initial_selections", currentOtherSeats);
+      socket.emit("initial_selections", activeSelections[showtimeId]);
     }
   });
 
@@ -92,20 +90,17 @@ io.on("connection", (socket) => {
         if (activeSelections[showtimeId]) {
           delete activeSelections[showtimeId][userId];
         }
-        io.to(showtimeId).emit("someone_clicking", {
-          userId: userId,
-          selectedSeats: []
-        });
-        socket.emit("hold_timeout", { message: "Hết 3 phút giữ ghế rồi sếp ơi!" });
+        io.to(showtimeId).emit("someone_clicking", activeSelections[showtimeId] || {});
+        socket.emit("hold_timeout", { message: "Hết 5 phút giữ ghế rồi sếp ơi!" });
         delete holdTimers[userId];
-      }, 3 * 60 * 1000);
+      }, 5 * 60 * 1000);
     }
 
     if (!activeSelections[showtimeId]) activeSelections[showtimeId] = {};
     activeSelections[showtimeId][userId] = selectedSeats;
 
-    // Phát tín hiệu cho những người khác trong phòng
-    socket.to(showtimeId).emit("someone_clicking", data);
+    // Phát toàn bộ object activeSelections cho những người trong phòng
+    io.to(showtimeId).emit("someone_clicking", activeSelections[showtimeId]);
   });
 
   // C. 🎟️ KHI THANH TOÁN THÀNH CÔNG (Cả khách và staff đều dùng cái này)
@@ -136,15 +131,13 @@ io.on("connection", (socket) => {
     }
     if (showtimeId && userId && activeSelections[showtimeId]) {
       delete activeSelections[showtimeId][userId];
-      io.to(showtimeId).emit("someone_clicking", {
-        userId: userId,
-        selectedSeats: []
-      });
+      io.to(showtimeId).emit("someone_clicking", activeSelections[showtimeId] || {});
     }
   };
 
   socket.on("leave_showtime", handleLeave);
   socket.on("disconnect", handleLeave);
+  socket.on("cancel-hold-timer", handleLeave);
 });
 
 const PORT = process.env.PORT || 5000;

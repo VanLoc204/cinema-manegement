@@ -10,7 +10,7 @@ export default function Movies() {
     const [activeFilter, setActiveFilter] = useState("all");
     
     const navigate = useNavigate();
-    const API_URL = "http://localhost:5000";
+    const API_URL = import.meta.env.DEV ? "http://localhost:5000" : window.location.origin;
 
     useEffect(() => {
         axios.get("/movies").then(res => {
@@ -69,6 +69,7 @@ export default function Movies() {
                     {/* Đường line trang trí */}
                     <div style={{ width: "80px", height: "4px", background: "#fb4226", margin: "20px auto" }}></div>
                 </div>
+
 
                 {/* HIỂN THỊ GRID PHIM */}
                 <div className="movie-grid">

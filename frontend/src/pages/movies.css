@@ -109,27 +109,38 @@
 
 /* 📱 Responsive cho các thiết bị khác */
 @media (max-width: 992px) {
-  .movie-grid { grid-template-columns: repeat(2, 1fr); }
+  .movie-grid { grid-template-columns: repeat(3, 1fr); gap: 20px; }
 }
-@media (max-width: 576px) {
-  .movie-grid { grid-template-columns: 1fr; }
+@media (max-width: 768px) {
+  .movie-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .img-container { height: 300px; }
+  .movie-info-overlay h3 { font-size: 0.9rem; }
+}
+@media (max-width: 480px) {
+  .movie-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .img-container { height: 260px; }
+  .container { padding: 10px; }
 }
 
 .filter-tabs {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 0 10px;
 }
 
 .filter-btn {
     background: transparent;
     border: 2px solid #ddd;
-    padding: 10px 25px;
+    padding: 10px 18px;
     font-weight: bold;
     cursor: pointer;
     border-radius: 5px;
     transition: all 0.3s ease;
     color: #555;
+    font-size: 0.85rem;
+    white-space: nowrap;
 }
 
 .filter-btn:hover {

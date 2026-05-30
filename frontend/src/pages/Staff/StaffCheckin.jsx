@@ -18,7 +18,7 @@ export default function StaffCheckin() {
 
         return () => {
             if (scannerRef.current?.isScanning) {
-                scannerRef.current.stop().catch(() => {});
+                scannerRef.current.stop().catch(() => { });
             }
         };
     }, [readerId]);
@@ -27,7 +27,7 @@ export default function StaffCheckin() {
         if (!scannerRef.current) return;
         setIsScanning(true);
         setError(null);
-        
+
         try {
             await scannerRef.current.start(
                 { facingMode: "environment" },
@@ -58,8 +58,8 @@ export default function StaffCheckin() {
             setError(null);
             new Audio("https://www.soundjay.com/buttons/beep-07a.mp3").play();
         } catch (err) {
-            const msg = err.response 
-                ? (err.response.data?.message || "Vé không hợp lệ") 
+            const msg = err.response
+                ? (err.response.data?.message || "Vé không hợp lệ")
                 : "Không thể kết nối hệ thống, vui lòng thử lại";
             setError(msg);
             setScanResult(null);
@@ -68,7 +68,7 @@ export default function StaffCheckin() {
         }
     };
 
-    const onScanError = () => {};
+    const onScanError = () => { };
 
     const handleFileScan = async (e) => {
         const file = e.target.files[0];
@@ -195,7 +195,31 @@ export default function StaffCheckin() {
     };
 
     return (
-        <div style={{ padding: "20px", maxWidth: "1100px", margin: "0 auto", fontFamily: "'Be Vietnam Pro', sans-serif" }}>
+        <div style={{ padding: "20px", maxWidth: "1100px", margin: "0 auto", fontFamily: "'Be Vietnam Pro', sans-serif" }} className="checkin-container">
+            <style>{`
+                @media (max-width: 768px) {
+                    .checkin-container {
+                        padding: 10px !important;
+                    }
+                    .no-print-layout {
+                        grid-template-columns: 1fr !important;
+                        gap: 20px !important;
+                    }
+                    .checkin-card {
+                        border-radius: 16px !important;
+                    }
+                    .scanner-card {
+                        border-radius: 16px !important;
+                        padding: 15px !important;
+                    }
+                    .mobile-qr-img {
+                        width: 50px !important;
+                    }
+                    .mobile-details-header {
+                        padding: 15px !important;
+                    }
+                }
+            `}</style>
 
             <div className="no-print-layout" style={{ display: 'grid', gridTemplateColumns: '1fr 0.8fr', gap: '30px' }}>
 
@@ -205,10 +229,10 @@ export default function StaffCheckin() {
                         <h2 style={{ marginBottom: "20px", fontWeight: "900", color: "#1a1a1a", fontSize: '1.5rem', letterSpacing: '-0.5px' }}>
                             SOÁT VÉ QR SYSTEM
                         </h2>
-                        <div style={scannerContainerStyle}>
+                        <div className="scanner-card" style={scannerContainerStyle}>
                             {/* Vùng Camera */}
                             <div id={readerId} style={{ display: isScanning ? 'block' : 'none', width: '100%' }}></div>
-                            
+
                             {/* Giao diện Standby giống hệt thư viện gốc */}
                             {!isScanning && (
                                 <div style={{ padding: '40px 20px', textAlign: 'center' }}>
@@ -220,14 +244,14 @@ export default function StaffCheckin() {
                                             <path d="M9 10h6M12 7v6" />
                                         </svg>
                                     </div>
-                                    <button 
+                                    <button
                                         onClick={startScanning}
-                                        style={{ 
-                                            background: '#f8f9fa', 
-                                            border: '1px solid #ddd', 
-                                            padding: '8px 16px', 
-                                            borderRadius: '4px', 
-                                            fontSize: '13px', 
+                                        style={{
+                                            background: '#f8f9fa',
+                                            border: '1px solid #ddd',
+                                            padding: '8px 16px',
+                                            borderRadius: '4px',
+                                            fontSize: '13px',
                                             fontWeight: '600',
                                             cursor: 'pointer',
                                             color: '#333'
@@ -239,11 +263,11 @@ export default function StaffCheckin() {
                                         <label htmlFor="qr-file-input" style={{ color: '#007bff', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline' }}>
                                             Quét từ tệp hình ảnh
                                         </label>
-                                        <input 
-                                            id="qr-file-input" 
-                                            type="file" 
-                                            accept="image/*" 
-                                            style={{ display: 'none' }} 
+                                        <input
+                                            id="qr-file-input"
+                                            type="file"
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
                                             onChange={handleFileScan}
                                         />
                                     </div>
@@ -252,7 +276,7 @@ export default function StaffCheckin() {
 
                             {isScanning && (
                                 <div style={{ marginTop: '15px' }}>
-                                    <button 
+                                    <button
                                         onClick={stopScanning}
                                         style={{ background: '#fb4226', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}
                                     >
@@ -274,7 +298,7 @@ export default function StaffCheckin() {
                 </div>
 
                 {/* BÊN PHẢI: CHI TIẾT VÉ */}
-                <div style={webCardStyle}>
+                <div className="checkin-card" style={webCardStyle}>
                     {error && (
                         <div className="fade-in" style={{ ...statusBanner, background: 'linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%)', color: '#e74c3c', border: '1px solid #ffccd5', textAlign: 'center' }}>
                             <b style={{ fontSize: '0.9rem' }}>THẤT BẠI: {error}</b>
@@ -293,7 +317,7 @@ export default function StaffCheckin() {
                                 <h3 style={{ margin: 0, fontSize: '0.8rem', color: '#fff', fontWeight: '800', letterSpacing: '1.5px' }}>THÔNG TIN CHI TIẾT</h3>
                             </div>
 
-                            <div style={{ padding: '20px' }}>
+                            <div className="mobile-details-header" style={{ padding: '20px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
                                     <div>
                                         <p style={labelSmallWeb}>BOOKING ID</p>
@@ -304,7 +328,7 @@ export default function StaffCheckin() {
                                         </p>
                                     </div>
                                     <div className="no-print" style={qrBoxStyleWeb}>
-                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${scanResult._id}`} style={{ width: '60px', borderRadius: '6px' }} alt="QR" />
+                                        <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${scanResult._id}`} className="mobile-qr-img" style={{ width: '60px', borderRadius: '6px' }} alt="QR" />
                                     </div>
                                 </div>
 
@@ -341,8 +365,8 @@ export default function StaffCheckin() {
                                     <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", color: "#777", fontSize: "0.85rem" }}>
                                         <span>Giảm giá voucher:</span>
                                         <span style={{ fontWeight: "700", color: "#fb4226" }}>
-                                            {scanResult.discountAmount > 0 
-                                                ? `-${scanResult.discountAmount.toLocaleString()}đ` 
+                                            {scanResult.discountAmount > 0
+                                                ? `-${scanResult.discountAmount.toLocaleString()}đ`
                                                 : "Quà tặng"}
                                         </span>
                                     </div>
@@ -385,6 +409,7 @@ export default function StaffCheckin() {
         </div>
     );
 }
+
 
 // --- 💄 STYLES WEB PREMIUM (COMPACT) ---
 const webCardStyle = { background: '#fff', borderRadius: '25px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', height: 'fit-content', border: '1px solid #f0f0f0' };

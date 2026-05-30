@@ -17,9 +17,17 @@ export default function MovieDetail() {
     const [comment, setComment] = useState("");
     const [canReview, setCanReview] = useState(false); // Điều kiện đã mua vé
     const [hasReviewed, setHasReviewed] = useState(false); // Điều kiện chưa đánh giá
+    const [activeMobileTab, setActiveMobileTab] = useState("detail"); // Tab chi tiết/trailer trên mobile
+    
+    // --- 📢 NOTIFICATION TOAST ---
+    const [toastData, setToastData] = useState(null);
+    const showToast = (message, type = "error") => {
+        setToastData({ message, type });
+        setTimeout(() => setToastData(null), 4000);
+    };
 
     const userId = localStorage.getItem("userId");
-    const API_URL = "http://localhost:5000";
+    const API_URL = import.meta.env.DEV ? "http://localhost:5000" : window.location.origin;
 
     // 🔄 1. FETCH DATA: GIỮ NGUYÊN LOGIC CỦA SẾP + THÊM LOGIC CHECK QUYỀN
     const fetchData = async () => {
@@ -63,7 +71,7 @@ export default function MovieDetail() {
             }
         } catch (err) {
             console.error("Lỗi sếp ơi:", err);
-            alert("Không thể tải dữ liệu, vui lòng thử lại");
+            showToast("Không thể tải dữ liệu, vui lòng thử lại");
         }
     };
 
@@ -73,17 +81,19 @@ export default function MovieDetail() {
 
     // 🚀 2. HÀM XỬ LÝ REVIEW & REACTION
     const handleSendReview = async () => {
-        if (!comment.trim()) return alert("Sếp nhập vài chữ cảm nhận phim nhé!");
+        if (!comment.trim()) return showToast("Sếp nhập vài chữ cảm nhận phim nhé!");
         try {
             await axios.post("/reviews/add", { movieId: id, userId, rating: userRating, content: comment });
             setComment("");
             fetchData();
-            alert("✅ Cảm ơn sếp đã đánh giá!");
-        } catch (err) { alert(err.response?.data); }
+            showToast("Cảm ơn sếp đã đánh giá!", "success");
+        } catch (err) {
+            showToast(err.response?.data);
+        }
     };
 
     const handleReaction = async (reviewId, type) => {
-        if (!userId) return alert("Đăng nhập để tương tác sếp ơi!");
+        if (!userId) return showToast("Đăng nhập để tương tác sếp ơi!");
         try {
             await axios.post("/reviews/react", { reviewId, userId, type });
             fetchData();
@@ -107,8 +117,10 @@ export default function MovieDetail() {
     const handleBookingClick = (showtimeId) => {
         const token = localStorage.getItem("token");
         if (!token) {
-            alert("Vui lòng đăng nhập để tiếp tục đặt vé!");
-            navigate("/login");
+            showToast("Vui lòng đăng nhập để tiếp tục đặt vé!");
+            setTimeout(() => {
+                navigate("/login");
+            }, 1500);
         } else {
             navigate(`/booking/${showtimeId}`);
         }
@@ -146,16 +158,247 @@ export default function MovieDetail() {
         }
     };
 
+    const toastElement = toastData && (
+        <div className="cinema-custom-toast">
+            <h2 style={{ margin: 0, fontSize: "1rem", fontWeight: "bold", color: toastData.type === "success" ? "#4ade80" : "#f87171" }}>
+                {toastData.message}
+            </h2>
+        </div>
+    );
+
     return (
-        <div style={containerStyle}>
+        <div style={containerStyle} className="movie-detail-container">
+            {toastElement}
+            <style>{`
+                /* --- 📢 CUSTOM LUXURY TOAST CSS --- */
+                .cinema-custom-toast {
+                    position: fixed;
+                    top: 24px;
+                    right: 24px;
+                    background: rgba(26, 26, 29, 0.95);
+                    backdrop-filter: blur(8px);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    padding: 16px 24px;
+                    border-radius: 16px;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+                    z-index: 10000;
+                    max-width: 380px;
+                    color: #fff;
+                    animation: toastFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                @keyframes toastFadeIn {
+                    from { transform: translateY(-20px) scale(0.95); opacity: 0; }
+                    to { transform: translateY(0) scale(1); opacity: 1; }
+                }
+                @media (max-width: 768px) {
+                    .cinema-custom-toast {
+                        top: auto !important;
+                        bottom: 24px !important;
+                        left: 16px !important;
+                        right: 16px !important;
+                        max-width: none !important;
+                        animation: toastFadeInMobile 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+                    }
+                    @keyframes toastFadeInMobile {
+                        from { transform: translateY(20px) scale(0.95); opacity: 0; }
+                        to { transform: translateY(0) scale(1); opacity: 1; }
+                    }
+                }
+
+                /* Desktop layout tab bar hide */
+                .mobile-detail-tabs {
+                    display: none;
+                }
+
+                @media (max-width: 768px) {
+                    .movie-detail-container {
+                        padding: 15px 12px !important;
+                        margin: 10px auto !important;
+                        max-width: 100% !important;
+                        overflow-x: hidden !important;
+                    }
+                    .movie-detail-header {
+                        flex-direction: column !important;
+                        align-items: center !important;
+                        gap: 20px !important;
+                        margin-bottom: 25px !important;
+                        text-align: center !important;
+                    }
+                    .movie-poster-container {
+                        width: 160px !important;
+                        flex: 0 0 160px !important;
+                        margin: 0 auto !important;
+                    }
+                    .movie-info-content {
+                        width: 100% !important;
+                    }
+                    .movie-info-content h1 {
+                        font-size: 1.5rem !important;
+                        text-align: center !important;
+                    }
+                    .movie-tags {
+                        display: flex !important;
+                        flex-wrap: wrap !important;
+                        justify-content: center !important;
+                        gap: 8px !important;
+                        margin-bottom: 15px !important;
+                    }
+                    
+                    /* Tabs for Detail/Trailer */
+                    .mobile-detail-tabs {
+                        display: flex !important;
+                        width: 100% !important;
+                        border: 1.5px solid #fb4226 !important;
+                        border-radius: 30px !important;
+                        overflow: hidden !important;
+                        margin: 15px 0 !important;
+                        background: #fff !important;
+                    }
+                    .mobile-tab-btn {
+                        flex: 1 !important;
+                        padding: 10px !important;
+                        border: none !important;
+                        background: #fff !important;
+                        font-weight: 800 !important;
+                        font-size: 0.85rem !important;
+                        cursor: pointer !important;
+                        color: #fb4226 !important;
+                        text-transform: uppercase !important;
+                        transition: all 0.2s ease !important;
+                    }
+                    .mobile-tab-btn.active {
+                        background: #fb4226 !important;
+                        color: #fff !important;
+                    }
+
+                    /* Align details to the left */
+                    .movie-details-list {
+                        border-left: none !important;
+                        padding-left: 0 !important;
+                        text-align: left !important;
+                    }
+                    .movie-details-list p {
+                        text-align: left !important;
+                    }
+                    .movie-info-content p {
+                        text-align: left !important;
+                    }
+
+                    .movie-trailer-container {
+                        width: 100% !important;
+                        flex: 0 0 auto !important;
+                        box-sizing: border-box !important;
+                        margin-top: 10px !important;
+                    }
+                    
+                    /* Show exactly 5 days on 1 screen */
+                    .date-scroller-container {
+                        display: flex !important;
+                        gap: 5px !important;
+                        padding: 5px 0 !important;
+                        overflow-x: auto !important;
+                        -webkit-overflow-scrolling: touch;
+                        justify-content: space-between !important;
+                    }
+                    .date-scroller-container::-webkit-scrollbar {
+                        height: 0px !important;
+                    }
+                    .date-scroller-container > div {
+                        flex: 0 0 calc((100vw - 24px - 20px) / 5) !important;
+                        min-width: calc((100vw - 24px - 20px) / 5) !important;
+                        height: 60px !important;
+                        box-sizing: border-box !important;
+                        border-radius: 8px !important;
+                    }
+                    .date-scroller-container > div > div {
+                        font-size: 0.65rem !important;
+                    }
+
+                    /* Show exactly 3 showtimes per row */
+                    .showtime-grid-container {
+                        display: grid !important;
+                        grid-template-columns: repeat(3, 1fr) !important;
+                        gap: 8px !important;
+                    }
+                    .showtime-item {
+                        padding: 8px 4px !important;
+                    }
+                    .showtime-item button {
+                        padding: 8px 2px !important;
+                        font-size: 0.78rem !important;
+                    }
+
+                    /* Align ratings header and summary card to the left */
+                    .rating-header-flex {
+                        flex-direction: column !important;
+                        align-items: flex-start !important;
+                        text-align: left !important;
+                        gap: 15px !important;
+                    }
+                    .rating-header-flex h3 {
+                        justify-content: flex-start !important;
+                    }
+                    .rating-summary-card {
+                        width: auto !important;
+                        box-sizing: border-box !important;
+                        justify-content: flex-start !important;
+                        align-self: flex-start !important;
+                        padding: 10px 15px !important;
+                    }
+                    .review-box-container {
+                        padding: 20px 15px !important;
+                    }
+                    .review-box-container textarea {
+                        font-size: 0.9rem !important;
+                    }
+                    .review-box-container button {
+                        width: 100% !important;
+                    }
+
+                    /* Fit all star filters in one screen */
+                    .filter-bar-container {
+                        display: flex !important;
+                        flex-wrap: nowrap !important;
+                        align-items: center !important;
+                        gap: 3px !important;
+                        width: 100% !important;
+                        padding: 8px 0 !important;
+                        overflow-x: hidden !important;
+                        justify-content: space-between !important;
+                    }
+                    .filter-bar-container span {
+                        font-size: 0.68rem !important;
+                        margin-right: 2px !important;
+                        white-space: nowrap !important;
+                    }
+                    .filter-bar-container button {
+                        flex: 1 !important;
+                        font-size: 0.62rem !important;
+                        padding: 4px 2px !important;
+                        border-radius: 12px !important;
+                        white-space: nowrap !important;
+                        text-align: center !important;
+                    }
+                    
+                    /* Dynamic tab toggle visibility */
+                    .movie-detail-info-block.mobile-hide,
+                    .movie-trailer-container.mobile-hide {
+                        display: none !important;
+                    }
+                    .movie-detail-info-block.mobile-show,
+                    .movie-trailer-container.mobile-show {
+                        display: block !important;
+                    }
+                }
+            `}</style>
             {/* 🎥 1. HEADER (GIỮ NGUYÊN CỦA SẾP) */}
-            <div style={movieHeaderStyle}>
-                <div style={posterContainerStyle}>
+            <div style={movieHeaderStyle} className="movie-detail-header">
+                <div style={posterContainerStyle} className="movie-poster-container">
                     <img src={movie?.image ? `${API_URL}${movie.image}` : null} alt={movie?.title} style={posterImageStyle} />
                 </div>
-                <div style={infoContentStyle}>
+                <div style={infoContentStyle} className="movie-info-content">
                     <h1 style={titleStyle}>{movie?.title || "Đang tải..."}</h1>
-                    <div style={tagContainerStyle}>
+                    <div style={tagContainerStyle} className="movie-tags">
                         <span style={{ ...statusTagStyle, background: getRatedColor(movie?.rated) }}>{movie?.rated || "P"}</span>
                         <span style={tagStyle}>{movie?.genre}</span>
                         <span style={tagStyle}>{movie?.duration} Phút</span>
@@ -163,15 +406,32 @@ export default function MovieDetail() {
                             {movie?.status === "now_showing" ? "Đang chiếu" : "Sắp chiếu"}
                         </span>
                     </div>
-                    <div style={detailContainerStyle}>
+
+                    {/* Nút tròn xem chi tiết & trailer khi responsive */}
+                    <div className="mobile-detail-tabs">
+                        <button
+                            className={`mobile-tab-btn ${activeMobileTab === "detail" ? "active" : ""}`}
+                            onClick={() => setActiveMobileTab("detail")}
+                        >
+                            Chi tiết
+                        </button>
+                        <button
+                            className={`mobile-tab-btn ${activeMobileTab === "trailer" ? "active" : ""}`}
+                            onClick={() => setActiveMobileTab("trailer")}
+                        >
+                            Trailer
+                        </button>
+                    </div>
+
+                    <div style={detailContainerStyle} className={`movie-details-list movie-detail-info-block ${activeMobileTab === "detail" ? "mobile-show" : "mobile-hide"}`}>
                         <p style={detailItemStyle}><strong>Đạo diễn:</strong> {movie?.director || "Đang cập nhật"}</p>
                         <p style={detailItemStyle}><strong>Diễn viên:</strong> {movie?.cast || "Đang cập nhật"}</p>
                         <p style={detailItemStyle}><strong>Khởi chiếu:</strong> {movie?.releaseDate ? new Date(movie.releaseDate).toLocaleDateString('vi-VN') : "22/3/2026"}</p>
                     </div>
-                    <p style={descriptionStyle}>{movie?.description}</p>
+                    <p style={descriptionStyle} className={`movie-detail-info-block ${activeMobileTab === "detail" ? "mobile-show" : "mobile-hide"}`}>{movie?.description}</p>
                 </div>
                 {movie?.trailer && getEmbedUrl(movie.trailer) && (
-                    <div style={smallTrailerContainer}>
+                    <div style={smallTrailerContainer} className={`movie-trailer-container ${activeMobileTab === "trailer" ? "mobile-show" : "mobile-hide"}`}>
                         <div style={smallVideoWrapper}>
                             <iframe style={iframeStyle} src={getEmbedUrl(movie.trailer)} frameBorder="0" allowFullScreen></iframe>
                         </div>
@@ -182,7 +442,7 @@ export default function MovieDetail() {
             <hr style={dividerStyle} />
 
             {/* 📅 2. BỘ LỌC NGÀY (GIỮ NGUYÊN CỦA SẾP) */}
-            <div style={dateScrollerStyle}>
+            <div style={dateScrollerStyle} className="date-scroller-container">
                 {dateList.map((date, index) => {
                     const fullDate = date.toISOString().split('T')[0];
                     const isActive = selectedDate === fullDate;
@@ -198,10 +458,10 @@ export default function MovieDetail() {
             {/* 🎟️ 3. LỊCH CHIẾU (GIỮ NGUYÊN CỦA SẾP) */}
             <div style={showtimeSectionStyle}>
                 <h3 style={sectionTitleStyle}><span style={accentBarStyle}></span> LỊCH CHIẾU</h3>
-                <div style={showtimeGridStyle}>
+                <div style={showtimeGridStyle} className="showtime-grid-container">
                     {filteredShowtimes.length > 0 ? (
                         filteredShowtimes.map(s => (
-                            <div key={s._id} style={showtimeItemStyle}>
+                            <div key={s._id} style={showtimeItemStyle} className="showtime-item">
                                 <div style={roomInfoWrapper}>
                                     <span style={roomNameText}>{s.roomId?.name}</span>
                                     <span style={roomTypeBadge}>{s.roomId?.type || "2D"}</span>
@@ -218,9 +478,9 @@ export default function MovieDetail() {
             {/* 💬 4. PHẦN BÌNH LUẬN & ĐÁNH GIÁ (SỬA ĐẸP LÊN THEO Ý SẾP) */}
             <div style={reviewSectionStyle}>
                 {/* 📊 KHỐI HIỂN THỊ TỔNG ĐIỂM RATING */}
-                <div style={ratingHeaderFlex}>
+                <div style={ratingHeaderFlex} className="rating-header-flex">
                     <h3 style={sectionTitleStyle}><span style={accentBarStyle}></span> ĐÁNH GIÁ KHÁN GIẢ</h3>
-                    <div style={ratingSummaryCard}>
+                    <div style={ratingSummaryCard} className="rating-summary-card">
                         <span style={bigRatingNumber}>{averageRating}</span>
                         <div style={{ textAlign: 'left' }}>
                             <div style={{ color: '#f1c40f', fontSize: '1.2rem' }}>★★★★★</div>
@@ -230,11 +490,11 @@ export default function MovieDetail() {
                 </div>
 
                 {/* 📝 FORM VIẾT ĐÁNH GIÁ (CHỈ HIỆN KHI ĐỦ ĐIỀU KIỆN) */}
-                <div style={reviewBoxContainer}>
+                <div style={reviewBoxContainer} className="review-box-container">
                     {!userId ? (
                         <div style={lockMessageStyle}>Sếp hãy đăng nhập để chia sẻ cảm nghĩ nhé!</div>
                     ) : hasReviewed ? (
-                        <div style={{ ...lockMessageStyle, color: '#2ecc71', fontWeight: 'bold' }}>✅ Phim này sếp đã đánh giá rồi! Cảm ơn sếp nhiều.</div>
+                        <div style={{ ...lockMessageStyle, color: '#2ecc71', fontWeight: 'bold' }}>Phim này sếp đã đánh giá rồi! Cảm ơn sếp nhiều.</div>
                     ) : !canReview ? (
                         <div style={lockMessageStyle}>Chỉ dành cho khán giả đã mua vé. Sếp hãy trải nghiệm phim rồi quay lại đánh giá nhé!</div>
                     ) : (
@@ -252,7 +512,7 @@ export default function MovieDetail() {
                 </div>
 
                 {/* 🔍 BỘ LỌC SAO */}
-                <div style={filterBarContainer}>
+                <div style={filterBarContainer} className="filter-bar-container">
                     <span style={{ fontWeight: 'bold', marginRight: '10px' }}>Lọc theo:</span>
                     {["all", 5, 4, 3, 2, 1].map(star => (
                         <button key={star} onClick={() => setFilterStar(star)} style={filterBtnStyle(filterStar === star)}>
@@ -278,10 +538,10 @@ export default function MovieDetail() {
                             <p style={cardContent}>{r.content}</p>
                             <div style={cardFooter}>
                                 <button onClick={() => handleReaction(r._id, 'like')} style={reactionStyle(r.likes?.includes(userId))}>
-                                    👍 {r.likes?.length || 0} Hữu ích
+                                    {r.likes?.length || 0} Hữu ích
                                 </button>
                                 <button onClick={() => handleReaction(r._id, 'dislike')} style={reactionStyle(r.dislikes?.includes(userId))}>
-                                    👎 {r.dislikes?.length || 0}
+                                    {r.dislikes?.length || 0}
                                 </button>
                             </div>
                         </div>

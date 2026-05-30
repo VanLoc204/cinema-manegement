@@ -233,7 +233,7 @@ export default function MovieManager() {
                 <tbody>
                     {filteredMovies.length > 0 ? filteredMovies.map(m => (
                         <tr key={m._id} style={{ borderBottom: "1px solid #eee", opacity: m.status === 'ended' ? 0.6 : 1 }}>
-                            <td style={tdStyle}><img src={`http://localhost:5000${m.image}`} width="50" height="70" style={{ borderRadius: 4, objectFit: 'cover' }} /></td>
+                            <td style={tdStyle}><img src={`${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${m.image}`} width="50" height="70" style={{ borderRadius: 4, objectFit: 'cover' }} /></td>
                             <td style={tdStyle}><b>{m.title}</b><br/><small style={{ color: '#888' }}>{m.director}</small></td>
                             <td style={tdStyle}>{m.genre}<br/><span style={{ color: '#fb4226', fontWeight: 'bold' }}>{m.rated}</span></td>
                             <td style={tdStyle}>
@@ -297,7 +297,7 @@ export default function MovieManager() {
                                         const file = e.target.files[0];
                                         if(file) { setMovieFile(file); setPreview(URL.createObjectURL(file)); }
                                     }} />
-                                    <img src={preview || `http://localhost:5000${editingMovie.image}`} width="50" height="70" style={{ borderRadius: '4px', objectFit: 'cover' }} />
+                                    <img src={preview || `${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${editingMovie.image}`} width="50" height="70" style={{ borderRadius: '4px', objectFit: 'cover' }} />
                                 </div>
                             </div>
                             <div style={{ gridColumn: 'span 2', display: 'flex', gap: '15px', marginTop: '10px' }}>

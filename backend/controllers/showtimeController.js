@@ -137,7 +137,7 @@ exports.getAllShowtimes = async (req, res) => {
         // 2. Sếp đang sort -1 (Mới nhất lên đầu), nhân viên POS cần sort 1 (Giờ sớm nhất lên đầu)
         const allShowtimes = await Showtime.find(query)
             .populate("movieId") // Lấy hết thông tin phim để hiện poster/thời lượng
-            .populate("roomId", "name price")
+            .populate("roomId", "name price type")
             .sort({ time: 1 }); // Sắp xếp theo giờ chiếu tăng dần
 
         res.json(allShowtimes);

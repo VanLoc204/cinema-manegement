@@ -78,7 +78,7 @@ export default function MembershipTab({ history, info, loading, viewTitleStyle }
             <h2 style={viewTitleStyle}>CHƯƠNG TRÌNH THÀNH VIÊN</h2>
 
             {/* 💳 THÈ THÀNH VIÊN SẢN PHẨM */}
-            <div style={{
+            <div className="db-member-card" style={{
                 background: previewData.gradient,
                 color: previewData.fontColor,
                 padding: "35px",
@@ -165,7 +165,7 @@ export default function MembershipTab({ history, info, loading, viewTitleStyle }
             </div>
 
             {/* 🎛️ BỘ LỌC TABS TƯƠNG TÁC XEM TRƯỚC */}
-            <div style={{
+            <div className="db-sub-tabs" style={{
                 display: "flex",
                 background: "#f2eedb",
                 padding: "5px",
@@ -199,7 +199,7 @@ export default function MembershipTab({ history, info, loading, viewTitleStyle }
             {/* 📊 TÍCH LŨY ĐIỂM */}
             <div style={{ marginTop: "35px" }}>
                 <h3 style={{ fontSize: "0.8rem", color: "#bbb", fontWeight: "800", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "20px" }}>Tích lũy Lux-Points</h3>
-                <div style={{ display: "flex", gap: "20px" }}>
+                <div className="db-member-rates" style={{ display: "flex", gap: "20px" }}>
                     <div style={{
                         flex: 1,
                         background: "#fff",

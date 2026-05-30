@@ -30,7 +30,12 @@ function ScrollToTop() {
     return null;
 }
 
-const socket = io("http://localhost:5000", { autoConnect: true });
+const socket = io(window.location.origin, {
+    autoConnect: true,
+    extraHeaders: {
+        "ngrok-skip-browser-warning": "true"
+    }
+});
 
 const ProtectedRoute = ({ children }) => {
     const token = localStorage.getItem("token");

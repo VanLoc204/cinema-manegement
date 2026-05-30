@@ -12,6 +12,15 @@ router.get("/:id", bookingController.getOccupiedSeats);
 // API: POST /api/bookings/confirm
 router.post("/confirm", verifyToken, bookingController.createBooking);
 
+// API: POST /api/bookings/verify-payment
+router.post("/verify-payment", verifyToken, bookingController.verifyPayment);
+
+// API: POST /api/bookings/webhook (Không dùng verifyToken vì PayOS gọi trực tiếp)
+router.post("/webhook", bookingController.payosWebhook);
+
+// API: POST /api/bookings/cancel
+router.post("/cancel", verifyToken, bookingController.cancelBooking);
+
 // 📜 3. Lấy lịch sử vé của User
 router.get("/user/:userId", verifyToken, bookingController.getUserBookings);
 

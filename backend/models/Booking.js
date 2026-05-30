@@ -22,7 +22,8 @@ const bookingSchema = new mongoose.Schema({
   appliedVoucher: { type: String },
   discountAmount: { type: Number, default: 0 },
   appliedVoucherQty: { type: Number, default: 1 },
-  status: { type: String, default: "Success" },
+  orderCode: { type: Number, unique: true, sparse: true }, // Thêm trường lưu mã đơn hàng của PayOS
+  status: { type: String, default: "Pending" }, // Đổi mặc định thành Pending
   createdAt: { type: Date, default: Date.now }
 });
 

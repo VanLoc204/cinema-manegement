@@ -97,7 +97,7 @@ export default function SnackManager() {
                         }} />
                         {/* Hiện preview ảnh hoặc ảnh cũ từ server */}
                         {(preview || (editingSnack && editingSnack.image)) && (
-                            <img src={preview || `http://localhost:5000${editingSnack.image}`} width="45" height="45" style={{ borderRadius: "5px", objectFit: "cover" }} />
+                            <img src={preview || `${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${editingSnack.image}`} width="45" height="45" style={{ borderRadius: "5px", objectFit: "cover" }} />
                         )}
                     </div>
 
@@ -125,7 +125,7 @@ export default function SnackManager() {
                     {snacks.map(s => (
                         <tr key={s._id} style={{ borderBottom: "1px solid #eee" }}>
                             <td style={tdStyle}>
-                                <img src={`http://localhost:5000${s.image}`} width="55" height="55" style={{ borderRadius: "8px", objectFit: "cover" }}
+                                <img src={`${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${s.image}`} width="55" height="55" style={{ borderRadius: "8px", objectFit: "cover" }}
                                     onError={(e) => e.target.src = "https://via.placeholder.com/50"} />
                             </td>
                             <td style={tdStyle}><b>{s.name}</b></td>

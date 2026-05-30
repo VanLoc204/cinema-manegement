@@ -8,9 +8,11 @@ export default function Navbar() {
     const userName = localStorage.getItem("name") || "Khách";
     const role = localStorage.getItem("role"); // 'admin', 'staff', 'customer'
     const isAdminPage = location.pathname.startsWith("/admin");
+    const isStaffPage = location.pathname.startsWith("/staff");
     const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
 
     const [notice, setNotice] = useState({ show: false, message: "" });
+    const [menuOpen, setMenuOpen] = useState(false);
 
     const handleLogout = () => {
         setNotice({ show: true, message: "Đang đăng xuất..." });
@@ -23,7 +25,7 @@ export default function Navbar() {
     const handleLogoClick = () => {
         const currentRole = localStorage.getItem("role");
         if (currentRole === "staff") {
-            navigate("/staff"); 
+            navigate("/staff");
         } else if (currentRole === "admin") {
             navigate("/admin");
         } else {
@@ -33,55 +35,92 @@ export default function Navbar() {
 
     return (
         <nav style={navStyle}>
+            <style>{`
+                @media (max-width: 768px) {
+                    .nb-menu { display: none !important; }
+                    .nb-menu.open { display: flex !important; flex-direction: column; align-items: flex-start;
+                        position: fixed; top: 0; right: 0; width: 75vw; max-width: 300px; height: 100vh;
+                        background: #fff; padding: 80px 24px 40px; gap: 18px; z-index: 1100;
+                        box-shadow: -6px 0 30px rgba(0,0,0,0.15); overflow-y: auto; }
+                    .nb-hamburger { display: flex !important; }
+                    .nb-overlay { display: block !important; }
+                    .nb-user-group { flex-direction: column; align-items: flex-start; gap: 12px; width: 100%; }
+                    .nb-btn-group { flex-direction: column; width: 100%; }
+                    .nb-action-btn { text-align: left; width: 100%; padding: 10px 14px; font-size: 0.9rem; }
+                    .nb-logout-btn { width: 100%; text-align: center; }
+                    .nb-nav-link { font-size: 1rem; width: 100%; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+                    .nb-welcome { font-size: 0.95rem; }
+                    .nb-nav { padding: 0 16px !important; height: 60px !important; }
+                    .nb-logo { font-size: 1.2rem !important; }
+                    .nb-staff-hi { display: flex !important; }
+                }
+                .nb-hamburger { display: none; flex-direction: column; justify-content: space-between;
+                    width: 26px; height: 20px; background: none; border: none; cursor: pointer; z-index: 1200; }
+                .nb-hamburger span { display: block; height: 3px; background: #333; border-radius: 3px; transition: 0.3s; }
+                .nb-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1050; }
+                .nb-staff-hi { display: none; align-items: center; gap: 6px; font-size: 0.85rem; color: #fb4226; font-weight: 600; }
+            `}</style>
+
             {notice.show && <div style={logoutToastStyle}>{notice.message}</div>}
 
             <div style={logoContainer} onClick={handleLogoClick}>
-                <h2 style={logoStyle}>CINEMA <span style={{ color: "#333" }}>LUX</span></h2>
+                <h2 style={logoStyle} className="nb-logo">CINEMA <span style={{ color: "#333" }}>LUX</span></h2>
             </div>
 
-            <div style={menuContainer}>
+            {/* Hiện "Hi, staff01!" trực tiếp trên Navbar mobile khi đang ở trang Staff */}
+            {isStaffPage && token && (
+                <span className="nb-staff-hi">
+                    Hi, <b style={{ color: '#333', marginLeft: '3px' }}>{userName}</b>!
+                </span>
+            )}
+
+            {!isStaffPage && (
+                <button className="nb-hamburger" onClick={() => setMenuOpen(!menuOpen)}>
+                    <span></span><span></span><span></span>
+                </button>
+            )}
+
+            {menuOpen && <div className="nb-overlay" onClick={() => setMenuOpen(false)} />}
+
+            <div className={`nb-menu${menuOpen ? " open" : ""}`} style={menuContainer}>
                 {isAdminPage ? (
                     <>
                         <span style={adminBadge}>ADMIN MODE</span>
-                        <Link to="/" style={navLink}>Quay lại Web</Link>
-                        <button onClick={handleLogout} style={logoutBtn}>Đăng xuất</button>
+                        <Link to="/" style={navLink} className="nb-nav-link" onClick={() => setMenuOpen(false)}>Quay lại Web</Link>
+                        <button onClick={handleLogout} style={logoutBtn} className="nb-logout-btn">Đăng xuất</button>
                     </>
                 ) : (
                     <>
                         {(role !== "staff" && role !== "admin") || isAuthPage ? (
-                            <Link to="/" style={{ ...navLink, color: location.pathname === "/" ? "#fb4226" : "#333" }}>
+                            <Link to="/" style={{ ...navLink, color: location.pathname === "/" ? "#fb4226" : "#333" }} className="nb-nav-link" onClick={() => setMenuOpen(false)}>
                                 Trang chủ
                             </Link>
                         ) : null}
 
                         {!token || isAuthPage ? (
-                            <Link to="/login" style={{ ...navLink, color: location.pathname === "/login" ? "#fb4226" : "#333" }}>Đăng nhập</Link>
+                            <Link to="/login" style={{ ...navLink, color: location.pathname === "/login" ? "#fb4226" : "#333" }} className="nb-nav-link" onClick={() => setMenuOpen(false)}>Đăng nhập</Link>
                         ) : (
-                            <div style={userGroup}>
-                                <span style={welcomeText}>Hi, <b style={{ color: '#333' }}>{userName}</b>!</span>
+                            <div style={userGroup} className="nb-user-group">
+                                <span style={welcomeText} className="nb-welcome">Hi, <b style={{ color: '#333' }}>{userName}</b>!</span>
 
-                                <div style={buttonGroup}>
-                                    {/* 1. ROLE ADMIN */}
+                                <div style={buttonGroup} className="nb-btn-group">
                                     {role === "admin" && (
-                                        <button style={actionBtn} onClick={() => navigate("/admin")}>Quản trị</button>
+                                        <button style={actionBtn} className="nb-action-btn" onClick={() => { navigate("/admin"); setMenuOpen(false); }}>Quản trị</button>
                                     )}
-
-                                    {/* 2. ROLE STAFF: Đã xóa toàn bộ nút điều hướng tại đây theo ý sếp */}
-                                    {role === "staff" ? (
-                                        null
-                                    ) : (
-                                        /* 3. ROLE CUSTOMER */
+                                    {role !== "staff" && (
                                         <button
-                                            style={{ 
-                                                ...actionBtn, 
-                                                borderBottom: ["/profile", "/history", "/watched-movies", "/membership", "/vouchers"].includes(location.pathname) ? "2px solid #fb4226" : "none" 
+                                            style={{
+                                                ...actionBtn,
+                                                borderBottom: ["/profile", "/history", "/watched-movies", "/membership", "/vouchers"].includes(location.pathname) ? "2px solid #fb4226" : "none"
                                             }}
-                                            onClick={() => navigate("/profile")}
+                                            className="nb-action-btn"
+                                            onClick={() => { navigate("/profile"); setMenuOpen(false); }}
                                         >Tài khoản của tôi</button>
                                     )}
                                 </div>
-
-                                <button onClick={handleLogout} style={logoutBtn}>Đăng xuất</button>
+                                {role !== "staff" && (
+                                    <button onClick={handleLogout} style={logoutBtn} className="nb-logout-btn">Đăng xuất</button>
+                                )}
                             </div>
                         )}
                     </>
@@ -92,7 +131,7 @@ export default function Navbar() {
 }
 
 // --- Styles giữ nguyên 100% ---
-const navStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 60px", height: "80px", background: "#ffffff", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 1000, borderBottom: "1px solid #f0f0f0" };
+const navStyle = { display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 40px", height: "70px", background: "#ffffff", boxShadow: "0 4px 20px rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 1000, borderBottom: "1px solid #f0f0f0" };
 const logoContainer = { cursor: "pointer" };
 const logoStyle = { margin: 0, color: "#fb4226", fontWeight: "900", letterSpacing: "2px", fontSize: "1.6rem", textTransform: "uppercase" };
 const menuContainer = { display: "flex", alignItems: "center", gap: "30px" };

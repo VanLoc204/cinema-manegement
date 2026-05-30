@@ -18,24 +18,33 @@ export default function Banner() {
     return (
         /* 📦 BƯỚC 1: TẠO CÁI LỒNG Ở GIỮA */
         <div style={{
-            maxWidth: "1200px", // 📏 Sếp chỉnh con số này để tăng/giảm độ rộng của Banner
-            margin: "20px auto", // 🎯 "auto" giúp đẩy Banner ra chính giữa màn hình
-            padding: "0 20px", // 🛡️ Giữ khoảng cách nhỏ khi thu nhỏ màn hình điện thoại
+            maxWidth: "1200px",
+            margin: "20px auto",
+            padding: "0 20px",
             overflow: "hidden"
         }}>
+            <style>{`
+                @media (max-width: 768px) {
+                    .banner-swiper { height: 220px !important; border-radius: 10px !important; }
+                }
+                @media (max-width: 480px) {
+                    .banner-swiper { height: 180px !important; }
+                }
+            `}</style>
 
             {/* 🎞️ BƯỚC 2: CÁI SWIPER BÂY GIỜ SẼ NẰM GỌN TRONG LỒNG NÀY */}
             <Swiper
                 modules={[Navigation, Pagination, Autoplay]}
-                spaceBetween={20} // ↔️ Tạo khoảng cách nhỏ nếu sếp hiện nhiều slide
+                spaceBetween={20}
                 slidesPerView={1}
                 navigation={true}
                 pagination={{ clickable: true }}
                 autoplay={{ delay: 3500 }}
+                className="banner-swiper"
                 style={{
                     height: "450px",
-                    borderRadius: "15px", // ✨ Bo góc cho giống CGV sếp nhé
-                    boxShadow: "0 10px 30px rgba(0,0,0,0.15)" // 🌫️ Thêm tí đổ bóng cho sang
+                    borderRadius: "15px",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.15)"
                 }}
             >
                 {bannerImages.map((url, index) => (

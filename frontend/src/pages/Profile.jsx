@@ -33,11 +33,12 @@ export default function Profile() {
     const [loading, setLoading] = useState(true);
     const [showAllHistory, setShowAllHistory] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
+    const [largeQRId, setLargeQRId] = useState(null);
     const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
     const [fieldErrors, setFieldErrors] = useState({});
 
     const now = new Date();
-    const API_URL = "http://localhost:5000";
+    const API_URL = import.meta.env.DEV ? "http://localhost:5000" : window.location.origin;
 
     // --- 📢 NOTIFICATION TOAST ---
     const showNotify = (msg, type = "success") => {
@@ -151,10 +152,10 @@ export default function Profile() {
     };
 
     // --- 📑 FILTER LOGICS ---
-    const unusedTickets = history.filter(t => t.status === "Paid" && new Date(t.showtimeId?.time) > now); 
+    const unusedTickets = history.filter(t => t.status === "Paid" && new Date(t.showtimeId?.time) > now);
     const watchedMovies = Array.from(new Set(
         history.filter(t => t.status === "Checked-in" || (t.status === "Paid" && new Date(t.showtimeId?.time) <= now))
-               .map(t => JSON.stringify(t.showtimeId?.movieId))
+            .map(t => JSON.stringify(t.showtimeId?.movieId))
     )).map(s => JSON.parse(s));
 
     // --- 🏆 MEMBERSHIP LOGICS (Lấy trực tiếp từ Backend bảo mật) ---
@@ -188,16 +189,200 @@ export default function Profile() {
             <line x1="1" y1="1" x2="23" y2="23"></line>
         </svg>
     );
-
     return (
-        <div style={{ background: "#fdfcf0", minHeight: "100vh", padding: "40px 20px" }}>
+        <div style={{ background: "#fdfcf0", minHeight: "100vh", padding: "40px 20px" }} className="profile-outer-page">
             <style>{`
                 @keyframes spin {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
                 }
+                @media (max-width: 768px) {
+                    .profile-outer-page {
+                        padding: 10px 6px !important;
+                    }
+                    .db-container {
+                        flex-direction: column !important;
+                        gap: 12px !important;
+                        padding: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                    }
+                    .db-sidebar {
+                        width: 100% !important;
+                        box-sizing: border-box;
+                        padding: 15px 10px !important;
+                        border-radius: 16px !important;
+                    }
+                    .db-menu-list {
+                        flex-direction: row !important;
+                        overflow-x: auto;
+                        white-space: nowrap;
+                        padding-bottom: 4px;
+                        gap: 6px !important;
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    .db-menu-list::-webkit-scrollbar {
+                        height: 3px;
+                    }
+                    .db-menu-list::-webkit-scrollbar-thumb {
+                        background: #fb4226;
+                        border-radius: 3px;
+                    }
+                    .db-menu-item {
+                        flex: 0 0 auto;
+                        padding: 8px 10px !important;
+                        font-size: 0.76rem !important;
+                    }
+                    .db-content-area {
+                        padding: 20px 10px !important;
+                        box-sizing: border-box;
+                        width: 100% !important;
+                        min-height: auto !important;
+                        border-radius: 16px !important;
+                    }
+                    .db-form-grid {
+                        grid-template-columns: 1fr !important;
+                        gap: 12px !important;
+                    }
+                    .db-input-span-2 {
+                        grid-column: span 1 !important;
+                    }
+                    .db-avatar {
+                        width: 60px !important;
+                        height: 60px !important;
+                        font-size: 2rem !important;
+                    }
+                    .db-stats {
+                        flex-direction: row !important;
+                        justify-content: space-around !important;
+                        gap: 10px;
+                        padding: 15px 10px !important;
+                    }
+                    .db-stats-divider {
+                        display: block !important;
+                        width: 1px !important;
+                        height: 40px !important;
+                        background: #eee !important;
+                    }
+                    .db-collapse-header {
+                        padding: 12px 10px !important;
+                        display: flex !important;
+                        flex-direction: row !important;
+                        justify-content: space-between !important;
+                        align-items: center !important;
+                        gap: 5px !important;
+                    }
+                    .db-collapse-header span {
+                        font-size: 0.74rem !important;
+                        white-space: nowrap !important;
+                        letter-spacing: 0px !important;
+                    }
+                    .db-ticket-row {
+                        flex-direction: column !important;
+                        align-items: flex-start !important;
+                        gap: 8px;
+                        padding: 12px !important;
+                    }
+                    .db-ticket-right {
+                        text-align: left !important;
+                        width: 100%;
+                    }
+                    .db-invoice {
+                        width: 92vw !important;
+                        max-width: 360px !important;
+                    }
+                    .db-invoice-body {
+                        padding: 20px !important;
+                    }
+                    .db-sub-tabs {
+                        gap: 10px !important;
+                        margin-bottom: 15px !important;
+                    }
+                    .db-sub-tabs button {
+                        font-size: 0.78rem !important;
+                        padding: 6px 4px !important;
+                    }
+                    .db-member-card {
+                        padding: 15px !important;
+                        min-height: 140px !important;
+                    }
+                    .db-member-card h1 {
+                        font-size: 1.6rem !important;
+                    }
+                    .db-member-rates {
+                        flex-direction: column !important;
+                        gap: 10px !important;
+                    }
+                    .db-movies-grid {
+                        grid-template-columns: repeat(2, 1fr) !important;
+                        gap: 12px !important;
+                    }
+                    .db-voucher-grid {
+                        grid-template-columns: 1fr !important;
+                    }
+                    .db-voucher-card {
+                        flex-direction: row !important;
+                        align-items: stretch !important;
+                    }
+                    .db-voucher-left {
+                        width: 100px !important;
+                        padding: 12px 6px !important;
+                        border-right: 2px dashed #fdfcf0 !important;
+                        border-bottom: none !important;
+                        box-sizing: border-box;
+                        display: flex !important;
+                        flex-direction: column !important;
+                        justify-content: center !important;
+                        align-items: center !important;
+                    }
+                    .db-voucher-left span {
+                        font-size: 0.55rem !important;
+                    }
+                    .db-voucher-left h2 {
+                        margin: 4px 0 !important;
+                        font-size: 1.15rem !important;
+                    }
+                    .db-voucher-left div {
+                        display: block !important;
+                        width: 16px !important;
+                        height: 16px !important;
+                    }
+                    .db-voucher-right {
+                        padding: 12px 10px !important;
+                        flex-direction: row !important;
+                        justify-content: space-between !important;
+                        align-items: center !important;
+                        gap: 8px !important;
+                        box-sizing: border-box;
+                        flex: 1 !important;
+                    }
+                    .db-voucher-details {
+                        flex: 1 !important;
+                        text-align: left !important;
+                    }
+                    .db-voucher-details span {
+                        font-size: 0.6rem !important;
+                    }
+                    .db-voucher-details h3 {
+                        font-size: 0.82rem !important;
+                        margin: 4px 0 !important;
+                        line-height: 1.2 !important;
+                    }
+                    .db-voucher-details p {
+                        font-size: 0.68rem !important;
+                        margin: 2px 0 0 0 !important;
+                        line-height: 1.2 !important;
+                    }
+                    .db-voucher-btn-wrapper {
+                        text-align: right !important;
+                        flex-shrink: 0 !important;
+                    }
+                    .db-voucher-btn-wrapper span {
+                        font-size: 0.68rem !important;
+                        padding: 6px 10px !important;
+                    }
+                }
             `}</style>
-            {/* 📢 THÔNG BÁO TOAST */}
             {notification.show && (
                 <div style={{
                     ...toastStyle,
@@ -207,44 +392,49 @@ export default function Profile() {
                 </div>
             )}
 
-            <div style={dashboardContainer}>
-                
+            <div style={dashboardContainer} className="db-container">
+
                 {/* 📂 BÊN TRÁI: SIDEBAR HỒ SƠ KIỂU CGV */}
-                <div style={sidebarStyle}>
+                <div style={sidebarStyle} className="db-sidebar">
                     <h3 style={sidebarTitle}>Tài khoản của tôi</h3>
-                    <ul style={menuList}>
-                        <li 
+                    <ul style={menuList} className="db-menu-list">
+                        <li
                             style={menuItem(location.pathname === "/profile")}
                             onClick={() => navigate("/profile")}
+                            className="db-menu-item"
                         >
                             <span>Hồ sơ cá nhân</span>
                         </li>
-                        <li 
+                        <li
                             style={menuItem(location.pathname === "/history")}
                             onClick={() => navigate("/history")}
+                            className="db-menu-item"
                         >
                             <span>Lịch sử đặt vé</span>
                         </li>
-                        <li 
+                        <li
                             style={menuItem(location.pathname === "/watched-movies")}
                             onClick={() => navigate("/watched-movies")}
+                            className="db-menu-item"
                         >
                             <span>Phim đã xem</span>
                         </li>
-                        <li 
+                        <li
                             style={menuItem(location.pathname === "/vouchers")}
                             onClick={() => navigate("/vouchers")}
+                            className="db-menu-item"
                         >
                             <span>Voucher của tôi</span>
                         </li>
-                        <li 
+                        <li
                             style={menuItem(location.pathname === "/membership")}
                             onClick={() => navigate("/membership")}
+                            className="db-menu-item"
                         >
                             <span>Chương trình thành viên</span>
                         </li>
                     </ul>
-                    
+
                     <div style={sidebarFooter}>
                         <p style={{ margin: 0, fontWeight: "800", color: "#fb4226", fontSize: "0.8rem" }}>Cinema Lux Club</p>
                         <p style={{ margin: "5px 0 0 0", color: "#999", fontSize: "0.7rem" }}>Thành viên hạng {currentTier}</p>
@@ -252,73 +442,73 @@ export default function Profile() {
                 </div>
 
                 {/* 📄 BÊN PHẢI: CHI TIẾT TỪNG TAB */}
-                <div style={contentAreaStyle}>
-                    
+                <div style={contentAreaStyle} className="db-content-area">
+
                     {/* TAB 1: HỒ SƠ CÁ NHÂN */}
                     {location.pathname === "/profile" && (
                         <div>
                             <div style={{ textAlign: "center", marginBottom: "40px" }}>
-                                <div style={avatarStyle}>{(info.fullName || info.name || "U").charAt(0).toUpperCase()}</div>
+                                <div style={avatarStyle} className="db-avatar">{(info.fullName || info.name || "U").charAt(0).toUpperCase()}</div>
                                 <h2 style={{ color: "#333", margin: "15px 0 5px 0", fontWeight: "900", fontSize: "1.6rem" }}>HỒ SƠ THÀNH VIÊN</h2>
                                 <p style={{ color: "#888", fontSize: "0.9rem", margin: 0 }}>Xem và chỉnh sửa thông tin cá nhân của sếp</p>
                             </div>
 
-                            <div style={formGrid}>
+                            <div style={formGrid} className="db-form-grid">
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Tên đăng nhập (Nickname):</label>
-                                    <input type="text" value={info.name} style={inputStyle} onChange={e => setInfo({...info, name: e.target.value})} placeholder="Tên đăng nhập" />
+                                    <input type="text" value={info.name} style={inputStyle} onChange={e => setInfo({ ...info, name: e.target.value })} placeholder="Tên đăng nhập" />
                                 </div>
 
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Họ và tên đầy đủ:</label>
-                                    <input type="text" value={info.fullName} style={{...inputStyle, borderColor: fieldErrors.fullName ? "red" : "#ddd"}} onChange={e => {setInfo({...info, fullName: e.target.value}); setFieldErrors({...fieldErrors, fullName: ""})}} placeholder="Họ và tên" />
-                                    {fieldErrors.fullName && <span style={{color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block"}}>{fieldErrors.fullName}</span>}
+                                    <input type="text" value={info.fullName} style={{ ...inputStyle, borderColor: fieldErrors.fullName ? "red" : "#ddd" }} onChange={e => { setInfo({ ...info, fullName: e.target.value }); setFieldErrors({ ...fieldErrors, fullName: "" }) }} placeholder="Họ và tên" />
+                                    {fieldErrors.fullName && <span style={{ color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block" }}>{fieldErrors.fullName}</span>}
                                 </div>
 
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Ngày sinh:</label>
-                                    <input type="date" value={info.birthday} style={{...inputStyle, borderColor: fieldErrors.birthday ? "red" : "#ddd"}} onChange={e => {setInfo({...info, birthday: e.target.value}); setFieldErrors({...fieldErrors, birthday: ""})}} />
-                                    {fieldErrors.birthday && <span style={{color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block"}}>{fieldErrors.birthday}</span>}
+                                    <input type="date" value={info.birthday} style={{ ...inputStyle, borderColor: fieldErrors.birthday ? "red" : "#ddd" }} onChange={e => { setInfo({ ...info, birthday: e.target.value }); setFieldErrors({ ...fieldErrors, birthday: "" }) }} />
+                                    {fieldErrors.birthday && <span style={{ color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block" }}>{fieldErrors.birthday}</span>}
                                 </div>
 
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Số điện thoại:</label>
-                                    <input type="text" value={info.phone} style={{...inputStyle, borderColor: fieldErrors.phone ? "red" : "#ddd"}} onChange={e => {setInfo({...info, phone: e.target.value}); setFieldErrors({...fieldErrors, phone: ""})}} placeholder="Số điện thoại" />
-                                    {fieldErrors.phone && <span style={{color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block"}}>{fieldErrors.phone}</span>}
+                                    <input type="text" value={info.phone} style={{ ...inputStyle, borderColor: fieldErrors.phone ? "red" : "#ddd" }} onChange={e => { setInfo({ ...info, phone: e.target.value }); setFieldErrors({ ...fieldErrors, phone: "" }) }} placeholder="Số điện thoại" />
+                                    {fieldErrors.phone && <span style={{ color: "red", fontSize: "0.85rem", marginTop: "5px", display: "block" }}>{fieldErrors.phone}</span>}
                                 </div>
 
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Giới tính:</label>
                                     <div style={{ display: "flex", gap: "15px", padding: "12px 0" }}>
                                         <label style={{ cursor: "pointer", fontSize: "0.95rem" }}>
-                                            <input type="radio" value="Nam" checked={info.gender === "Nam"} onChange={e => setInfo({...info, gender: e.target.value})} style={{ marginRight: "5px" }} /> Nam
+                                            <input type="radio" value="Nam" checked={info.gender === "Nam"} onChange={e => setInfo({ ...info, gender: e.target.value })} style={{ marginRight: "5px" }} /> Nam
                                         </label>
                                         <label style={{ cursor: "pointer", fontSize: "0.95rem" }}>
-                                            <input type="radio" value="Nữ" checked={info.gender === "Nữ"} onChange={e => setInfo({...info, gender: e.target.value})} style={{ marginRight: "5px" }} /> Nữ
+                                            <input type="radio" value="Nữ" checked={info.gender === "Nữ"} onChange={e => setInfo({ ...info, gender: e.target.value })} style={{ marginRight: "5px" }} /> Nữ
                                         </label>
                                         <label style={{ cursor: "pointer", fontSize: "0.95rem" }}>
-                                            <input type="radio" value="Khác" checked={info.gender === "Khác"} onChange={e => setInfo({...info, gender: e.target.value})} style={{ marginRight: "5px" }} /> Khác
+                                            <input type="radio" value="Khác" checked={info.gender === "Khác"} onChange={e => setInfo({ ...info, gender: e.target.value })} style={{ marginRight: "5px" }} /> Khác
                                         </label>
                                     </div>
                                 </div>
 
                                 <div style={inputGroup}>
                                     <label style={labelStyle}>Địa chỉ email:</label>
-                                    <input type="email" value={info.email} readOnly style={{...inputStyle, background: "#f0f0f0", color: "#888", cursor: "not-allowed"}} title="Không thể thay đổi email" />
+                                    <input type="email" value={info.email} readOnly style={{ ...inputStyle, background: "#f0f0f0", color: "#888", cursor: "not-allowed" }} title="Không thể thay đổi email" />
                                 </div>
 
-                                <div style={{ ...inputGroup, gridColumn: "span 2" }}>
+                                <div style={{ ...inputGroup, gridColumn: "span 2" }} className="db-input-span-2">
                                     <label style={labelStyle}>Địa chỉ nơi ở:</label>
-                                    <input type="text" value={info.address} style={inputStyle} onChange={e => setInfo({...info, address: e.target.value})} placeholder="Địa chỉ của sếp" />
+                                    <input type="text" value={info.address} style={inputStyle} onChange={e => setInfo({ ...info, address: e.target.value })} placeholder="Địa chỉ của sếp" />
                                 </div>
 
-                                <div style={{ ...inputGroup, gridColumn: "span 2", marginTop: "10px", marginBottom: "10px" }}>
+                                <div style={{ ...inputGroup, gridColumn: "span 2", marginTop: "10px", marginBottom: "10px" }} className="db-input-span-2">
                                     <label style={{ display: "flex", alignItems: "center", cursor: "pointer", fontSize: "0.95rem", color: "#444", fontWeight: "600" }}>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={isChangingPassword} 
-                                            onChange={e => setIsChangingPassword(e.target.checked)} 
-                                            style={{ marginRight: "10px", width: "18px", height: "18px", accentColor: "#fb4226", cursor: "pointer" }} 
+                                        <input
+                                            type="checkbox"
+                                            checked={isChangingPassword}
+                                            onChange={e => setIsChangingPassword(e.target.checked)}
+                                            style={{ marginRight: "10px", width: "18px", height: "18px", accentColor: "#fb4226", cursor: "pointer" }}
                                         />
                                         Tôi muốn thay đổi mật khẩu
                                     </label>
@@ -326,29 +516,29 @@ export default function Profile() {
 
                                 {isChangingPassword && (
                                     <>
-                                        <div style={{ ...inputGroup, gridColumn: "span 2" }}>
-                                            <label style={labelStyle}>Mật khẩu hiện tại <span style={{color: "#fb4226"}}>*</span></label>
+                                        <div style={{ ...inputGroup, gridColumn: "span 2" }} className="db-input-span-2">
+                                            <label style={labelStyle}>Mật khẩu hiện tại <span style={{ color: "#fb4226" }}>*</span></label>
                                             <div style={{ position: "relative" }}>
-                                                <input type={showPasswords.old ? "text" : "password"} value={passwordData.oldPassword} style={{...inputStyle, paddingRight: "45px"}} onChange={e => setPasswordData({...passwordData, oldPassword: e.target.value})} placeholder="Nhập mật khẩu hiện tại" autoComplete="new-password" />
-                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({...showPasswords, old: !showPasswords.old})}>
+                                                <input type={showPasswords.old ? "text" : "password"} value={passwordData.oldPassword} style={{ ...inputStyle, paddingRight: "45px" }} onChange={e => setPasswordData({ ...passwordData, oldPassword: e.target.value })} placeholder="Nhập mật khẩu hiện tại" autoComplete="new-password" />
+                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({ ...showPasswords, old: !showPasswords.old })}>
                                                     <EyeIcon show={showPasswords.old} />
                                                 </div>
                                             </div>
                                         </div>
                                         <div style={inputGroup}>
-                                            <label style={labelStyle}>Mật khẩu mới <span style={{color: "#fb4226"}}>*</span></label>
+                                            <label style={labelStyle}>Mật khẩu mới <span style={{ color: "#fb4226" }}>*</span></label>
                                             <div style={{ position: "relative" }}>
-                                                <input type={showPasswords.new ? "text" : "password"} value={passwordData.newPassword} style={{...inputStyle, paddingRight: "45px"}} onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})} placeholder="Nhập mật khẩu mới" autoComplete="new-password" />
-                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({...showPasswords, new: !showPasswords.new})}>
+                                                <input type={showPasswords.new ? "text" : "password"} value={passwordData.newPassword} style={{ ...inputStyle, paddingRight: "45px" }} onChange={e => setPasswordData({ ...passwordData, newPassword: e.target.value })} placeholder="Nhập mật khẩu mới" autoComplete="new-password" />
+                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}>
                                                     <EyeIcon show={showPasswords.new} />
                                                 </div>
                                             </div>
                                         </div>
                                         <div style={inputGroup}>
-                                            <label style={labelStyle}>Nhập lại mật khẩu mới <span style={{color: "#fb4226"}}>*</span></label>
+                                            <label style={labelStyle}>Nhập lại mật khẩu mới <span style={{ color: "#fb4226" }}>*</span></label>
                                             <div style={{ position: "relative" }}>
-                                                <input type={showPasswords.confirm ? "text" : "password"} value={passwordData.confirmPassword} style={{...inputStyle, paddingRight: "45px"}} onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})} placeholder="Nhập lại mật khẩu mới" autoComplete="new-password" />
-                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({...showPasswords, confirm: !showPasswords.confirm})}>
+                                                <input type={showPasswords.confirm ? "text" : "password"} value={passwordData.confirmPassword} style={{ ...inputStyle, paddingRight: "45px" }} onChange={e => setPasswordData({ ...passwordData, confirmPassword: e.target.value })} placeholder="Nhập lại mật khẩu mới" autoComplete="new-password" />
+                                                <div style={eyeBtnStyle} onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}>
                                                     <EyeIcon show={showPasswords.confirm} />
                                                 </div>
                                             </div>
@@ -371,19 +561,19 @@ export default function Profile() {
                     {location.pathname === "/history" && (
                         <div>
                             {/* 📊 DASHBOARD TỐI GIẢN */}
-                            <div style={dashboardStatsStyle}>
+                            <div style={dashboardStatsStyle} className="db-stats">
                                 <div style={statBox}>
                                     <p style={statLabel}>VÉ CHƯA SỬ DỤNG</p>
-                                    <h2 style={{...statNum, color: '#fb4226'}}>{unusedTickets.length}</h2>
+                                    <h2 style={{ ...statNum, color: '#fb4226' }}>{unusedTickets.length}</h2>
                                 </div>
-                                <div style={{ width: '1px', background: '#eee', height: '40px' }}></div>
+                                <div style={{ width: '1px', background: '#eee', height: '40px' }} className="db-stats-divider"></div>
                                 <div style={statBox}>
                                     <p style={statLabel}>PHIM ĐÃ XEM</p>
-                                    <h2 style={{...statNum, color: '#333'}}>{watchedMovies.length}</h2>
+                                    <h2 style={{ ...statNum, color: '#333' }}>{watchedMovies.length}</h2>
                                 </div>
                             </div>
 
-                            <div style={collapseHeader} onClick={() => setShowAllHistory(!showAllHistory)}>
+                            <div style={collapseHeader} className="db-collapse-header" onClick={() => setShowAllHistory(!showAllHistory)}>
                                 <span style={{ fontSize: '0.9rem', fontWeight: '800', letterSpacing: '0.5px' }}>LỊCH SỬ GIAO DỊCH VÉ</span>
                                 <span style={{ fontSize: '0.8rem', color: '#fb4226', fontWeight: 'bold' }}>
                                     {showAllHistory ? "THU GỌN VÉ CŨ" : "XEM TẤT CẢ GIAO DỊCH"}
@@ -394,9 +584,9 @@ export default function Profile() {
                                 <h3 style={listSectionTitle}>
                                     {showAllHistory ? "TẤT CẢ GIAO DỊCH" : "VÉ CHƯA SỬ DỤNG"}
                                 </h3>
-                                
+
                                 {(showAllHistory ? history : unusedTickets).map(ticket => (
-                                    <div key={ticket._id} style={ticketRowSmall} onClick={() => setSelectedTicket(ticket)}>
+                                    <div key={ticket._id} style={ticketRowSmall} className="db-ticket-row" onClick={() => setSelectedTicket(ticket)}>
                                         <div style={{ flex: 1, paddingRight: "15px" }}>
                                             <h4 style={{ margin: 0, color: '#333', fontSize: '1rem', fontWeight: "800" }}>{ticket.showtimeId?.movieId?.title}</h4>
                                             <p style={ticketTimeText}>
@@ -406,7 +596,7 @@ export default function Profile() {
                                                 Phòng: {ticket.showtimeId?.roomId?.name} ({ticket.showtimeId?.roomId?.type || "Standard"})
                                             </p>
                                         </div>
-                                        <div style={{ textAlign: 'right' }}>
+                                        <div style={{ textAlign: 'right' }} className="db-ticket-right">
                                             <b style={{ color: '#fb4226', fontSize: '1.1rem', fontWeight: "900" }}>{ticket.totalAmount?.toLocaleString()}đ</b>
                                             <p style={{
                                                 ...paidStatusText,
@@ -431,9 +621,9 @@ export default function Profile() {
                     {location.pathname === "/watched-movies" && (
                         <div>
                             <h2 style={viewTitleStyle}>DANH SÁCH PHIM ĐÃ XEM</h2>
-                            
+
                             {watchedMovies.length > 0 ? (
-                                <div style={gridStyle}>
+                                <div style={gridStyle} className="db-movies-grid">
                                     {watchedMovies.map(movie => (
                                         <div key={movie?._id} style={movieCardStyle}>
                                             <div style={posterWrapper}>
@@ -454,7 +644,7 @@ export default function Profile() {
 
                     {/* TAB 4: CHƯƠNG TRÌNH THÀNH VIÊN */}
                     {location.pathname === "/membership" && (
-                        <MembershipTab 
+                        <MembershipTab
                             history={history}
                             info={info}
                             loading={loading}
@@ -464,7 +654,7 @@ export default function Profile() {
 
                     {/* TAB 5: VOUCHER CỦA TÔI */}
                     {location.pathname === "/vouchers" && (
-                        <VouchersTab 
+                        <VouchersTab
                             history={history}
                             info={info}
                             loading={loading}
@@ -492,19 +682,25 @@ export default function Profile() {
                                         {new Date(selectedTicket.showtimeId?.time).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} - {new Date(selectedTicket.showtimeId?.time).toLocaleDateString('vi-VN')}
                                     </p>
                                 </div>
-                                <div style={qrWrapper}>
-                                    <img 
-                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedTicket._id}`} 
-                                        style={{ width: '75px', display: 'block' }} 
-                                        alt="QR Code" 
+                                <div
+                                    style={{ ...qrWrapper, cursor: 'zoom-in', transition: 'transform 0.2s' }}
+                                    onClick={() => setLargeQRId(selectedTicket._id)}
+                                    onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                                    onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                                    title="Click để phóng to mã QR sếp nhé!"
+                                >
+                                    <img
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedTicket._id}`}
+                                        style={{ width: '75px', display: 'block' }}
+                                        alt="QR Code"
                                     />
                                 </div>
                             </div>
-                            
+
                             <hr style={simpleLine} />
-                            
+
                             <h3 style={movieTitleInvoice}>{selectedTicket.showtimeId?.movieId?.title}</h3>
-                            
+
                             <div style={infoGrid}>
                                 <div>
                                     <p style={cleanLabel}>Phòng</p>
@@ -543,21 +739,104 @@ export default function Profile() {
                                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", color: "#777", fontSize: "0.85rem" }}>
                                     <span>Giảm giá voucher:</span>
                                     <span style={{ fontWeight: "700", color: "#fb4226" }}>
-                                        {selectedTicket.discountAmount > 0 
-                                            ? `-${selectedTicket.discountAmount.toLocaleString()}đ` 
+                                        {selectedTicket.discountAmount > 0
+                                            ? `-${selectedTicket.discountAmount.toLocaleString()}đ`
                                             : "Quà tặng"}
                                     </span>
                                 </div>
                             )}
 
                             <hr style={simpleLine} />
-                            
+
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 'bold', letterSpacing: '0.5px' }}>TỔNG THANH TOÁN</span>
                                 <b style={{ color: '#fb4226', fontSize: '1.4rem', fontWeight: '900' }}>{selectedTicket.totalAmount?.toLocaleString()}đ</b>
                             </div>
                         </div>
                         <button onClick={() => setSelectedTicket(null)} style={closeBtnClean}>ĐÓNG</button>
+                    </div>
+                </div>
+            )}
+
+            {/* 🔍 MODAL PHÓNG TO QR SIÊU NÉT CHO NHÂN VIÊN QUÉT */}
+            {largeQRId && (
+                <div
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        background: 'rgba(0,0,0,0.85)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 2000,
+                        backdropFilter: 'blur(8px)',
+                        cursor: 'zoom-out'
+                    }}
+                    onClick={() => setLargeQRId(null)}
+                >
+                    <div
+                        style={{
+                            background: '#fff',
+                            padding: '30px',
+                            borderRadius: '24px',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '20px',
+                            cursor: 'default',
+                            width: '320px',
+                            boxSizing: 'border-box'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '900', color: '#1a1a1a', letterSpacing: '0.5px' }}>
+                            MÃ SOÁT VÉ XEM PHIM
+                        </h3>
+                        <div style={{
+                            padding: '12px',
+                            background: '#fff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '20px',
+                            boxShadow: '0 8px 20px rgba(0,0,0,0.04)'
+                        }}>
+                            <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${largeQRId}`}
+                                style={{ width: '240px', height: '240px', display: 'block', borderRadius: '10px' }}
+                                alt="Large QR"
+                            />
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.88rem', color: '#fb4226', fontWeight: '800' }}>
+                            MÃ VÉ: {String(largeQRId).toUpperCase()}
+                        </p>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: '#888', fontWeight: '600', lineHeight: '1.4' }}>
+                            Đưa mã này cho nhân viên soát vé quét bằng máy cầm tay sếp nhé!
+                        </p>
+                        <button
+                            onClick={() => setLargeQRId(null)}
+                            style={{
+                                marginTop: '10px',
+                                width: '100%',
+                                padding: '12px 0',
+                                background: '#1a1a1a',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '12px',
+                                fontWeight: '800',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = '#fb4226'}
+                            onMouseOut={e => e.currentTarget.style.background = '#1a1a1a'}
+                        >
+                            ĐÓNG
+                        </button>
                     </div>
                 </div>
             )}

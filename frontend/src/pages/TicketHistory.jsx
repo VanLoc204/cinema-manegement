@@ -7,13 +7,13 @@ export default function TicketHistory() {
     const [loading, setLoading] = useState(true);
     const [showAllHistory, setShowAllHistory] = useState(false);
     const [selectedTicket, setSelectedTicket] = useState(null);
+    const [largeQRId, setLargeQRId] = useState(null);
     
     const location = useLocation();
     const isWatchedView = location.pathname === "/watched-movies";
     const userId = localStorage.getItem("userId");
     const now = new Date();
-    const API_URL = "http://localhost:5000"; 
-
+    const API_URL = import.meta.env.DEV ? "http://localhost:5000" : window.location.origin;
     useEffect(() => {
         if (userId) {
             axios.get(`/bookings/user/${userId}`).then(res => {
@@ -121,7 +121,13 @@ export default function TicketHistory() {
                                         {new Date(selectedTicket.showtimeId?.time).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'})} - {new Date(selectedTicket.showtimeId?.time).toLocaleDateString('vi-VN')}
                                     </p>
                                 </div>
-                                <div style={qrWrapper}>
+                                <div 
+                                    style={{ ...qrWrapper, cursor: 'zoom-in', transition: 'transform 0.2s' }}
+                                    onClick={() => setLargeQRId(selectedTicket._id)}
+                                    onMouseOver={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                                    onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
+                                    title="Click để phóng to mã QR sếp nhé!"
+                                >
                                     <img src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${selectedTicket._id}`} style={{width: '70px', display: 'block'}}/>
                                 </div>
                             </div>
@@ -171,6 +177,89 @@ export default function TicketHistory() {
                             </div>
                         </div>
                         <button onClick={() => setSelectedTicket(null)} style={closeBtnClean}>ĐÓNG</button>
+                    </div>
+                </div>
+            )}
+
+            {/* 🔍 MODAL PHÓNG TO QR SIÊU NÉT CHO NHÂN VIÊN QUÉT */}
+            {largeQRId && (
+                <div 
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        background: 'rgba(0,0,0,0.85)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        zIndex: 2000,
+                        backdropFilter: 'blur(8px)',
+                        cursor: 'zoom-out'
+                    }}
+                    onClick={() => setLargeQRId(null)}
+                >
+                    <div 
+                        style={{
+                            background: '#fff',
+                            padding: '30px',
+                            borderRadius: '24px',
+                            boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+                            textAlign: 'center',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '20px',
+                            cursor: 'default',
+                            width: '320px',
+                            boxSizing: 'border-box'
+                        }}
+                        onClick={e => e.stopPropagation()}
+                    >
+                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: '900', color: '#1a1a1a', letterSpacing: '0.5px' }}>
+                            MÃ SOÁT VÉ XEM PHIM
+                        </h3>
+                        <div style={{
+                            padding: '12px',
+                            background: '#fff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '20px',
+                            boxShadow: '0 8px 20px rgba(0,0,0,0.04)'
+                        }}>
+                            <img 
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${largeQRId}`} 
+                                style={{ width: '240px', height: '240px', display: 'block', borderRadius: '10px' }} 
+                                alt="Large QR"
+                            />
+                        </div>
+                        <p style={{ margin: 0, fontSize: '0.88rem', color: '#fb4226', fontWeight: '800' }}>
+                            MÃ VÉ: {String(largeQRId).toUpperCase()}
+                        </p>
+                        <p style={{ margin: 0, fontSize: '0.78rem', color: '#888', fontWeight: '600', lineHeight: '1.4' }}>
+                            Đưa mã này cho nhân viên soát vé quét bằng máy cầm tay sếp nhé!
+                        </p>
+                        <button 
+                            onClick={() => setLargeQRId(null)}
+                            style={{
+                                marginTop: '10px',
+                                width: '100%',
+                                padding: '12px 0',
+                                background: '#1a1a1a',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '12px',
+                                fontWeight: '800',
+                                fontSize: '0.85rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}
+                            onMouseOver={e => e.currentTarget.style.background = '#fb4226'}
+                            onMouseOut={e => e.currentTarget.style.background = '#1a1a1a'}
+                        >
+                            ĐÓNG
+                        </button>
                     </div>
                 </div>
             )}

@@ -24,6 +24,19 @@ export default function StaffBooking({ socket }) {
     const [voucherError, setVoucherError] = useState("");
     const [showVoucherModal, setShowVoucherModal] = useState(false);
 
+    // 💳 Các states hỗ trợ cổng thanh toán PayOS tự động cho nhân viên
+    const [showQR, setShowQR] = useState(false);
+    const [checkoutUrl, setCheckoutUrl] = useState("");
+    const [currentBookingId, setCurrentBookingId] = useState("");
+    const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+    const [paymentCountdown, setPaymentCountdown] = useState(300);
+    const [payosBin, setPayosBin] = useState("");
+    const [payosAccountNumber, setPayosAccountNumber] = useState("");
+    const [payosAccountName, setPayosAccountName] = useState("");
+
+    // 🪟 State quản lý modal xác nhận tùy chỉnh (thay thế window.confirm)
+    const [confirmModal, setConfirmModal] = useState({ show: false, message: "", onConfirm: null });
+
     // 🚩 REALTIME: Tham gia vào phòng của suất chiếu ngay khi vào trang
     useEffect(() => {
         if (socket && id) {
@@ -36,6 +49,62 @@ export default function StaffBooking({ socket }) {
             };
         }
     }, [socket, id]);
+
+    // ⏱️ Bộ đếm thời gian giữ ghế và tự động kiểm tra giao dịch PayOS dành cho nhân viên
+    useEffect(() => {
+        let timer;
+        if (showQR && paymentCountdown > 0) {
+            timer = setInterval(() => {
+                setPaymentCountdown(prev => prev - 1);
+            }, 1000);
+        } else if (paymentCountdown === 0 && showQR) {
+            if (currentBookingId) {
+                axios.post("/bookings/cancel", { bookingId: currentBookingId })
+                    .catch(err => console.error("Lỗi tự động hủy đơn hết hạn:", err));
+            }
+            alert("⏰ Hết thời gian giữ vé! Ghế của khách đã tự động được giải phóng.");
+            setShowQR(false);
+            setIsCheckingPayment(false);
+        }
+        return () => clearInterval(timer);
+    }, [showQR, paymentCountdown, currentBookingId]);
+
+    useEffect(() => {
+        let interval;
+        if (isCheckingPayment && currentBookingId) {
+            interval = setInterval(async () => {
+                try {
+                    const res = await axios.post("/bookings/verify-payment", { bookingId: currentBookingId });
+                    if (res.data.status === "Paid") {
+                        clearInterval(interval);
+                        setIsCheckingPayment(false);
+                        setShowQR(false);
+                        setBill(res.data.booking);
+
+                        // 📡 Báo cho các máy khác cập nhật ghế thời gian thực
+                        if (socket) {
+                            socket.emit("confirm_booking", {
+                                showtimeId: id,
+                                seats: seats.map(s => s.id)
+                            });
+                        }
+
+                        // 💥 Bắn pháo hoa Confetti chúc mừng!
+                        if (window.confetti) {
+                            window.confetti({
+                                particleCount: 150,
+                                spread: 80,
+                                origin: { y: 0.6 }
+                            });
+                        }
+                    }
+                } catch (err) {
+                    console.error("Lỗi kiểm tra thanh toán:", err);
+                }
+            }, 3000);
+        }
+        return () => clearInterval(interval);
+    }, [isCheckingPayment, currentBookingId]);
 
     useEffect(() => {
         axios.get(`/showtimes/detail/${id}`).then(res => {
@@ -111,7 +180,7 @@ export default function StaffBooking({ socket }) {
             const res = await axios.get(`/users/find-customer?keyword=${searchKeyword}`);
             setCustomer(res.data);
             setUserTier(res.data.membershipTier || "NORMAL");
-            
+
             const [voucherRes, bookingRes] = await Promise.all([
                 axios.get(`/vouchers/my-vouchers?userId=${res.data._id}`),
                 axios.get(`/bookings/user/${res.data._id}`)
@@ -174,7 +243,15 @@ export default function StaffBooking({ socket }) {
 
     const handleConfirmCash = async () => {
         const finalPrice = appliedVoucher ? discountedTotal : totalAmount;
-        if (!window.confirm(`Sếp xác nhận đã thu ${finalPrice.toLocaleString()}đ tiền mặt từ khách chứ?`)) return;
+        setConfirmModal({
+            show: true,
+            message: `Xác nhận đã thu ${finalPrice.toLocaleString()}đ tiền mặt từ khách chứ?`,
+            onConfirm: () => _doCashPayment(finalPrice)
+        });
+        return;
+    };
+
+    const _doCashPayment = async (finalPrice) => {
 
         try {
             const staffId = localStorage.getItem("userId");
@@ -193,10 +270,10 @@ export default function StaffBooking({ socket }) {
             if (appliedVoucher && appliedVoucher.discountType === "FreeSnack") {
                 const isBirthday = appliedVoucher.code.includes("BIRTHDAY-COMBO");
                 const name = isBirthday ? "Birthday Solo Combo" : "Combo Bắp Nước";
-                const qty = isBirthday 
+                const qty = isBirthday
                     ? (appliedVoucher.code.startsWith("PLAT") ? 2 : 1)
                     : (appliedVoucher.discountValue || 1);
-                
+
                 snackList.push({
                     snackId: "free_snack_gift",
                     name: name,
@@ -228,10 +305,78 @@ export default function StaffBooking({ socket }) {
                 });
             }
 
-            alert("✅ Đã xác nhận thu tiền và tạo vé thành công!");
+
         } catch (err) {
             console.error("Lỗi bán vé tại quầy:", err);
             alert("❌ Lỗi hệ thống khi tạo vé!");
+        }
+    };
+
+    const handleConfirmTransfer = async () => {
+        const finalPrice = appliedVoucher ? discountedTotal : totalAmount;
+        if (finalPrice === 0) {
+            // Nếu vé 0đ thì cho phép nhận vé luôn không cần QR
+            return handleConfirmCash();
+        }
+
+        try {
+            const staffId = localStorage.getItem("userId");
+            const snackList = Object.entries(selectedSnacks)
+                .filter(([_, qty]) => qty > 0)
+                .map(([snackId, qty]) => {
+                    const snack = availableSnacks.find(s => s._id === snackId);
+                    return {
+                        snackId: snack._id,
+                        name: snack.name,
+                        quantity: qty,
+                        price: snack.price
+                    };
+                });
+
+            if (appliedVoucher && appliedVoucher.discountType === "FreeSnack") {
+                const isBirthday = appliedVoucher.code.includes("BIRTHDAY-COMBO");
+                const name = isBirthday ? "Birthday Solo Combo" : "Combo Bắp Nước";
+                const qty = isBirthday
+                    ? (appliedVoucher.code.startsWith("PLAT") ? 2 : 1)
+                    : (appliedVoucher.discountValue || 1);
+
+                snackList.push({
+                    snackId: "free_snack_gift",
+                    name: name,
+                    quantity: qty,
+                    price: 0
+                });
+            }
+
+            const payload = {
+                showtimeId: id,
+                userId: customer ? customer._id : staffId,
+                seats: seats.map(s => s.id),
+                snacks: snackList,
+                totalAmount: finalPrice,
+                appliedVoucher: appliedVoucher ? appliedVoucher.code : undefined,
+                discountAmount: discountAmount
+            };
+
+            // Hiển thị modal chờ và reset bộ đếm thời gian
+            setPaymentCountdown(300);
+            setShowQR(true);
+            setCheckoutUrl("");
+            setCurrentBookingId("");
+
+            const res = await axios.post("/bookings/confirm", payload);
+
+            // Gán thông tin ngân hàng ảo PayOS
+            setCheckoutUrl(res.data.checkoutUrl);
+            setPayosBin(res.data.bin || "");
+            setPayosAccountNumber(res.data.accountNumber || "");
+            setPayosAccountName(res.data.accountName || "");
+            setCurrentBookingId(res.data.booking._id);
+            setIsCheckingPayment(true);
+        } catch (err) {
+            console.error("Lỗi tạo liên kết chuyển khoản:", err);
+            setShowQR(false);
+            alert("❌ Lỗi hệ thống khi tạo liên kết PayOS QR!");
         }
     };
 
@@ -373,7 +518,7 @@ export default function StaffBooking({ socket }) {
 
                     {bill.snacks?.length > 0 && (
                         <div style={snackBoxStyleWeb}>
-                            <p style={{ ...labelSmallWeb, color: '#666', marginBottom: '10px' }}>🍿 BẮP NƯỚC ĐÃ ĐẶT:</p>
+                            <p style={{ ...labelSmallWeb, color: '#666', marginBottom: '10px' }}>BẮP NƯỚC ĐÃ ĐẶT:</p>
                             {bill.snacks.map((s, i) => (
                                 <div key={i} style={snackRowWeb}>
                                     <span>{s.name} x{s.quantity}</span>
@@ -393,8 +538,8 @@ export default function StaffBooking({ socket }) {
                         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px", color: "#777", fontSize: "0.9rem" }}>
                             <span>Giảm giá voucher:</span>
                             <span>
-                                {bill.discountAmount > 0 
-                                    ? `-${bill.discountAmount.toLocaleString()}đ` 
+                                {bill.discountAmount > 0
+                                    ? `-${bill.discountAmount.toLocaleString()}đ`
                                     : "Quà tặng"}
                             </span>
                         </div>
@@ -414,6 +559,10 @@ export default function StaffBooking({ socket }) {
 
             <style>{`
                 @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes scaleUp { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                @keyframes pulse { 0% { transform: scale(0.9); opacity: 0.6; } 50% { transform: scale(1.1); opacity: 1; } 100% { transform: scale(0.9); opacity: 0.6; } }
                 .fade-in-up { animation: fadeInUp 0.4s ease-out; }
                 @media print { .no-print { display: none !important; } }
             `}</style>
@@ -422,25 +571,232 @@ export default function StaffBooking({ socket }) {
 
 
     return (
-        <div style={{ padding: "40px", display: "flex", justifyContent: "center", gap: 30, background: "#f5f5f5", minHeight: "100vh" }}>
-            <div style={{ flex: 2, background: "#fff", padding: 30, borderRadius: 15, boxShadow: "0 5px 20px rgba(0,0,0,0.05)" }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                    <h2 style={{ margin: 0, color: '#fb4226' }}>BÁN VÉ TẠI QUẦY (POS)</h2>
-                    <span style={{ padding: '5px 15px', background: '#eee', borderRadius: '20px', fontSize: '0.8rem' }}>Bước {step}/2</span>
+        <div className="staff-booking-wrapper">
+            <style>{`
+                /* --- HỆ THỐNG CSS RESPONSIVE BÁN VÉ TẠI QUẦY --- */
+                .staff-booking-wrapper {
+                    padding: 40px;
+                    display: flex;
+                    justify-content: center;
+                    gap: 30px;
+                    background: #f5f5f5;
+                    min-height: 100vh;
+                    box-sizing: border-box;
+                    width: 100%;
+                    max-width: 100%;
+                    min-width: 0;
+                    font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                }
+
+                .staff-booking-left {
+                    flex: 2;
+                    background: #fff;
+                    padding: 30px;
+                    border-radius: 15px;
+                    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+                    box-sizing: border-box;
+                    min-width: 0;
+                    width: 100%;
+                }
+
+                .staff-booking-right {
+                    width: 300px;
+                    background: #fff;
+                    padding: 20px;
+                    border-radius: 15px;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    height: fit-content;
+                    box-sizing: border-box;
+                    flex-shrink: 0;
+                }
+
+                .staff-booking-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    width: 100%;
+                }
+
+                .staff-booking-back-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    padding: 8px 16px;
+                    background: #f1f5f9;
+                    border: 1px solid #cbd5e1;
+                    border-radius: 10px;
+                    color: #475569;
+                    fontWeight: 700;
+                    fontSize: 0.88rem;
+                    cursor: pointer;
+                    transition: all 0.2s;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                }
+
+                .staff-booking-back-btn:hover {
+                    background: #e2e8f0;
+                    color: #1e293b;
+                }
+
+                .staff-booking-title {
+                    margin: 0;
+                    color: #fb4226;
+                    font-size: 1.4rem;
+                    font-weight: 900;
+                }
+
+                .staff-booking-step-badge {
+                    padding: 5px 15px;
+                    background: #eee;
+                    border-radius: 20px;
+                    font-size: 0.8rem;
+                    font-weight: 700;
+                }
+
+                .staff-snacks-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                    width: 100%;
+                }
+
+                /* --- 📱 CSS RESPONSIVE TRANG ĐẶT GHẾ MOBILE CỰC MẠNH --- */
+                @media (max-width: 768px) {
+                    /* Khóa cứng main area của Staff bằng vw chống phình tuyệt đối */
+                    .staff-main {
+                        padding: 8px !important;
+                        width: 100vw !important;
+                        max-width: 100vw !important;
+                        box-sizing: border-box !important;
+                        overflow-x: hidden !important;
+                    }
+
+                    /* Khóa cứng hộp trắng content box ngoài cùng bằng vw */
+                    .staff-content-box {
+                        padding: 10px !important;
+                        width: calc(100vw - 16px) !important;
+                        max-width: calc(100vw - 16px) !important;
+                        box-sizing: border-box !important;
+                        overflow-x: hidden !important;
+                        border-radius: 8px !important;
+                        background: #fff !important;
+                        box-shadow: none !important;
+                    }
+
+                    /* Khóa cứng wrapper của booking, triệt tiêu padding thừa */
+                    .staff-booking-wrapper {
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        flex-direction: column !important;
+                        gap: 15px !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        background: transparent !important;
+                        box-sizing: border-box !important;
+                        overflow: hidden !important;
+                    }
+
+                    /* Khóa cứng hộp trắng booking bên trong, loại bỏ nền trắng trùng lặp */
+                    .staff-booking-left {
+                        padding: 5px 0 !important;
+                        background: transparent !important;
+                        box-shadow: none !important;
+                        border-radius: 0 !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        box-sizing: border-box !important;
+                        min-width: 0 !important;
+                        overflow: hidden !important;
+                    }
+
+                    /* Khóa cứng container của SeatMap */
+                    .booking-container {
+                        width: 100% !important;
+                        max-width: 100% !important;
+                        padding: 15px 5px !important;
+                        box-sizing: border-box !important;
+                        background: #fdfcf0 !important;
+                        border-radius: 8px !important;
+                        margin: 0 auto !important;
+                        overflow: hidden !important;
+                    }
+
+                    .staff-booking-right {
+                        width: 100% !important;
+                        padding: 20px 15px !important;
+                        border-radius: 12px !important;
+                        margin-top: 5px !important;
+                        box-sizing: border-box !important;
+                    }
+
+                    .staff-booking-header {
+                        margin-bottom: 15px !important;
+                        gap: 10px !important;
+                        padding: 0 5px !important;
+                    }
+
+                    .staff-booking-title {
+                        font-size: 1.15rem !important;
+                    }
+
+                    .staff-booking-back-btn {
+                        padding: 6px 12px !important;
+                        font-size: 0.8rem !important;
+                        border-radius: 8px !important;
+                    }
+
+                    .staff-booking-step-badge {
+                        padding: 4px 10px !important;
+                        font-size: 0.72rem !important;
+                    }
+
+                    .staff-snacks-grid {
+                        grid-template-columns: 1fr !important;
+                        gap: 10px !important;
+                    }
+
+                    .staff-qr-modal-content {
+                        width: 95% !important;
+                        max-width: 95% !important;
+                        padding: 20px 15px !important;
+                        border-radius: 16px !important;
+                        box-sizing: border-box !important;
+                    }
+                }
+            `}</style>
+
+            <div className="staff-booking-left">
+                <div className="staff-booking-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <button
+                            onClick={() => navigate("/staff/pos")}
+                            className="staff-booking-back-btn"
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            Quay lại
+                        </button>
+                        <h2 className="staff-booking-title">BÁN VÉ TẠI QUẦY</h2>
+                    </div>
+                    <span className="staff-booking-step-badge">Bước {step}/2</span>
                 </div>
 
                 {step === 1 ? (
                     <SeatMap
                         onSelect={setSeats}
+                        selectedSeats={seats}
                         showtimeId={id}
                         roomPrice={showtime?.roomId?.price || 0}
                         socket={socket}
                     />
                 ) : (
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                    <div className="staff-snacks-grid">
                         {availableSnacks.map(snack => (
                             <div key={snack._id} style={snackCardStyle}>
-                                <img src={`http://localhost:5000${snack.image}`} width="60" height="60" style={{ borderRadius: "8px", objectFit: 'cover' }} />
+                                <img src={`${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${snack.image}`} width="60" height="60" style={{ borderRadius: "8px", objectFit: 'cover' }} />
                                 <div style={{ flex: 1, paddingLeft: "15px" }}>
                                     <b style={{ fontSize: "0.9rem" }}>{snack.name}</b>
                                     <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: 5 }}>
@@ -455,7 +811,7 @@ export default function StaffBooking({ socket }) {
                 )}
             </div>
 
-            <div style={summaryBoxStyle}>
+            <div className="staff-booking-right">
                 <h3 style={{ borderBottom: "2px solid #fb4226", paddingBottom: 10 }}>ĐƠN HÀNG MỚI</h3>
                 <p style={{ fontSize: '0.9rem' }}>Phim: <b>{showtime?.movieId?.title}</b></p>
                 <p style={{ fontSize: '0.9rem' }}>Ghế: <b style={{ color: "#fb4226" }}>{seats.map(s => s.id).join(", ") || "Chưa chọn"}</b></p>
@@ -473,7 +829,7 @@ export default function StaffBooking({ socket }) {
                         </div>
                     ) : (
                         <div style={{ display: "flex", gap: 5, marginBottom: 10 }}>
-                            <input 
+                            <input
                                 type="text"
                                 placeholder="SĐT hoặc Email..."
                                 value={searchKeyword}
@@ -501,7 +857,7 @@ export default function StaffBooking({ socket }) {
                         ) : (
                             <>
                                 <div style={{ display: "flex", gap: 5, marginBottom: 5 }}>
-                                    <input 
+                                    <input
                                         type="text"
                                         placeholder="Nhập mã voucher..."
                                         value={voucherCode}
@@ -511,7 +867,7 @@ export default function StaffBooking({ socket }) {
                                     <button onClick={() => handleApplyVoucher()} style={{ padding: "6px 12px", background: "#fb4226", color: "#fff", border: "none", borderRadius: 6, fontSize: "0.8rem", cursor: "pointer", fontWeight: "bold" }}>Áp</button>
                                 </div>
                                 {voucherError && <p style={{ color: "#dc2626", fontSize: "0.75rem", margin: "4px 0" }}>{voucherError}</p>}
-                                
+
                                 {allAvailableVouchers.length > 0 && (
                                     <button onClick={() => setShowVoucherModal(true)} style={{ width: "100%", padding: "6px", background: "#eee", color: "#333", border: "1px solid #ddd", borderRadius: 6, fontSize: "0.75rem", cursor: "pointer", fontWeight: "bold", marginTop: 5 }}>
                                         Chọn từ kho voucher ({allAvailableVouchers.length})
@@ -546,8 +902,15 @@ export default function StaffBooking({ socket }) {
                     </button>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
-                        <button onClick={handleConfirmCash} style={{ ...btnStyle, background: "#28a745" }}>XÁC NHẬN THU TIỀN</button>
-                        <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888' }}>Quay lại chọn ghế</button>
+                        <button onClick={handleConfirmCash} style={{ ...btnStyle, background: "#2e7d32", padding: "14px", fontSize: "0.9rem", fontWeight: "800", borderRadius: "10px" }}>
+                            THANH TOÁN TIỀN MẶT
+                        </button>
+                        <button onClick={handleConfirmTransfer} style={{ ...btnStyle, background: "linear-gradient(135deg, #fb4226 0%, #ff8a00 100%)", padding: "14px", fontSize: "0.9rem", fontWeight: "800", borderRadius: "10px" }}>
+                            QUÉT MÃ CHUYỂN KHOẢN (QR)
+                        </button>
+                        <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontWeight: "bold", fontSize: "0.8rem", marginTop: 5 }}>
+                            Quay lại chọn ghế
+                        </button>
                     </div>
                 )}
             </div>
@@ -572,7 +935,7 @@ export default function StaffBooking({ socket }) {
                                             <div style={{ fontSize: "0.75rem", color: "#666" }}>{v.desc || `Đơn tối thiểu từ ${(v.minSpend || 0).toLocaleString()}đ`}</div>
                                             <div style={{ fontSize: "0.7rem", color: "#999", marginTop: 4 }}>Hạn dùng: {new Date(v.expiryDate).toLocaleDateString('vi-VN')}</div>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => handleApplyVoucher(v.code)}
                                             style={{ padding: "6px 12px", background: "#fb4226", color: "#fff", border: "none", borderRadius: 6, fontSize: "0.8rem", cursor: "pointer", fontWeight: "bold" }}
                                         >
@@ -582,6 +945,298 @@ export default function StaffBooking({ socket }) {
                                 ))}
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* 🖥️ CỔNG THANH TOÁN TỰ ĐỘNG PAYOS (DYNAMIC DUAL-QR) CHO NHÂN VIÊN */}
+            {showQR && (
+                <div style={{
+                    position: "fixed",
+                    top: 0, left: 0, right: 0, bottom: 0,
+                    background: "rgba(0,0,0,0.6)",
+                    backdropFilter: "blur(8px)",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    zIndex: 2000,
+                    animation: "fadeIn 0.3s ease-out"
+                }}>
+                    <div className="staff-qr-modal-content" style={{
+                        background: "#ffffff",
+                        width: "440px",
+                        borderRadius: "24px",
+                        boxShadow: "0 25px 60px rgba(0,0,0,0.3)",
+                        padding: "30px",
+                        textAlign: "center",
+                        position: "relative",
+                        overflow: "hidden",
+                        border: "1px solid rgba(255,255,255,0.8)"
+                    }}>
+                        {/* Thanh chỉ màu phong cách Lux */}
+                        <div style={{
+                            position: "absolute",
+                            top: 0, left: 0, right: 0,
+                            height: "6px",
+                            background: "linear-gradient(90deg, #fb4226, #ff8a00)"
+                        }}></div>
+
+                        {/* Tiêu đề & Đồng hồ */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+                            <span style={{ fontSize: "0.72rem", background: "rgba(251,66,38,0.1)", color: "#fb4226", padding: "4px 10px", borderRadius: "12px", fontWeight: "800" }}>
+                                THANH TOÁN TẠI QUẦY (PAYOS)
+                            </span>
+                            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                <span style={{ fontSize: "0.72rem", color: "#666", fontWeight: "600" }}>Giữ ghế:</span>
+                                <span style={{
+                                    fontSize: "0.82rem",
+                                    fontWeight: "800",
+                                    color: paymentCountdown < 60 ? "#d32f2f" : "#2e7d32"
+                                }}>
+                                    {Math.floor(paymentCountdown / 60)}:
+                                    {String(paymentCountdown % 60).padStart(2, "0")}
+                                </span>
+                            </div>
+                        </div>
+
+                        <h3 style={{ margin: "0 0 15px 0", color: "#111", fontSize: "1.25rem", fontWeight: "900", letterSpacing: "-0.5px" }}>
+                            MÃ QR CHUYỂN KHOẢN ĐỘNG
+                        </h3>
+
+                        {/* HIỂN THỊ MÃ QR */}
+                        {payosBin && payosAccountNumber ? (
+                            <div style={{ position: "relative", display: "inline-block", margin: "0 auto 15px" }}>
+                                <img
+                                    src={`https://img.vietqr.io/image/${payosBin}-${payosAccountNumber}-compact2.png?amount=${appliedVoucher ? discountedTotal : totalAmount}&addInfo=LUXCINEMA%20${String(currentBookingId).slice(-6)}&accountName=${encodeURIComponent(payosAccountName)}`}
+                                    alt="VietQR PayOS"
+                                    style={{
+                                        width: "210px",
+                                        height: "210px",
+                                        display: "block",
+                                        border: "4px solid rgba(251, 66, 38, 0.1)",
+                                        borderRadius: "16px",
+                                        padding: "8px",
+                                        background: "#fff",
+                                        boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
+                                    }}
+                                />
+                                <div style={{
+                                    position: "absolute",
+                                    bottom: "-10px",
+                                    left: "50%",
+                                    transform: "translateX(-50%)",
+                                    background: "#fb4226",
+                                    color: "#fff",
+                                    fontSize: "0.65rem",
+                                    fontWeight: "800",
+                                    padding: "3px 10px",
+                                    borderRadius: "10px",
+                                    boxShadow: "0 4px 10px rgba(251,66,38,0.3)",
+                                    whiteSpace: "nowrap"
+                                }}>
+                                    QUÉT ĐỂ TỰ ĐỘNG CHUYỂN KHOẢN
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{
+                                height: "210px",
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "10px",
+                                border: "2px dashed #eee",
+                                borderRadius: "16px",
+                                margin: "0 auto 15px",
+                                width: "210px"
+                            }}>
+                                <span style={{
+                                    width: "28px",
+                                    height: "28px",
+                                    border: "3px solid #eee",
+                                    borderTop: "3px solid #fb4226",
+                                    borderRadius: "50%",
+                                    animation: "spin 0.8s linear infinite"
+                                }}></span>
+                                <span style={{ fontSize: "0.8rem", color: "#888", fontWeight: "600" }}>Đang sinh mã QR...</span>
+                            </div>
+                        )}
+
+                        {/* THÔNG TIN CHUYỂN KHOẢN CHI TIẾT */}
+                        <div style={{
+                            background: "#f9f9fb",
+                            padding: "15px",
+                            borderRadius: "16px",
+                            marginBottom: "20px",
+                            border: "1px solid #f0f0f4",
+                            textAlign: "left"
+                        }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "0.8rem" }}>
+                                <span style={{ color: "#777", fontWeight: "600" }}>Số tài khoản:</span>
+                                <span style={{ color: "#111", fontWeight: "800", letterSpacing: "0.5px" }}>
+                                    {payosAccountNumber || "Đang tải..."}
+                                    {payosAccountNumber && (
+                                        <span
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(payosAccountNumber);
+                                                alert("Đã sao chép Số tài khoản thành công!");
+                                            }}
+                                            style={{ color: "#fb4226", marginLeft: "8px", cursor: "pointer", fontSize: "0.75rem", textDecoration: "underline" }}
+                                        >
+                                            Copy
+                                        </span>
+                                    )}
+                                </span>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "0.8rem" }}>
+                                <span style={{ color: "#777", fontWeight: "600" }}>Tên người nhận:</span>
+                                <span style={{ color: "#111", fontWeight: "800" }}>
+                                    {payosAccountName || "Đang tải..."}
+                                </span>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px", fontSize: "0.8rem" }}>
+                                <span style={{ color: "#777", fontWeight: "600" }}>Số tiền:</span>
+                                <span style={{ color: "#fb4226", fontWeight: "900" }}>
+                                    {(appliedVoucher ? discountedTotal : totalAmount).toLocaleString()} VND
+                                </span>
+                            </div>
+
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem" }}>
+                                <span style={{ color: "#777", fontWeight: "600" }}>Nội dung ck:</span>
+                                <span style={{ color: "#111", fontWeight: "800" }}>
+                                    {currentBookingId ? `LUXCINEMA ${String(currentBookingId).slice(-6)}` : "Đang tải..."}
+                                    {currentBookingId && (
+                                        <span
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(`LUXCINEMA ${String(currentBookingId).slice(-6)}`);
+                                                alert("Đã sao chép Nội dung chuyển khoản thành công!");
+                                            }}
+                                            style={{ color: "#fb4226", marginLeft: "8px", cursor: "pointer", fontSize: "0.75rem", textDecoration: "underline" }}
+                                        >
+                                            Copy
+                                        </span>
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* LẮNG NGHE CHUYỂN KHOẢN */}
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", fontSize: "0.8rem", color: "#666", marginBottom: "20px" }}>
+                            <span style={{
+                                width: "8px", height: "8px", borderRadius: "50%", background: "#2e7d32",
+                                animation: "pulse 1.2s infinite ease-in-out"
+                            }}></span>
+                            <span>Hệ thống đang kiểm tra giao dịch tự động...</span>
+                        </div>
+
+                        {/* HỦY GIAO DỊCH */}
+                        <button
+                            onClick={() => {
+                                setConfirmModal({
+                                    show: true,
+                                    message: "Bạn có chắc chắn muốn hủy giao dịch chuyển khoản này không?",
+                                    onConfirm: async () => {
+                                        try {
+                                            if (currentBookingId) {
+                                                await axios.post("/bookings/cancel", { bookingId: currentBookingId });
+                                            }
+                                            setShowQR(false);
+                                            setIsCheckingPayment(false);
+                                        } catch (err) {
+                                            console.error("Lỗi khi hủy giao dịch:", err);
+                                        }
+                                    }
+                                });
+                            }}
+                            style={{
+                                width: "100%",
+                                padding: "12px",
+                                background: "#f5f5f7",
+                                color: "#555",
+                                border: "none",
+                                borderRadius: "12px",
+                                fontWeight: "800",
+                                cursor: "pointer",
+                                fontSize: "0.85rem",
+                                transition: "all 0.2s"
+                            }}
+                        >
+                            Quay lại trang đặt vé
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ✅ MODAL XÁC NHẬN NỔI - Thay thế window.confirm() */}
+            {confirmModal.show && (
+                <div style={{
+                    position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+                    background: "rgba(0,0,0,0.55)",
+                    backdropFilter: "blur(6px)",
+                    display: "flex", justifyContent: "center", alignItems: "center",
+                    zIndex: 9999,
+                    animation: "fadeIn 0.2s ease-out"
+                }}>
+                    <div style={{
+                        background: "#fff",
+                        borderRadius: "20px",
+                        padding: "35px 30px",
+                        width: "100%",
+                        maxWidth: "400px",
+                        boxShadow: "0 25px 60px rgba(0,0,0,0.2)",
+                        textAlign: "center",
+                        position: "relative",
+                        animation: "scaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)"
+                    }}>
+                        {/* Icon */}
+                        <div style={{
+                            width: "60px", height: "60px", borderRadius: "50%",
+                            background: "linear-gradient(135deg, #fff3e0, #ffe0b2)",
+                            display: "flex", justifyContent: "center", alignItems: "center",
+                            margin: "0 auto 20px auto", fontSize: "1.8rem"
+                        }}>
+                            ⚠️
+                        </div>
+
+                        <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem", fontWeight: "900", color: "#1e293b" }}>
+                            Xác nhận
+                        </h3>
+                        <p style={{ margin: "0 0 28px 0", color: "#64748b", fontSize: "0.95rem", lineHeight: "1.6" }}>
+                            {confirmModal.message}
+                        </p>
+
+                        <div style={{ display: "flex", gap: "12px" }}>
+                            <button
+                                onClick={() => setConfirmModal({ show: false, message: "", onConfirm: null })}
+                                style={{
+                                    flex: 1, padding: "13px",
+                                    background: "#f1f5f9", color: "#475569",
+                                    border: "none", borderRadius: "12px",
+                                    fontWeight: "800", fontSize: "0.95rem", cursor: "pointer"
+                                }}
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const fn = confirmModal.onConfirm;
+                                    setConfirmModal({ show: false, message: "", onConfirm: null });
+                                    if (fn) fn();
+                                }}
+                                style={{
+                                    flex: 1, padding: "13px",
+                                    background: "linear-gradient(135deg, #fb4226, #e03014)",
+                                    color: "#fff",
+                                    border: "none", borderRadius: "12px",
+                                    fontWeight: "800", fontSize: "0.95rem", cursor: "pointer",
+                                    boxShadow: "0 4px 15px rgba(251,66,38,0.3)"
+                                }}
+                            >
+                                Xác nhận
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

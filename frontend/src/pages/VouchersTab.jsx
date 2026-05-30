@@ -127,7 +127,7 @@ export default function VouchersTab({ history, info, loading, viewTitleStyle }) 
             <h2 style={viewTitleStyle}>VOUCHER CỦA TÔI</h2>
 
             {/* 🎛️ BỘ LỌC CHƯA DÙNG / ĐÃ DÙNG */}
-            <div style={{
+            <div className="db-sub-tabs" style={{
                 display: "flex",
                 borderBottom: "2px solid #eee",
                 marginBottom: "30px",
@@ -171,7 +171,7 @@ export default function VouchersTab({ history, info, loading, viewTitleStyle }) 
 
             {/* 🎟️ GRID DANH SÁCH VOUCHER */}
             {activeList.length > 0 ? (
-                <div style={{
+                <div className="db-voucher-grid" style={{
                     display: "grid",
                     gridTemplateColumns: "1fr",
                     gap: "20px"
@@ -179,6 +179,7 @@ export default function VouchersTab({ history, info, loading, viewTitleStyle }) 
                     {activeList.map((v, i) => (
                         <div
                             key={i}
+                            className="db-voucher-card"
                             style={{
                                 display: "flex",
                                 background: "#fff",
@@ -191,7 +192,7 @@ export default function VouchersTab({ history, info, loading, viewTitleStyle }) 
                             }}
                         >
                             {/* 🎟️ PHẦN TRÁI VÉ (VÉ CÓ ĐỤC LỖ RĂNG CƯA) */}
-                            <div style={{
+                            <div className="db-voucher-left" style={{
                                 width: "130px",
                                 background: v.isUsed 
                                     ? "linear-gradient(135deg, #757575 0%, #9e9e9e 100%)" 
@@ -238,14 +239,14 @@ export default function VouchersTab({ history, info, loading, viewTitleStyle }) 
                             </div>
 
                             {/* 📄 PHẦN PHẢI (CHI TIẾT VOUCHER) */}
-                            <div style={{
+                            <div className="db-voucher-right" style={{
                                 flex: 1,
                                 padding: "25px",
                                 display: "flex",
                                 justifyContent: "space-between",
                                 alignItems: "center"
                             }}>
-                                <div>
+                                <div className="db-voucher-details">
                                     <span style={{
                                         fontSize: "0.65rem",
                                         fontWeight: "900",
@@ -284,7 +285,7 @@ export default function VouchersTab({ history, info, loading, viewTitleStyle }) 
                                     </p>
                                 </div>
 
-                                <div style={{ textAlign: "right" }}>
+                                <div className="db-voucher-btn-wrapper" style={{ textAlign: "right" }}>
                                     <span style={{
                                         fontSize: "0.75rem",
                                         fontWeight: "800",

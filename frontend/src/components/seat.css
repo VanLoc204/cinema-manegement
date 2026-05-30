@@ -101,17 +101,85 @@
   content: none !important;
 }
 
-/* 💡 Chú thích loại ghế (Legend) */
+/* 🔍 Bộ điều khiển zoom floating - Chỉ hiển thị trên điện thoại */
+.zoom-toolbar {
+  display: none;
+}
+
+.zoom-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  color: #333;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.zoom-btn:hover {
+  background: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.18);
+  color: #fb4226;
+}
+
+.zoom-btn.reset-btn {
+  font-size: 10px;
+  font-weight: 800;
+  color: #fb4226;
+  background: rgba(251, 66, 38, 0.08);
+  border-color: rgba(251, 66, 38, 0.2);
+}
+
+.seat-zoom-container {
+  display: inline-block;
+  margin: 0 auto;
+  transform-origin: top center;
+}
+
+/* Biểu tượng "X" cho ghế đã đặt trong Legend */
+.booked-legend-box {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background-color: #e9e9e9 !important;
+  border: 1px solid #ddd !important;
+  color: #bbb !important;
+  font-size: 11px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Legend container */
 .legend {
   display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 25px;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
   margin-top: 50px;
-  padding: 20px;
+  padding: 15px 20px;
   background: #fff;
   border-radius: 10px;
   box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Legend rows */
+.legend-row {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  width: 100%;
 }
 
 .legend-item {
@@ -121,12 +189,14 @@
   font-size: 13px;
   font-weight: 500;
   color: #555;
+  white-space: nowrap; /* Tránh méo chữ chú thích */
 }
 
 .legend-box {
   width: 20px;
   height: 20px;
   border-radius: 4px;
+  flex-shrink: 0;
 }
 
 /* Đồng bộ legend box cho chuyên nghiệp */
@@ -156,4 +226,88 @@
     15% { opacity: 1; top: 20px; }
     85% { opacity: 1; top: 20px; }
     100% { opacity: 0; top: 0px; }
+}
+
+/* 📱 Responsive & Hướng dẫn vuốt cho mobile */
+.mobile-swipe-guide {
+  display: none;
+}
+
+.seat-scroll-wrapper {
+  width: 100%;
+  text-align: center;
+}
+
+.seat-map-grid {
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .booking-container {
+    padding: 20px 10px !important;
+    border-radius: 10px !important;
+  }
+  
+  .screen-container {
+    margin-bottom: 30px !important;
+  }
+  
+  .seat-scroll-wrapper {
+    overflow: auto !important; /* Cho phép cuộn ngang lẫn dọc khi zoom */
+    -webkit-overflow-scrolling: touch;
+    padding: 15px 0 !important;
+    margin-bottom: 15px !important;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.02);
+    border: 1px dashed rgba(0, 0, 0, 0.05);
+    max-height: 65vh; /* Giới hạn chiều cao cho gọn gàng */
+  }
+
+  .seat-scroll-wrapper::-webkit-scrollbar {
+    height: 4px !important;
+    width: 4px !important;
+  }
+
+  .seat-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: rgba(251, 66, 38, 0.3) !important;
+    border-radius: 4px !important;
+  }
+  
+  .seat-map-grid {
+    min-width: 580px !important; /* Giữ nguyên tỷ lệ các ô ghế */
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    padding: 0 10px !important;
+  }
+
+  .legend {
+    gap: 10px !important;
+    padding: 12px 10px !important;
+    margin-top: 25px !important;
+  }
+
+  .legend-row {
+    gap: 15px !important;
+    justify-content: space-around !important;
+  }
+
+  .legend-item {
+    font-size: 11px !important;
+  }
+  
+  .zoom-toolbar {
+    display: flex !important; /* Chỉ hiển thị trên điện thoại */
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 100;
+  }
+  
+  .zoom-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
 }

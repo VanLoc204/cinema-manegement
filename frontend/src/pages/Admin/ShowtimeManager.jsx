@@ -302,7 +302,7 @@ export default function ShowtimeManager() {
                         return acc;
                     }, {})).map(group => (
                         <div key={group.movie._id} style={{ display: "flex", gap: "25px", background: "#fff", padding: "25px", borderRadius: "15px", boxShadow: "0 5px 20px rgba(0,0,0,0.05)" }}>
-                            <img src={`http://localhost:5000${group.movie.image}`} alt={group.movie.title} style={{ width: "130px", height: "190px", objectFit: "cover", borderRadius: "10px" }} />
+                            <img src={`${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${group.movie.image}`} alt={group.movie.title} style={{ width: "130px", height: "190px", objectFit: "cover", borderRadius: "10px" }} />
                             <div>
                                 <h3 style={{ margin: "0 0 8px 0", color: "#1a1a1a", fontSize: "1.5rem" }}>{group.movie.title}</h3>
                                 <p style={{ margin: "0 0 20px 0", color: "#666", fontSize: "0.95rem" }}>{group.movie.genre} | {group.movie.duration} Phút</p>

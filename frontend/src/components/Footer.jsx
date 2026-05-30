@@ -1,10 +1,16 @@
 export default function Footer() {
     return (
         <footer style={footerStyle}>
+            <style>{`
+                @media (max-width: 768px) {
+                    .ft-links { flex-direction: column !important; gap: 10px !important; align-items: center; }
+                    .ft-links span { font-size: 0.85rem; }
+                }
+            `}</style>
             <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
                 <h2 style={{ color: "#fb4226", marginBottom: "15px", fontWeight: '900' }}>CINEMA LUX</h2>
                 <p>Hệ thống rạp chiếu phim hiện đại hàng đầu Việt Nam.</p>
-                <div style={{display: 'flex', justifyContent: 'center', gap: '20px', margin: '20px 0', fontSize: '0.9rem'}}>
+                <div className="ft-links" style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '20px 0', fontSize: '0.9rem', flexWrap: 'wrap' }}>
                     <span>Điều khoản sử dụng</span>
                     <span>Chính sách bảo mật</span>
                     <span>Chăm sóc khách hàng: 1900 1234</span>

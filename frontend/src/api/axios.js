@@ -1,10 +1,13 @@
 import axios from "axios";
 
 // 🌐 Cấu hình địa chỉ Backend
-const API_URL = "http://localhost:5000/api";
+const API_URL = "/api";
 
 const instance = axios.create({
     baseURL: API_URL,
+    headers: {
+        "ngrok-skip-browser-warning": "true"
+    }
 });
 
 // 🚀 1. TỰ ĐỘNG GẮN TOKEN VÀO REQUEST

@@ -4,15 +4,24 @@ const Room = require("../models/Room");
 const Showtime = require("../models/Showtime"); // ✨ Thêm cái này để lọc theo phim
 const mongoose = require("mongoose");
 const emailService = require("../utils/emailService");
+const { PayOS } = require("@payos/node");
 
-// 💺 1. Lấy danh sách ghế (Giữ nguyên)
+// 💳 Khởi tạo PayOS kết nối với các biến môi trường
+const payos = new PayOS({
+    clientId: process.env.PAYOS_CLIENT_ID,
+    apiKey: process.env.PAYOS_API_KEY,
+    checksumKey: process.env.PAYOS_CHECKSUM_KEY
+});
+
+// 💺 1. Lấy danh sách ghế (Chỉ lấy ghế của đơn hàng Đã thanh toán hoặc Đang chờ)
 exports.getOccupiedSeats = async (req, res) => {
     try {
         const { id } = req.params;
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: "ID suất chiếu không chuẩn sếp ơi!" });
         }
-        const bookings = await Booking.find({ showtimeId: id });
+        // Lọc bỏ các vé đã bị Cancelled để giải phóng ghế
+        const bookings = await Booking.find({ showtimeId: id, status: { $ne: "Cancelled" } });
         const bookedSeats = bookings.flatMap(b => b.seats);
         res.json(bookedSeats);
     } catch (err) {
@@ -20,11 +29,18 @@ exports.getOccupiedSeats = async (req, res) => {
     }
 };
 
-// 🎟️ 2. Tạo đơn hàng (Giữ nguyên real-time)
+// 🎟️ 2. Tạo đơn hàng (Hỗ trợ PayOS tự động)
 exports.createBooking = async (req, res) => {
     try {
         const { showtimeId, userId, seats, snacks, totalAmount, appliedVoucher, discountAmount } = req.body;
-        const existing = await Booking.find({ showtimeId, seats: { $in: seats } });
+        console.log("📥 [CONFIRM] Nhận yêu cầu đặt vé từ Client:", { showtimeId, userId, seats, snacks, totalAmount, appliedVoucher });
+
+        // Kiểm tra ghế xem đã bị ai đặt trước chưa (Chỉ bỏ qua các vé đã bị Cancelled)
+        const existing = await Booking.find({
+            showtimeId,
+            seats: { $in: seats },
+            status: { $ne: "Cancelled" }
+        });
         if (existing.length > 0) return res.status(400).json({ message: "Ghế đã bị đặt mất rồi!" });
 
         let appliedVoucherQty = 0;
@@ -62,62 +78,203 @@ exports.createBooking = async (req, res) => {
             }
         }
 
+        // Tạo mã đơn hàng số duy nhất cho PayOS (phải là số nguyên dương)
+        const orderCode = Number(String(Date.now()).slice(-8) + Math.floor(10 + Math.random() * 90));
+
+        const isPaid = req.body.isPaid === true || totalAmount === 0;
+
+        // Lưu thông tin đặt vé vào database với trạng thái ban đầu
         const booking = await Booking.create({
-            showtimeId, userId, seats, snacks: snacks || [], totalAmount, status: "Paid",
-            appliedVoucher, discountAmount: discountAmount || 0,
-            appliedVoucherQty: appliedVoucher ? (appliedVoucherQty || 1) : 0
+            showtimeId,
+            userId,
+            seats,
+            snacks: snacks || [],
+            totalAmount,
+            status: isPaid ? "Paid" : "Pending", // Vé 0đ hoặc có gắn isPaid sẽ được đánh dấu Paid luôn
+            appliedVoucher,
+            discountAmount: discountAmount || 0,
+            appliedVoucherQty: appliedVoucher ? (appliedVoucherQty || 1) : 0,
+            orderCode: isPaid ? undefined : orderCode
         });
 
-        // 🎟️ Đánh dấu voucher đã sử dụng
-        if (appliedVoucher) {
-            const Voucher = require("../models/Voucher");
-            const voucher = await Voucher.findOne({ code: appliedVoucher.toUpperCase() });
-            if (voucher) {
-                const userIndex = voucher.assignedUsers.findIndex(
-                    au => au.userId.toString() === userId.toString()
-                );
-                if (userIndex !== -1) {
-                    voucher.assignedUsers[userIndex].used = true;
-                    voucher.assignedUsers[userIndex].usedAt = new Date();
-                } else {
-                    voucher.assignedUsers.push({
-                        userId,
-                        used: true,
-                        usedAt: new Date()
-                    });
+        // 🟢 Trường hợp đặc biệt: Vé miễn phí hoàn toàn hoặc đã được thu tiền (Ví dụ: Tiền mặt tại quầy)
+        if (isPaid) {
+            // Đánh dấu voucher đã sử dụng ngay lập tức
+            if (appliedVoucher) {
+                const Voucher = require("../models/Voucher");
+                const voucher = await Voucher.findOne({ code: appliedVoucher.toUpperCase() });
+                if (voucher) {
+                    const userIndex = voucher.assignedUsers.findIndex(
+                        au => au.userId.toString() === userId.toString()
+                    );
+                    if (userIndex !== -1) {
+                        voucher.assignedUsers[userIndex].used = true;
+                        voucher.assignedUsers[userIndex].usedAt = new Date();
+                    } else {
+                        voucher.assignedUsers.push({
+                            userId,
+                            used: true,
+                            usedAt: new Date()
+                        });
+                    }
+                    await voucher.save();
                 }
-                await voucher.save();
             }
+
+            const io = req.app.get("socketio");
+            if (io) {
+                io.emit("cancel-hold-timer", { userId });
+                const allBookings = await Booking.find({ showtimeId, status: { $ne: "Cancelled" } });
+                const allBookedSeats = allBookings.flatMap(b => b.seats);
+                io.to(showtimeId.toString()).emit("update-booked-seats", allBookedSeats);
+            }
+
+            const fullBooking = await Booking.findById(booking._id)
+                .populate({ path: 'showtimeId', populate: { path: 'movieId roomId' } })
+                .populate('userId', 'email name');
+
+            // Gửi email xác nhận
+            if (fullBooking && fullBooking.userId && fullBooking.userId.email) {
+                emailService.sendBookingConfirmation(fullBooking.userId.email, {
+                    bookingId: fullBooking._id,
+                    showtime: fullBooking.showtimeId,
+                    seats: fullBooking.seats,
+                    snacks: fullBooking.snacks,
+                    totalAmount: fullBooking.totalAmount,
+                    discountAmount: fullBooking.discountAmount,
+                    appliedVoucher: fullBooking.appliedVoucher
+                }).catch(e => console.error("Email error:", e));
+            }
+
+            return res.json({
+                message: "Thanh toán thành công! Vé đã được xác nhận.",
+                booking: fullBooking,
+                isFree: true
+            });
         }
 
-        const io = req.app.get("socketio");
-        if (io) {
-            io.emit("cancel-hold-timer", { userId });
-            const allBookings = await Booking.find({ showtimeId });
-            const allBookedSeats = allBookings.flatMap(b => b.seats);
-            io.to(showtimeId).emit("update-booked-seats", allBookedSeats);
-        }
+        // 🟢 Trường hợp thanh toán thông thường qua PayOS (Tổng tiền > 0)
+        // Tạo liên kết thanh toán PayOS
+        const paymentData = {
+            orderCode: orderCode,
+            amount: totalAmount,
+            description: `LUXCINEMA ${String(booking._id).slice(-6)}`,
+            cancelUrl: `http://localhost:5173/booking/${showtimeId}?status=cancelled&bookingId=${booking._id}`,
+            returnUrl: `http://localhost:5173/booking/${showtimeId}?status=success&bookingId=${booking._id}`,
+            items: [
+                {
+                    name: `Vé xem phim ${seats.join(", ")}`,
+                    quantity: 1,
+                    price: totalAmount
+                }
+            ]
+        };
 
-        const fullBooking = await Booking.findById(booking._id)
-            .populate({ path: 'showtimeId', populate: { path: 'movieId roomId' } })
-            .populate('userId', 'email name');
+        console.log("📡 [PAYOS] Đang gọi API PayOS để tạo link thanh toán:", paymentData);
+        const paymentLink = await payos.paymentRequests.create(paymentData);
+        console.log("📤 [PAYOS] Phản hồi từ PayOS thành công:", paymentLink);
 
-        // Gửi email xác nhận chạy ngầm
-        if (fullBooking && fullBooking.userId && fullBooking.userId.email) {
-            emailService.sendBookingConfirmation(fullBooking.userId.email, {
-                bookingId: fullBooking._id,
-                showtime: fullBooking.showtimeId,
-                seats: fullBooking.seats,
-                snacks: fullBooking.snacks,
-                totalAmount: fullBooking.totalAmount,
-                discountAmount: fullBooking.discountAmount,
-                appliedVoucher: fullBooking.appliedVoucher
-            }).catch(e => console.error("Email error:", e));
-        }
+        res.json({
+            message: "Đã tạo link thanh toán PayOS!",
+            checkoutUrl: paymentLink.checkoutUrl,
+            bin: paymentLink.bin,
+            accountNumber: paymentLink.accountNumber,
+            accountName: paymentLink.accountName,
+            booking,
+            orderCode
+        });
 
-        res.json({ message: "Thanh toán thành công! Thông tin vé đã được gửi về email của bạn.", booking: fullBooking });
     } catch (err) {
-        res.status(500).json({ message: "Lỗi lưu hóa đơn: " + err.message });
+        console.error("Lỗi tạo đơn hàng thanh toán:", err);
+        res.status(500).json({ message: "Lỗi tạo đơn hàng: " + err.message });
+    }
+};
+
+// 🎟️ 2B. Xác thực kết quả thanh toán từ PayOS SDK (Xử lý đồng bộ cực mạnh)
+exports.verifyPayment = async (req, res) => {
+    try {
+        const { bookingId } = req.body;
+        const booking = await Booking.findById(bookingId);
+
+        if (!booking) return res.status(404).json({ message: "Không tìm thấy hóa đơn này sếp ơi!" });
+
+        // Nếu hóa đơn đã được thanh toán từ trước, trả về thông tin thành công luôn
+        if (booking.status === "Paid" || booking.status === "Checked-in") {
+            const fullBooking = await Booking.findById(bookingId)
+                .populate({ path: 'showtimeId', populate: { path: 'movieId roomId' } })
+                .populate('userId', 'email name');
+            return res.json({ status: "Paid", booking: fullBooking });
+        }
+
+        // Tra cứu thông tin giao dịch từ PayOS
+        const paymentInfo = await payos.paymentRequests.get(booking.orderCode);
+
+        if (paymentInfo.status === "PAID") {
+            // Cập nhật trạng thái trong database
+            booking.status = "Paid";
+            await booking.save();
+
+            // 🎟️ Đánh dấu voucher đã sử dụng
+            if (booking.appliedVoucher) {
+                const Voucher = require("../models/Voucher");
+                const voucher = await Voucher.findOne({ code: booking.appliedVoucher.toUpperCase() });
+                if (voucher) {
+                    const userIndex = voucher.assignedUsers.findIndex(
+                        au => au.userId.toString() === booking.userId.toString()
+                    );
+                    if (userIndex !== -1) {
+                        voucher.assignedUsers[userIndex].used = true;
+                        voucher.assignedUsers[userIndex].usedAt = new Date();
+                    } else {
+                        voucher.assignedUsers.push({
+                            userId: booking.userId,
+                            used: true,
+                            usedAt: new Date()
+                        });
+                    }
+                    await voucher.save();
+                }
+            }
+
+            // 📡 Kích hoạt Socket.io gửi cập nhật sơ đồ ghế của phòng chiếu sang các máy khác
+            const io = req.app.get("socketio");
+            if (io) {
+                io.emit("cancel-hold-timer", { userId: booking.userId });
+                const allBookings = await Booking.find({ showtimeId: booking.showtimeId, status: { $ne: "Cancelled" } });
+                const allBookedSeats = allBookings.flatMap(b => b.seats);
+                io.to(booking.showtimeId.toString()).emit("update-booked-seats", allBookedSeats);
+            }
+
+            const fullBooking = await Booking.findById(booking._id)
+                .populate({ path: 'showtimeId', populate: { path: 'movieId roomId' } })
+                .populate('userId', 'email name');
+
+            // Gửi email xác nhận chạy ngầm
+            if (fullBooking && fullBooking.userId && fullBooking.userId.email) {
+                emailService.sendBookingConfirmation(fullBooking.userId.email, {
+                    bookingId: fullBooking._id,
+                    showtime: fullBooking.showtimeId,
+                    seats: fullBooking.seats,
+                    snacks: fullBooking.snacks,
+                    totalAmount: fullBooking.totalAmount,
+                    discountAmount: fullBooking.discountAmount,
+                    appliedVoucher: fullBooking.appliedVoucher
+                }).catch(e => console.error("Email error:", e));
+            }
+
+            return res.json({ status: "Paid", booking: fullBooking });
+
+        } else if (paymentInfo.status === "CANCELLED" || paymentInfo.status === "EXPIRED") {
+            booking.status = "Cancelled";
+            await booking.save();
+            return res.json({ status: "Cancelled", message: "Giao dịch đã bị khách hàng hủy hoặc hết hạn!" });
+        } else {
+            return res.json({ status: "Pending", message: "Đang chờ khách hàng quét mã thanh toán..." });
+        }
+
+    } catch (err) {
+        console.error("Lỗi kiểm tra thanh toán:", err);
+        res.status(500).json({ message: "Lỗi kiểm tra thanh toán sếp ơi: " + err.message });
     }
 };
 
@@ -353,5 +510,73 @@ exports.checkInTicket = async (req, res) => {
         res.json({ message: "Soát vé thành công! Mời khách vào phòng.", booking });
     } catch (err) {
         res.status(500).json({ message: "Lỗi hệ thống khi soát vé" });
+    }
+};
+
+// 🛑 6. Hủy đơn đặt vé và giải phóng ghế ngay lập tức (Real-time)
+exports.cancelBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.body;
+        if (!bookingId) return res.status(400).json({ message: "Thiếu Booking ID!" });
+
+        const booking = await Booking.findById(bookingId);
+        if (!booking) return res.status(404).json({ message: "Không tìm thấy đơn đặt vé!" });
+
+        // Cập nhật trạng thái thành Cancelled
+        booking.status = "Cancelled";
+        await booking.save();
+
+        // 🚩 REALTIME: Phát tín hiệu giải phóng ghế qua socket
+        const io = req.app.get("socketio");
+        if (io) {
+            io.emit("cancel-hold-timer", { userId: booking.userId });
+
+            // Lấy lại danh sách ghế đã được đặt chính thức để đồng bộ cho các máy khác
+            const allBookings = await Booking.find({ showtimeId: booking.showtimeId, status: { $ne: "Cancelled" } });
+            const allBookedSeats = allBookings.flatMap(b => b.seats);
+            io.to(booking.showtimeId.toString()).emit("update-booked-seats", allBookedSeats);
+        }
+
+        res.json({ message: "Đã hủy đơn hàng và giải phóng ghế thành công!", booking });
+    } catch (err) {
+        console.error("Lỗi hủy đơn đặt vé:", err);
+        res.status(500).json({ message: "Lỗi hệ thống khi hủy vé: " + err.message });
+    }
+};
+
+// WEBHOOK: Nhận tín hiệu thanh toán tự động từ PayOS
+exports.payosWebhook = async (req, res) => {
+    try {
+        // Xác thực chữ ký checksum từ PayOS (chống giả mạo)
+        const webhookData = await payos.webhooks.verify(req.body);
+        console.log("[WEBHOOK] Nhận tín hiệu từ PayOS, orderCode:", webhookData.orderCode);
+
+        // code "00" = thanh toán thành công
+        if (req.body.code === "00") {
+            const booking = await Booking.findOne({ orderCode: webhookData.orderCode });
+
+            if (booking && booking.status === "Pending") {
+                booking.status = "Paid";
+                await booking.save();
+                console.log("[WEBHOOK] Cập nhật Booking", booking._id, "sang Paid thành công!");
+
+                // Phát Socket.io để cập nhật sơ đồ ghế cho các client đang mở
+                const io = req.app.get("socketio");
+                if (io) {
+                    const allBookings = await Booking.find({
+                        showtimeId: booking.showtimeId,
+                        status: { $ne: "Cancelled" }
+                    });
+                    const allBookedSeats = allBookings.flatMap(b => b.seats);
+                    io.to(booking.showtimeId.toString()).emit("update-booked-seats", allBookedSeats);
+                }
+            }
+        }
+
+        // Bắt buộc phải trả về success để PayOS không retry
+        return res.json({ success: true });
+    } catch (err) {
+        console.error("[WEBHOOK] Lỗi xác thực (checksum sai hoặc dữ liệu không hợp lệ):", err.message);
+        return res.json({ success: false });
     }
 };
