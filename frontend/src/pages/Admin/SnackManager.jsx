@@ -20,14 +20,12 @@ export default function SnackManager() {
     const handleSaveSnack = async (e) => {
         e.preventDefault();
 
-        // 🛡️ Kiểm tra nếu là THÊM MỚI mà quên chọn file
-        if (!editingSnack && !snackFile) {
-            return alert("Sếp ơi, món mới này chưa có ảnh! Chọn ảnh đã nhé.");
+        const data = editingSnack || newSnack;
+        if (!data.name || !data.price || (!editingSnack && !snackFile)) {
+            return alert("Cần bổ sung thêm thông tin món");
         }
 
         const formData = new FormData();
-        const data = editingSnack || newSnack;
-
         formData.append("name", data.name);
         formData.append("price", data.price);
         formData.append("description", data.description || "");
@@ -39,12 +37,12 @@ export default function SnackManager() {
                 await axios.put(`/snacks/${editingSnack._id}`, formData, {
                     headers: { "Content-Type": "multipart/form-data" }
                 });
-                alert("Cập nhật thành công!");
+                alert("Cập nhật thành công");
             } else {
                 await axios.post("/snacks", formData, {
                     headers: { "Content-Type": "multipart/form-data" }
                 });
-                alert("Thêm bắp nước mới thành công!");
+                alert("Thêm bắp nước mới thành công");
             }
 
             // Reset form và file input sau khi thành công
@@ -56,15 +54,23 @@ export default function SnackManager() {
 
             fetchSnacks();
         } catch (err) {
-            alert("❌ Lỗi xử lý bắp nước sếp ơi!");
+            if (editingSnack) {
+                alert("Không thể cập nhật, vui lòng thử lại");
+            } else {
+                alert("Không thể xử lý, vui lòng thử lại");
+            }
         }
     };
 
     // ❌ HÀM XÓA BẮP NƯỚC
     const handleDeleteSnack = async (id) => {
-        if (window.confirm("Xóa món này khỏi kho hả sếp?")) {
-            await axios.delete(`/snacks/${id}`);
-            fetchSnacks();
+        if (window.confirm("Xóa món này khỏi kho")) {
+            try {
+                await axios.delete(`/snacks/${id}`);
+                fetchSnacks();
+            } catch (err) {
+                alert("Không thể xóa, vui lòng thử lại");
+            }
         }
     };
 
@@ -101,7 +107,7 @@ export default function SnackManager() {
 
                     <div style={{ gridColumn: "span 1", display: "flex", gap: "10px" }}>
                         <button type="submit" style={btnSubmitStyle}>{editingSnack ? "CẬP NHẬT" : "THÊM MỚI"}</button>
-                        {editingSnack && <button type="button" onClick={() => { setEditingSnack(null); setPreview(null); }} style={btnCancelStyle}>HỦY</button>}
+                        {editingSnack && <button type="button" onClick={() => { setEditingSnack(null); setPreview(null); }} style={btnCancelStyle}>Hủy bỏ</button>}
                     </div>
                 </form>
             </div>
@@ -130,6 +136,11 @@ export default function SnackManager() {
                             </td>
                         </tr>
                     ))}
+                    {snacks.length === 0 && (
+                        <tr>
+                            <td colSpan="4" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không tìm thấy món nào</td>
+                        </tr>
+                    )}
                 </tbody>
             </table>
         </div>

@@ -4,12 +4,12 @@ import axios from "../../api/axios";
 export default function MemberManager() {
     const [members, setMembers] = useState([]);
     const [newMem, setNewMem] = useState({ name: "", email: "", role: "customer" });
-    const [editingMem, setEditingMem] = useState(null); 
-    
+    const [editingMem, setEditingMem] = useState(null);
+
     // 🔍 States cho bộ lọc
     const [searchTerm, setSearchTerm] = useState("");
     const [filterRole, setFilterRole] = useState("all");
-    
+
     const [notification, setNotification] = useState({ show: false, message: "" });
 
     // 🔄 Lấy danh sách thành viên (có thể lọc)
@@ -29,8 +29,8 @@ export default function MemberManager() {
 
     // 🎯 Logic lọc tại Frontend cho mượt
     const filteredMembers = members.filter(m => {
-        const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             m.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesSearch = m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.email.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesRole = filterRole === "all" ? true : m.role === filterRole;
         return matchesSearch && matchesRole;
     });
@@ -38,36 +38,60 @@ export default function MemberManager() {
     // ➕ HÀM TẠO NHANH
     const handleQuickAdd = async (e) => {
         e.preventDefault();
+        const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!newMem.name || !newMem.email || !emailRegex.test(newMem.email)) {
+            return alert("Lỗi thêm thành viên");
+        }
         try {
-            const res = await axios.post("/users/admin/create", newMem);
-            showNotify(res.data); // Hiện câu: MK mặc định 123456
+            await axios.post("/users/admin/create", newMem);
+            alert("Tạo thành công");
             setNewMem({ name: "", email: "", role: "customer" });
             fetchMembers();
-        } catch (err) { alert(err.response?.data || "Lỗi rồi sếp!"); }
+        } catch (err) { 
+            alert("Không thể xử lý, vui lòng thử lại"); 
+        }
     };
 
     // 👁️ HÀM XEM CHI TIẾT
     const handleViewDetail = async (id) => {
         try {
             const res = await axios.get(`/users/detail/${id}`);
-            setEditingMem(res.data); 
+            setEditingMem(res.data);
         } catch (err) { alert("Không lấy được chi tiết sếp ơi!"); }
     };
 
     // ✏️ HÀM CẬP NHẬT
     const handleUpdate = async () => {
+        const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!editingMem.name || !editingMem.email || !emailRegex.test(editingMem.email)) {
+            return alert("Không thể cập nhật, vui lòng thử lại");
+        }
         try {
             await axios.put(`/users/update/${editingMem._id}`, editingMem);
-            showNotify("✅ Đã cập nhật thông tin thành công!");
+            alert("Đã cập nhật thành công");
             setEditingMem(null);
             fetchMembers();
-        } catch (err) { alert("Lỗi cập nhật!"); }
+        } catch (err) { 
+            alert("Không thể cập nhật, vui lòng thử lại"); 
+        }
+    };
+
+    // ❌ HÀM XÓA THÀNH VIÊN
+    const handleDeleteMember = async (id) => {
+        if (window.confirm("Xóa thành viên này")) {
+            try {
+                await axios.delete(`/users/admin/delete/${id}`);
+                fetchMembers();
+            } catch (err) {
+                alert("Không thể xóa, vui lòng thử lại");
+            }
+        }
     };
 
     return (
         <div style={{ padding: "20px" }}>
             {notification.show && <div style={toastStyle}>{notification.message}</div>}
-            
+
             <h2 style={{ color: "#333", marginBottom: 25 }}>QUẢN LÝ THÀNH VIÊN</h2>
 
             {/* ➕ KHU VỰC TẠO NHANH */}
@@ -81,25 +105,25 @@ export default function MemberManager() {
                         <option value="staff">Nhân viên</option> {/* ✨ Thêm dòng này */}
                         <option value="admin">Quản trị viên</option>
                     </select>
-                    <button type="submit" style={btnSubmitStyle}>TẠO NGAY</button>
+                    <button type="submit" style={btnSubmitStyle}>Tạo ngay</button>
                 </form>
             </div>
 
             {/* 🔍 THANH TÌM KIẾM & BỘ LỌC */}
             <div style={filterContainerStyle}>
-                <input 
-                    placeholder="🔍 Tìm theo tên hoặc email..." 
-                    style={{...inputStyle, flex: 2}} 
+                <input
+                    placeholder="🔍 Tìm theo tên hoặc email..."
+                    style={{ ...inputStyle, flex: 2 }}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
-                <select style={{...inputStyle, flex: 1}} value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
+                <select style={{ ...inputStyle, flex: 1 }} value={filterRole} onChange={(e) => setFilterRole(e.target.value)}>
                     <option value="all">Tất cả quyền</option>
                     <option value="customer">Khách hàng</option>
                     <option value="staff">Nhân viên</option> {/* ✨ Thêm dòng này */}
                     <option value="admin">Quản trị viên</option>
                 </select>
-                <button onClick={() => {setSearchTerm(""); setFilterRole("all");}} style={btnResetStyle}>LÀM MỚI</button>
+                <button onClick={() => { setSearchTerm(""); setFilterRole("all"); }} style={btnResetStyle}>LÀM MỚI</button>
             </div>
 
             {/* 📋 BẢNG DANH SÁCH */}
@@ -121,12 +145,13 @@ export default function MemberManager() {
                                 <span style={m.role === 'admin' ? adminBadge : userBadge}>{m.role.toUpperCase()}</span>
                             </td>
                             <td style={tdStyle}>
-                                <button onClick={() => handleViewDetail(m._id)} style={btnDetailStyle}>Chi tiết / Sửa</button>
+                                <button onClick={() => handleViewDetail(m._id)} style={{ ...btnDetailStyle, marginRight: 10 }}>sửa</button>
+                                <button onClick={() => handleDeleteMember(m._id)} style={btnDeleteStyle}>Xóa</button>
                             </td>
                         </tr>
                     ))}
                     {filteredMembers.length === 0 && (
-                        <tr><td colSpan="4" style={{padding: '20px', textAlign: 'center', color: '#999'}}>Không tìm thấy thành viên nào sếp ơi!</td></tr>
+                        <tr><td colSpan="4" style={{padding: '20px', textAlign: 'center', color: '#999'}}>Không tìm thấy thành viên</td></tr>
                     )}
                 </tbody>
             </table>
@@ -137,16 +162,25 @@ export default function MemberManager() {
                     <div style={modalContentStyle}>
                         <h3 style={{ color: "#fb4226", marginTop: 0 }}>THÔNG TIN CHI TIẾT</h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', textAlign: 'left' }}>
-                            <div><label style={labelStyle}>Tên đăng nhập:</label><input style={inputStyle} value={editingMem.name} onChange={e => setEditingMem({...editingMem, name: e.target.value})} /></div>
-                            <div><label style={labelStyle}>Email:</label><input style={inputStyle} value={editingMem.email} onChange={e => setEditingMem({...editingMem, email: e.target.value})} /></div>
-                            <div><label style={labelStyle}>Họ và tên thật:</label><input style={inputStyle} value={editingMem.fullName} onChange={e => setEditingMem({...editingMem, fullName: e.target.value})} /></div>
-                            <div><label style={labelStyle}>Số điện thoại:</label><input style={inputStyle} value={editingMem.phone} onChange={e => setEditingMem({...editingMem, phone: e.target.value})} /></div>
-                            <div><label style={labelStyle}>Ngày sinh:</label><input type="date" style={inputStyle} value={editingMem.birthday} onChange={e => setEditingMem({...editingMem, birthday: e.target.value})} /></div>
-                            <div><label style={labelStyle}>Địa chỉ:</label><input style={inputStyle} value={editingMem.address} onChange={e => setEditingMem({...editingMem, address: e.target.value})} /></div>
+                            <div><label style={labelStyle}>Tên đăng nhập:</label><input style={inputStyle} value={editingMem.name} onChange={e => setEditingMem({ ...editingMem, name: e.target.value })} /></div>
+                            <div><label style={labelStyle}>Email:</label><input style={inputStyle} value={editingMem.email} onChange={e => setEditingMem({ ...editingMem, email: e.target.value })} /></div>
+                            <div><label style={labelStyle}>Họ và tên thật:</label><input style={inputStyle} value={editingMem.fullName} onChange={e => setEditingMem({ ...editingMem, fullName: e.target.value })} /></div>
+                            <div><label style={labelStyle}>Số điện thoại:</label><input style={inputStyle} value={editingMem.phone} onChange={e => setEditingMem({ ...editingMem, phone: e.target.value })} /></div>
+                            <div><label style={labelStyle}>Ngày sinh:</label><input type="date" style={inputStyle} value={editingMem.birthday} onChange={e => setEditingMem({ ...editingMem, birthday: e.target.value })} /></div>
+                            <div><label style={labelStyle}>Địa chỉ:</label><input style={inputStyle} value={editingMem.address} onChange={e => setEditingMem({ ...editingMem, address: e.target.value })} /></div>
+                            <div>
+                                <label style={labelStyle}>Giới tính:</label>
+                                <select style={inputStyle} value={editingMem.gender || ""} onChange={e => setEditingMem({ ...editingMem, gender: e.target.value })}>
+                                    <option value="">Chọn giới tính</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
                         </div>
                         <div style={{marginTop: '25px', display: 'flex', gap: '10px'}}>
-                            <button onClick={handleUpdate} style={btnSubmitStyle}>LƯU THAY ĐỔI</button>
-                            <button onClick={() => setEditingMem(null)} style={{...btnSubmitStyle, background: '#ccc'}}>ĐÓNG</button>
+                            <button onClick={handleUpdate} style={btnSubmitStyle}>Cập nhật ngay</button>
+                            <button onClick={() => setEditingMem(null)} style={{...btnSubmitStyle, background: '#ccc'}}>Hủy bỏ</button>
                         </div>
                     </div>
                 </div>
@@ -165,6 +199,7 @@ const tableStyle = { width: "100%", borderCollapse: "collapse", background: '#ff
 const thStyle = { padding: "15px", textAlign: "left", color: "#666", fontSize: '0.85rem' };
 const tdStyle = { padding: "15px" };
 const btnDetailStyle = { background: 'none', border: '1px solid #3498db', color: '#3498db', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' };
+const btnDeleteStyle = { padding: "5px 12px", background: "none", border: "1px solid #e74c3c", color: "#e74c3c", borderRadius: "4px", cursor: "pointer", display: "inline-block" };
 const toastStyle = { position: 'fixed', top: '20px', right: '20px', background: '#2ecc71', color: '#fff', padding: '12px 25px', borderRadius: '8px', zIndex: 9999, fontWeight: 'bold' };
 const adminBadge = { background: '#fff0f0', color: '#fb4226', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' };
 const userBadge = { background: '#f0f7ff', color: '#3498db', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 'bold' };

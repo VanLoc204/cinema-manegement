@@ -15,30 +15,30 @@ export default function RoomManager() {
     }, []);
 
     const handleCreateRoom = async () => {
-        if (!newRoom.name || !newRoom.price) return alert("Sếp nhập thiếu tên hoặc giá rồi!");
+        if (!newRoom.name || !newRoom.price) return alert("Vui lòng nhập đầy đủ thông tin");
         try {
             await axios.post("/rooms", newRoom);
-            alert("Đã tạo phòng thành công sếp ơi!");
+            alert("Đã tạo phòng thành công");
             setNewRoom({ name: "", price: "", type: "2D", rows: 9, cols: 12 });
             fetchRooms();
-        } catch (err) { alert("❌ Lỗi khi tạo phòng!"); }
+        } catch (err) { alert("Không thể xử lý, vui lòng thử lại"); }
     };
 
     const handleUpdateRoom = async () => {
         try {
             await axios.put(`/rooms/${editingRoom._id}`, editingRoom);
-            alert("✅ Cập nhật phòng thành công!");
+            alert("Cập nhật phòng thành công");
             setEditingRoom(null);
             fetchRooms();
-        } catch (err) { alert("❌ Lỗi cập nhật phòng!"); }
+        } catch (err) { alert("Không thể cập nhật, vui lòng thử lại"); }
     };
 
     const handleDeleteRoom = async (id) => {
-        if (window.confirm("Xóa phòng này hả sếp?")) {
+        if (window.confirm("Xóa phòng chiếu này")) {
             try {
                 await axios.delete(`/rooms/${id}`);
                 fetchRooms();
-            } catch (err) { alert("❌ Lỗi khi xóa phòng!"); }
+            } catch (err) { alert("Không thể xóa, vui lòng thử lại"); }
         }
     };
 

@@ -20,6 +20,8 @@ export default function StaffDashboard() {
         totalSnacks: 0
     });
     const [currentTime, setCurrentTime] = useState(new Date());
+    const [warning, setWarning] = useState("");
+    const [error, setError] = useState("");
 
     useEffect(() => {
         // Cập nhật giờ thực tế mỗi phút
@@ -29,8 +31,19 @@ export default function StaffDashboard() {
         axios.get("/bookings/staff-stats")
             .then(res => {
                 setStats(res.data);
+                setError("");
+                // Kiểm tra 2.A1: Không có dữ liệu ca trực (doanh thu = 0 và vé = 0)
+                if (res.data.totalRevenue === 0 && res.data.totalTickets === 0) {
+                    setWarning("Chưa có dữ liệu ca làm này");
+                } else {
+                    setWarning("");
+                }
             })
-            .catch(err => console.error("Lỗi hốt dữ liệu ca trực:", err));
+            .catch(err => {
+                console.error("Lỗi hốt dữ liệu ca trực:", err);
+                setError("Không thể tải dữ liệu, vui lòng thử lại");
+                alert("Không thể tải dữ liệu, vui lòng thử lại");
+            });
             
         return () => clearInterval(timer);
     }, []);
@@ -132,6 +145,37 @@ export default function StaffDashboard() {
                     </div>
                 </div>
             </div>
+
+            {/* --- THÔNG BÁO CẢNH BÁO / LỖI --- */}
+            {error && (
+                <div style={{
+                    padding: "15px 20px",
+                    background: "#fef2f2",
+                    border: "1px solid #fee2e2",
+                    borderRadius: "12px",
+                    color: "#ef4444",
+                    fontWeight: "bold",
+                    marginBottom: "30px",
+                    fontSize: "0.95rem"
+                }}>
+                    ⚠️ {error}
+                </div>
+            )}
+
+            {warning && !error && (
+                <div style={{
+                    padding: "15px 20px",
+                    background: "#fffbeb",
+                    border: "1px solid #fef3c7",
+                    borderRadius: "12px",
+                    color: "#d97706",
+                    fontWeight: "bold",
+                    marginBottom: "30px",
+                    fontSize: "0.95rem"
+                }}>
+                     {warning}
+                </div>
+            )}
 
             {/* --- STATS GRID --- */}
             <div style={{ 

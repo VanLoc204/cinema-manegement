@@ -20,7 +20,7 @@ exports.adminCreateUser = async (req, res) => {
 
         const hash = await bcrypt.hash("123456", 10);
         const user = await User.create({ name, email, password: hash, role: role || "customer" });
-        
+
         // Tạo luôn profile rỗng
         await ProfileDetail.create({ userId: user._id, fullName: name });
         res.status(201).json("Tạo thành công! MK: 123456");
@@ -31,12 +31,12 @@ exports.adminCreateUser = async (req, res) => {
 exports.getUserDetail = async (req, res) => {
     try {
         const userId = req.params.id;
-        
+
         // 🏆 TÍNH TOÁN HẠNG THÀNH VIÊN REALTIME AN TOÀN BẢO MẬT Ở BACKEND (RESET TỰ ĐỘNG HÀNG NĂM)
         const currentYear = new Date().getFullYear();
-        const bookings = await Booking.find({ 
-            userId, 
-            status: { $in: ["Paid", "Checked-in"] } 
+        const bookings = await Booking.find({
+            userId,
+            status: { $in: ["Paid", "Checked-in"] }
         });
 
         const totalSpent = bookings
@@ -83,10 +83,10 @@ exports.getUserDetail = async (req, res) => {
 
         let profile = await ProfileDetail.findOne({ userId });
         if (!profile) profile = await ProfileDetail.create({ userId, fullName: user.name });
-        
+
         // Trả về kèm toàn bộ tính toán tiến trình thăng hạng chuẩn xác
-        res.json({ 
-            ...user._doc, 
+        res.json({
+            ...user._doc,
             ...profile._doc,
             _id: user._id.toString(), // 🚩 Đảm bảo _id trả về là ID của User chứ không bị ghi đè bởi ID của Profile
             nextTierLimit,
@@ -94,9 +94,9 @@ exports.getUserDetail = async (req, res) => {
             percentToNext,
             pointsRate
         }); // Gộp dữ liệu trả về 1 cục cho Frontend dễ dùng
-    } catch (err) { 
+    } catch (err) {
         console.error("Lỗi lấy chi tiết user:", err);
-        res.status(500).json("Lỗi lấy thông tin"); 
+        res.status(500).json("Lỗi lấy thông tin");
     }
 };
 
@@ -145,7 +145,7 @@ exports.updateUserDetailed = async (req, res) => {
                     return res.status(400).json({ message: "Mật khẩu 8-15 ký tự, có chữ HOA, chữ thường, số & ký tự đặc biệt!" });
                 }
             }
-            
+
             const hash = await bcrypt.hash(newPassword, 10);
             await User.findByIdAndUpdate(userId, { name, email, role, password: hash });
         } else {
@@ -188,5 +188,17 @@ exports.findCustomer = async (req, res) => {
     } catch (err) {
         console.error("Lỗi tìm kiếm khách hàng:", err);
         res.status(500).json("Lỗi hệ thống khi tìm kiếm!");
+    }
+};
+
+// ❌ 5. Admin xóa thành viên
+exports.deleteUser = async (req, res) => {
+    try {
+        const userId = req.params.id;
+        await User.findByIdAndDelete(userId);
+        await ProfileDetail.findOneAndDelete({ userId });
+        res.json("Xóa thành công!");
+    } catch (err) {
+        res.status(500).json("Không thể xóa, vui lòng thử lại");
     }
 };

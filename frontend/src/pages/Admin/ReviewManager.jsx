@@ -3,25 +3,40 @@ import axios from "../../api/axios";
 
 export default function ReviewManager() {
     const [reviews, setReviews] = useState([]);
+    const [movies, setMovies] = useState([]);
     const [filterMovie, setFilterMovie] = useState("all");
     const [filterStar, setFilterStar] = useState("all");
 
     const fetchAllReviews = () => {
-        axios.get("/reviews/all").then(res => setReviews(res.data));
+        axios.get("/reviews/all")
+            .then(res => setReviews(res.data))
+            .catch(err => {
+                console.error(err);
+                alert("Không thể tải dữ liệu, vui lòng thử lại");
+            });
     };
 
-    useEffect(() => { fetchAllReviews(); }, []);
+    const fetchMovies = () => {
+        axios.get("/movies")
+            .then(res => setMovies(res.data))
+            .catch(err => console.error(err));
+    };
+
+    useEffect(() => {
+        fetchAllReviews();
+        fetchMovies();
+    }, []);
 
     const toggleStatus = async (id, currentStatus) => {
-        const newStatus = currentStatus === "approved" ? "hidden" : "approved";
-        await axios.put(`/reviews/status/${id}`, { status: newStatus });
-        fetchAllReviews();
+        try {
+            const newStatus = currentStatus === "approved" ? "hidden" : "approved";
+            await axios.put(`/reviews/status/${id}`, { status: newStatus });
+            fetchAllReviews();
+        } catch (err) {
+            console.error(err);
+            alert("Không thể cập nhật trạng thái đánh giá");
+        }
     };
-
-    // 🎯 1. Tự động lấy danh sách Phim duy nhất từ đống reviews để bỏ vào Dropdown
-    const uniqueMovies = Array.from(new Set(reviews.map(r => JSON.stringify({id: r.movieId?._id, title: r.movieId?.title}))))
-                              .map(str => JSON.parse(str))
-                              .filter(m => m.id); // Loại bỏ null nếu có
 
     // 🎯 2. Logic Lọc "Kép" (Phim + Sao)
     const displayReviews = reviews.filter(r => {
@@ -38,8 +53,8 @@ export default function ReviewManager() {
                     <label style={labelStyle}>Lọc theo phim:</label>
                     <select style={selectStyle} value={filterMovie} onChange={(e) => setFilterMovie(e.target.value)}>
                         <option value="all">Tất cả phim</option>
-                        {uniqueMovies.map(m => (
-                            <option key={m.id} value={m.id}>{m.title}</option>
+                        {movies.map(m => (
+                            <option key={m._id} value={m._id}>{m.title}</option>
                         ))}
                     </select>
                 </div>
@@ -81,7 +96,7 @@ export default function ReviewManager() {
                             <td style={tdStyle}>{new Date(r.createdAt).toLocaleDateString('vi-VN')}</td>
                             <td style={tdStyle}>
                                 <span style={r.status === 'approved' ? activeBadge : hiddenBadge}>
-                                    {r.status === 'approved' ? "ĐANG HIỆN" : "ĐÃ ẨN"}
+                                    {r.status === 'approved' ? "Đang hiện" : "Đã ẩn"}
                                 </span>
                             </td>
                             <td style={tdStyle}>
@@ -96,7 +111,7 @@ export default function ReviewManager() {
                     )) : (
                         <tr>
                             <td colSpan="7" style={{textAlign: 'center', padding: '40px', color: '#999'}}>
-                                Không có bình luận nào khớp với bộ lọc của sếp ơi!
+                                Không tìm thấy đánh giá nào khớp với bộ lọc
                             </td>
                         </tr>
                     )}

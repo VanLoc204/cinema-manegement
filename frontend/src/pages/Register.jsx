@@ -30,7 +30,7 @@ export default function Register() {
   const handleSendOtp = async () => {
     const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(formData.email)) {
-      setNotice({ show: true, message: "Email không hợp lệ", type: "error" });
+      setNotice({ show: true, message: "Email không hợp lệ.", type: "error" });
       setTimeout(() => setNotice({ show: false, message: "", type: "" }), 3000);
       return;
     }
@@ -43,7 +43,13 @@ export default function Register() {
       setNotice({ show: true, message: "Đã gửi mã xác thực vào email!", type: "success" });
       setTimeout(() => setNotice({ show: false, message: "", type: "" }), 3000);
     } catch (err) {
-      setNotice({ show: true, message: err.response?.data || "Gửi mã thất bại!", type: "error" });
+      let msg = "Gửi mã thất bại!";
+      if (!err.response || err.response.status === 500) {
+        msg = "Không thể đăng ký, vui lòng thử lại sau.";
+      } else if (typeof err.response.data === "string") {
+        msg = err.response.data;
+      }
+      setNotice({ show: true, message: msg, type: "error" });
       setTimeout(() => setNotice({ show: false, message: "", type: "" }), 3000);
     }
     setSendingOtp(false);
@@ -53,12 +59,19 @@ export default function Register() {
   const handleRegister = async (e) => {
     e.preventDefault();
 
+    // Kiểm tra dữ liệu nhập không đầy đủ
+    if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
+      setNotice({ show: true, message: "Vui lòng nhập đầy đủ thông tin.", type: "error" });
+      setTimeout(() => setNotice({ show: false, message: "", type: "" }), 3000);
+      return;
+    }
+
     // Kiểm tra mật khẩu
     if (formData.password !== "123456") {
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/;
       if (!passwordRegex.test(formData.password)) {
-        setNotice({ show: true, message: "Mật khẩu 8-15 ký tự, có chữ HOA, chữ thường, số & ký tự đặc biệt!", type: "error" });
-        setTimeout(() => setNotice({ show: false, message: "", type: "" }), 4000);
+        setNotice({ show: true, message: "Mật khẩu không hợp lệ.", type: "error" });
+        setTimeout(() => setNotice({ show: false, message: "", type: "" }), 3000);
         return;
       }
     }
@@ -66,7 +79,7 @@ export default function Register() {
     // Kiểm tra email
     const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(formData.email)) {
-      setNotice({ show: true, message: "Email không hợp lệ", type: "error" });
+      setNotice({ show: true, message: "Email không hợp lệ.", type: "error" });
       setTimeout(() => setNotice({ show: false, message: "", type: "" }), 3000);
       return;
     }
@@ -80,10 +93,18 @@ export default function Register() {
 
     try {
       await axios.post("/auth/register", { ...formData, otp });
-      setNotice({ show: true, message: "Đăng ký thành công! Đang chuyển sang trang Đăng nhập...", type: "success" });
+      setNotice({ show: true, message: "Đăng ký thành công!", type: "success" });
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      setNotice({ show: true, message: err.response?.data || "Đăng ký thất bại!", type: "error" });
+      let msg = "Không thể đăng ký, vui lòng thử lại sau.";
+      if (err.response && err.response.status !== 500) {
+        if (typeof err.response.data === "string") {
+          msg = err.response.data;
+        } else if (err.response.data?.message) {
+          msg = err.response.data.message;
+        }
+      }
+      setNotice({ show: true, message: msg, type: "error" });
       setTimeout(() => setNotice({ show: false, message: "", type: "" }), 3000);
     }
   };
@@ -193,7 +214,7 @@ export default function Register() {
           </div>
         </div>
 
-        <button type="submit" style={buttonStyle}>Đăng ký ngay</button>
+        <button type="submit" style={buttonStyle}>Đăng ký</button>
 
         <p style={{ color: "#888", marginTop: 20 }}>
           Đã có tài khoản? <Link to="/login" style={{ color: "#fff", textDecoration: "none", fontWeight: 'bold' }}>Đăng nhập</Link>

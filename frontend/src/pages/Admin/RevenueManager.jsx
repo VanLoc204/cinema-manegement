@@ -32,6 +32,7 @@ export default function RevenueManager() {
             });
         } catch (err) {
             console.error("Lỗi lấy doanh thu:", err);
+            alert("Không thể xử lý, vui lòng thử lại");
         }
     };
 
@@ -74,7 +75,7 @@ export default function RevenueManager() {
                         <option value="true">Có mua bắp nước</option>
                         <option value="false">Chỉ mua vé</option>
                     </select>
-                    <button onClick={handleSearch} style={btnSearchStyle}>TÌM KIẾM</button>
+                    <button onClick={handleSearch} style={btnSearchStyle}>Tìm kiếm</button>
                 </div>
             </div>
 
@@ -100,11 +101,11 @@ export default function RevenueManager() {
             {/* 📊 CÁC THẺ SỐ LƯỢNG */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "40px" }}>
                 <div style={countCardStyle("#9b59b6")}>
-                    <span>Tổng số vé bán ra:</span>
+                    <span>Tổng vé đã bán:</span>
                     <b style={{fontSize: '1.5rem'}}>{revenueData.totalTickets} vé</b>
                 </div>
                 <div style={countCardStyle("#e74c3c")}>
-                    <span>Tổng combo bắp nước:</span>
+                    <span>Tổng combo đã bán:</span>
                     <b style={{fontSize: '1.5rem'}}>{revenueData.totalSnacks} bộ</b>
                 </div>
             </div>
@@ -147,7 +148,7 @@ export default function RevenueManager() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không có giao dịch nào trong khoảng này sếp ơi!</td>
+                                <td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không có giao dịch nào trong khoảng này!</td>
                             </tr>
                         )}
                     </tbody>

@@ -16,12 +16,12 @@ exports.sendOtp = async (req, res) => {
     // Kiểm tra định dạng Email
     const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json("Email không hợp lệ");
+      return res.status(400).json("Email không hợp lệ.");
     }
 
     // Kiểm tra email đã tồn tại chưa
     const exist = await User.findOne({ email });
-    if (exist) return res.status(400).json("Email đã tồn tại");
+    if (exist) return res.status(400).json("Email đã tồn tại.");
 
     // Tạo mã OTP 6 số
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -52,13 +52,13 @@ exports.register = async (req, res) => {
 
     const emailRegex = /^(?![^@]*\.\.)[a-zA-Z0-9][a-zA-Z0-9.]{4,28}[a-zA-Z0-9]@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json("Email không hợp lệ");
+      return res.status(400).json("Email không hợp lệ.");
     }
 
     const cleanEmail = email.toLowerCase();
 
     const exist = await User.findOne({ email: cleanEmail });
-    if (exist) return res.status(400).json("Email đã tồn tại");
+    if (exist) return res.status(400).json("Email đã tồn tại.");
 
     // 🔐 Kiểm tra OTP
     const stored = otpStore.get(cleanEmail);
@@ -79,7 +79,7 @@ exports.register = async (req, res) => {
     if (password !== "123456") {
       const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,15}$/;
       if (!passwordRegex.test(password)) {
-        return res.status(400).json("Mật khẩu 8-15 ký tự, có chữ HOA, chữ thường, số & ký tự đặc biệt!");
+        return res.status(400).json("Mật khẩu không hợp lệ.");
       }
     }
 
@@ -103,7 +103,7 @@ exports.register = async (req, res) => {
     res.json({ message: "Đăng ký thành công!", user: { name: user.name, email: user.email } });
   } catch (err) {
     console.error("Lỗi đăng ký:", err);
-    res.status(500).json("Lỗi đăng ký hệ thống");
+    res.status(500).json("Không thể đăng ký, vui lòng thử lại sau.");
   }
 };
 
@@ -150,7 +150,7 @@ exports.login = async (req, res) => {
       userId: user._id
     });
   } catch (err) {
-    res.status(500).json("Lỗi đăng nhập hệ thống");
+    res.status(500).json("Không thể xử lý, vui lòng thử lại.");
   }
 };
 

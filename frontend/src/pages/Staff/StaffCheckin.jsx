@@ -38,6 +38,7 @@ export default function StaffCheckin() {
         } catch (err) {
             console.error("Lỗi Camera:", err);
             setIsScanning(false);
+            setError("Không thể quét mã QR, vui lòng thử lại");
         }
     };
 
@@ -57,7 +58,9 @@ export default function StaffCheckin() {
             setError(null);
             new Audio("https://www.soundjay.com/buttons/beep-07a.mp3").play();
         } catch (err) {
-            const msg = err.response?.data?.message || "Vé không hợp lệ";
+            const msg = err.response 
+                ? (err.response.data?.message || "Vé không hợp lệ") 
+                : "Không thể kết nối hệ thống, vui lòng thử lại";
             setError(msg);
             setScanResult(null);
         } finally {
@@ -75,7 +78,7 @@ export default function StaffCheckin() {
             const decodedText = await scannerRef.current.scanFile(file, true);
             await onScanSuccess(decodedText);
         } catch (err) {
-            setError("Không tìm thấy mã QR trong ảnh!");
+            setError("Không thể quét mã QR, vui lòng thử lại");
         } finally {
             setLoading(false);
         }

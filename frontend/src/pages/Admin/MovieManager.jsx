@@ -48,7 +48,9 @@ export default function MovieManager() {
 
     const handleAddMovie = async (e) => {
         e.preventDefault();
-        if (!movieFile) return showNotify("Sếp ơi, chọn cái ảnh Poster đã!", "error");
+        if (!movieFile || !newMovie.title || !newMovie.description) {
+            return showNotify("Vui lòng nhập đầy đủ thông tin", "error");
+        }
 
         const formData = new FormData();
         Object.keys(newMovie).forEach(key => formData.append(key, newMovie[key]));
@@ -56,14 +58,14 @@ export default function MovieManager() {
 
         try {
             await axios.post("/movies", formData, { headers: { "Content-Type": "multipart/form-data" } });
-            showNotify("✅ Thêm phim mới thành công!");
+            showNotify("Thêm phim mới thành công");
             setNewMovie({ 
                 title: "", description: "", director: "", cast: "", genre: "", 
                 duration: "", releaseDate: "", language: "", rated: "P", status: "now_showing", trailer: "" 
             });
             setMovieFile(null); setPreview(null); e.target.reset(); fetchMovies();
         } catch (err) {
-            showNotify("❌ Lỗi thêm phim rồi sếp!", "error");
+            showNotify("Không thể lưu dữ liệu", "error");
         }
     };
 
@@ -79,10 +81,10 @@ export default function MovieManager() {
                 headers: { "Content-Type": "multipart/form-data" }
             });
 
-            showNotify("✅ Đã cập nhật phim thành công!");
+            showNotify("Đã cập nhật phim thành công");
             setEditingMovie(null); setMovieFile(null); setPreview(null); fetchMovies();
         } catch (err) {
-            showNotify("❌ Lỗi cập nhật rồi sếp!", "error");
+            showNotify("Không thể cập nhật dữ liệu", "error");
         }
     };
 
@@ -111,10 +113,10 @@ export default function MovieManager() {
         const nextStatus = movie.status === 'ended' ? 'now_showing' : 'ended';
         try {
             await axios.put(`/movies/${movie._id}`, { status: nextStatus });
-            showNotify(`✅ Đã ${nextStatus === 'ended' ? 'ẩn' : 'hiện'} phim thành công!`);
+            showNotify(nextStatus === 'ended' ? "Đã ẩn phim thành công" : "Đã hiện phim thành công");
             fetchMovies();
         } catch (err) {
-            showNotify("❌ Lỗi xử lý trạng thái!", "error");
+            showNotify("Không thể cập nhật dữ liệu", "error");
         }
     };
 
@@ -194,7 +196,7 @@ export default function MovieManager() {
             <div style={filterContainerStyle}>
                 <div style={{ flex: 2 }}>
                     <input 
-                        placeholder="🔍 Tìm theo tên phim hoặc đạo diễn..." 
+                        placeholder="Tìm theo tên phim hoặc đạo diễn..." 
                         style={inputStyle} 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -240,7 +242,7 @@ export default function MovieManager() {
                             </td>
                         </tr>
                     )) : (
-                        <tr><td colSpan="4" style={{ padding: "30px", textAlign: "center", color: "#999" }}>Không tìm thấy phim nào phù hợp sếp ơi!</td></tr>
+                        <tr><td colSpan="4" style={{ padding: "30px", textAlign: "center", color: "#999" }}>Không tìm thấy phim phù hợp</td></tr>
                     )}
                 </tbody>
             </table>

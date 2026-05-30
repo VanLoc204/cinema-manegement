@@ -32,13 +32,7 @@ const seedTestAi = async () => {
     
     // Ngày cần bơm vé: 19/05/2026 và 20/05/2026
     const targetDates = [
-      new Date("2026-05-19T00:00:00Z"),
-      new Date("2026-05-20T00:00:00Z"),
-      new Date("2026-05-21T00:00:00Z"),
-      new Date("2026-05-22T00:00:00Z"),
-      new Date("2026-05-23T00:00:00Z"),
-      new Date("2026-05-24T00:00:00Z")
-      
+      new Date("2026-05-30T00:00:00Z")
     ];
 
     let totalBookings = 0;

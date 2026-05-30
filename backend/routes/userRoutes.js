@@ -11,5 +11,6 @@ router.post("/admin/create", verifyAdmin, userController.adminCreateUser);
 router.get("/find-customer", userController.findCustomer);
 router.get("/detail/:id", userController.getUserDetail);
 router.put("/update/:id", userController.updateUserDetailed);
+router.delete("/admin/delete/:id", verifyAdmin, userController.deleteUser);
 
 module.exports = router;

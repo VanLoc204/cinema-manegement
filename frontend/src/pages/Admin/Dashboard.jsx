@@ -18,13 +18,25 @@ export default function Dashboard() {
         topMovies: [],
         recentBookings: []
     });
+    const [error, setError] = useState(null);
+    const [warning, setWarning] = useState(null);
 
     const fetchDashboard = async () => {
+        setError(null);
+        setWarning(null);
         try {
             const res = await axios.get("/bookings/admin/dashboard");
             setDashData(res.data);
+            if (!res.data || res.data.totalRevenue === 0) {
+                setWarning("Không tìm thấy dữ liệu thống kê");
+            }
         } catch (err) {
             console.error("Lỗi lấy dữ liệu Dashboard:", err);
+            if (err.response) {
+                setError("Không thể xử lý dữ liệu");
+            } else {
+                setError("Không thể tải dữ liệu, vui lòng thử lại");
+            }
         }
     };
 
@@ -43,6 +55,46 @@ export default function Dashboard() {
     return (
         <div style={{ paddingBottom: '40px' }}>
             <h2 style={{ marginBottom: 30, color: "#333" }}>TỔNG QUAN HỆ THỐNG</h2>
+
+            {error && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #fff5f5 0%, #ffe3e3 100%)',
+                    color: '#e74c3c',
+                    border: '1px solid #ffccd5',
+                    padding: '15px 20px',
+                    borderRadius: '12px',
+                    marginBottom: '25px',
+                    fontWeight: '800',
+                    fontSize: '0.95rem',
+                    boxShadow: '0 4px 15px rgba(231, 76, 60, 0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                }}>
+                    <span>⚠️</span>
+                    <span>{error}</span>
+                </div>
+            )}
+
+            {warning && !error && (
+                <div style={{
+                    background: 'linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%)',
+                    color: '#856404',
+                    border: '1px solid #ffeeba',
+                    padding: '15px 20px',
+                    borderRadius: '12px',
+                    marginBottom: '25px',
+                    fontWeight: '800',
+                    fontSize: '0.95rem',
+                    boxShadow: '0 4px 15px rgba(243, 156, 18, 0.08)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                }}>
+                    <span>🔔</span>
+                    <span>{warning}</span>
+                </div>
+            )}
 
             {/* ⚡ HÀNG 1: CÁC THẺ DOANH THU (Giữ nguyên của sếp) */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "20px" }}>

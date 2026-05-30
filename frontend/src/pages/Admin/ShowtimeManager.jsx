@@ -46,6 +46,7 @@ export default function ShowtimeManager() {
             setRooms(resRooms.data);
         } catch (err) {
             console.error("Lỗi lấy dữ liệu:", err);
+            alert("Không thể tải dữ liệu");
         }
     };
 
@@ -86,15 +87,15 @@ export default function ShowtimeManager() {
     // ➕ HÀM XẾP LỊCH CHIẾU MỚI
     const handleCreateShowtime = async () => {
         if (!newShowtime.movieId || !newShowtime.roomId || !newShowtime.time) {
-            return alert("Sếp nhập thiếu thông tin rồi!");
+            return alert("Vui lòng nhập đầy đủ thông tin");
         }
         try {
             await axios.post("/showtimes", newShowtime);
-            alert("Đã xếp lịch thành công!");
+            alert("Đã xếp lịch thành công");
             setNewShowtime({ movieId: "", roomId: "", time: "" });
             fetchAllData();
         } catch (err) {
-            alert("Lỗi khi xếp lịch!");
+            alert("Không thể xử lý, vui lòng thử lại");
         }
     };
 
@@ -102,22 +103,22 @@ export default function ShowtimeManager() {
     const handleUpdateShowtime = async () => {
         try {
             await axios.put(`/showtimes/${editingShowtime._id}`, editingShowtime);
-            alert("Đã cập nhật lịch chiếu thành công!");
+            alert("Đã cập nhật lịch chiếu thành công");
             setEditingShowtime(null);
             fetchAllData();
         } catch (err) {
-            alert("Lỗi cập nhật rồi sếp!");
+            alert("Không thể xử lý, vui lòng thử lại");
         }
     };
 
     // ❌ HÀM XÓA SUẤT CHIẾU
     const handleDeleteShowtime = async (id) => {
-        if (window.confirm("Xóa lịch chiếu này hả sếp?")) {
+        if (window.confirm("Xóa suất chiếu này")) {
             try {
                 await axios.delete(`/showtimes/${id}`);
                 fetchAllData();
             } catch (err) {
-                alert("Lỗi khi xóa lịch chiếu!");
+                alert("Không thể xử lý, vui lòng thử lại");
             }
         }
     };
@@ -286,7 +287,7 @@ export default function ShowtimeManager() {
                     ))}
                     {showtimes.length === 0 && (
                         <tr>
-                            <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không tìm thấy suất chiếu nào phù hợp sếp ơi!</td>
+                            <td colSpan="5" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không có dữ liệu</td>
                         </tr>
                     )}
                 </tbody>
@@ -318,7 +319,7 @@ export default function ShowtimeManager() {
                         </div>
                     ))}
                     {showtimes.length === 0 && (
-                        <div style={{ textAlign: "center", padding: "40px", color: "#999", background: "#fff", borderRadius: "15px" }}>Không có suất chiếu nào.</div>
+                        <div style={{ textAlign: "center", padding: "40px", color: "#999", background: "#fff", borderRadius: "15px" }}>Không có dữ liệu</div>
                     )}
                 </div>
             )}

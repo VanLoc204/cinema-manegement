@@ -77,9 +77,18 @@ export default function Login() {
             }, 1500);
 
         } catch (err) {
+            let errMsg = "Tên đăng nhập hoặc mật khẩu không đúng";
+            if (!err.response || err.response.status === 500) {
+                errMsg = "Không thể xử lý, vui lòng thử lại.";
+            } else if (typeof err.response.data === "string") {
+                errMsg = err.response.data;
+            } else if (err.response.data?.message) {
+                errMsg = err.response.data.message;
+            }
+
             setNotice({
                 show: true,
-                message: err.response?.data || "Tên đăng nhập hoặc mật khẩu không đúng",
+                message: errMsg,
                 type: "error"
             });
 
