@@ -53,8 +53,84 @@ export default function Dashboard() {
     const COLORS = ['#3498db', '#f39c12'];
 
     return (
-        <div style={{ paddingBottom: '40px' }}>
-            <h2 style={{ marginBottom: 30, color: "#333" }}>TỔNG QUAN HỆ THỐNG</h2>
+        <div style={{ paddingBottom: '40px' }} className="admin-dashboard-container">
+            <style>{`
+                .admin-dashboard-container h2 {
+                    margin-bottom: 30px;
+                    color: #333;
+                    font-size: 1.6rem;
+                    font-weight: 800;
+                }
+                .dash-grid-revenue {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 20px;
+                    margin-bottom: 20px;
+                }
+                .dash-grid-count {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr 1fr;
+                    gap: 20px;
+                    margin-bottom: 30px;
+                }
+                .dash-grid-charts {
+                    display: grid;
+                    grid-template-columns: 1fr 1.5fr;
+                    gap: 30px;
+                    margin-bottom: 40px;
+                }
+                .dash-grid-details {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 30px;
+                }
+                
+                @media (max-width: 1024px) {
+                    .dash-grid-revenue {
+                        grid-template-columns: 1fr 1fr;
+                    }
+                    .dash-grid-count {
+                        grid-template-columns: 1fr 1fr;
+                    }
+                    .dash-grid-charts {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .admin-dashboard-container h2 {
+                        font-size: 1.3rem;
+                        margin-bottom: 20px;
+                    }
+                    .dash-grid-revenue {
+                        grid-template-columns: 1fr;
+                        gap: 15px;
+                    }
+                    .dash-grid-count {
+                        grid-template-columns: 1fr 1fr;
+                        gap: 15px;
+                        margin-bottom: 20px;
+                    }
+                    .dash-grid-charts {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                        margin-bottom: 25px;
+                    }
+                    .dash-grid-details {
+                        grid-template-columns: 1fr;
+                        gap: 20px;
+                    }
+                }
+
+                @media (max-width: 480px) {
+                    .dash-grid-count {
+                        grid-template-columns: 1fr;
+                        gap: 12px;
+                    }
+                }
+            `}</style>
+            <h2>TỔNG QUAN HỆ THỐNG</h2>
 
             {error && (
                 <div style={{
@@ -96,8 +172,8 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* ⚡ HÀNG 1: CÁC THẺ DOANH THU (Giữ nguyên của sếp) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "20px" }}>
+            {/* ⚡ HÀNG 1: CÁC THẺ DOANH THU (Đã responsive) */}
+            <div className="dash-grid-revenue">
                 <div style={dashCardStyle("#2ecc71")}>
                     <p style={cardLabel}>Tổng doanh thu</p>
                     <h2 style={cardValue}>{dashData.totalRevenue?.toLocaleString()}đ</h2>
@@ -112,8 +188,8 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ⚡ HÀNG 2: THỐNG KÊ SỐ LƯỢNG (Giữ nguyên của sếp) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "20px", marginBottom: "30px" }}>
+            {/* ⚡ HÀNG 2: THỐNG KÊ SỐ LƯỢNG (Đã responsive) */}
+            <div className="dash-grid-count">
                 <div style={smallCardStyle("#9b59b6")}>
                     <p style={smallLabel}>Vé đã bán</p>
                     <h3 style={smallValue}>{dashData.totalTickets} Vé</h3>
@@ -132,8 +208,8 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* 📉 HÀNG 3: KHU VỰC BIỂU ĐỒ (Ý tưởng mới cho sếp) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1.5fr", gap: "30px", marginBottom: "40px" }}>
+            {/* 📉 HÀNG 3: KHU VỰC BIỂU ĐỒ (Đã responsive) */}
+            <div className="dash-grid-charts">
 
                 {/* 1. Biểu đồ tròn: Tỷ trọng nguồn thu */}
                 <div style={whiteBoxStyle}>
@@ -148,6 +224,8 @@ export default function Dashboard() {
                                     paddingAngle={5}
                                     dataKey="value"
                                     stroke="none"
+                                    cx="50%"
+                                    cy="45%"
                                 >
                                     {pieData.map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -169,7 +247,7 @@ export default function Dashboard() {
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#eee" />
                                 <XAxis
                                     dataKey="title"
-                                    fontSize={11}
+                                    fontSize={10}
                                     tick={{ fill: '#666' }}
                                     axisLine={false}
                                     interval={0}
@@ -183,7 +261,7 @@ export default function Dashboard() {
                                     dataKey="revenue"
                                     fill="#fb4226"
                                     radius={[8, 8, 0, 0]}
-                                    barSize={45}
+                                    barSize={30}
                                 />
                             </BarChart>
                         </ResponsiveContainer>
@@ -191,8 +269,8 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ⚡ HÀNG 4: DANH SÁCH CHI TIẾT (Giữ nguyên của sếp) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px" }}>
+            {/* ⚡ HÀNG 4: DANH SÁCH CHI TIẾT (Đã responsive) */}
+            <div className="dash-grid-details">
                 <div style={whiteBoxStyle}>
                     <h3 style={{ marginTop: 0, borderBottom: "1px solid #eee", paddingBottom: "15px" }}>Phim "hái ra tiền" nhất</h3>
                     {dashData.topMovies.map((m, index) => (

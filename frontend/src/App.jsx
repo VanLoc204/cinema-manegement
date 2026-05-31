@@ -11,9 +11,24 @@ import MovieDetail from "./pages/MovieDetail";
 import Admin from "./pages/Admin/Admin";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
-
-// 🚩 Sếp thêm dòng này vào trên cùng file App.jsx nhé
 import Staff from "./pages/Staff/Staff";
+
+// --- 🕵️‍♂️ KIỂM TRA TOKEN HẾT HẠN NGAY KHI LOAD TRANG ---
+const checkTokenExpiration = () => {
+    const token = localStorage.getItem("token");
+    if (token) {
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.exp * 1000 < Date.now()) {
+                console.warn("Phiên đăng nhập đã hết hạn. Đang đăng xuất...");
+                localStorage.clear();
+            }
+        } catch (e) {
+            localStorage.clear();
+        }
+    }
+};
+checkTokenExpiration();
 
 // --- 🛠️ COMPONENT SỬA LỖI CUỘN TRANG ---
 function ScrollToTop() {

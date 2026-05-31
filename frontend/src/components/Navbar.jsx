@@ -34,13 +34,13 @@ export default function Navbar() {
     };
 
     return (
-        <nav style={navStyle}>
+        <nav className="nb-nav" style={navStyle}>
             <style>{`
-                @media (max-width: 768px) {
+                @media (max-width: 1024px) {
                     .nb-menu { display: none !important; }
                     .nb-menu.open { display: flex !important; flex-direction: column; align-items: flex-start;
                         position: fixed; top: 0; right: 0; width: 75vw; max-width: 300px; height: 100vh;
-                        background: #fff; padding: 80px 24px 40px; gap: 18px; z-index: 1100;
+                        background: #fff; padding: 80px 24px 40px; gap: 20px; z-index: 1100;
                         box-shadow: -6px 0 30px rgba(0,0,0,0.15); overflow-y: auto; }
                     .nb-hamburger { display: flex !important; }
                     .nb-overlay { display: block !important; }
@@ -53,6 +53,15 @@ export default function Navbar() {
                     .nb-nav { padding: 0 16px !important; height: 60px !important; }
                     .nb-logo { font-size: 1.2rem !important; }
                     .nb-staff-hi { display: flex !important; }
+                    
+                    /* Căn chỉnh các nút admin trong drawer di động */
+                    .nb-menu.open .nb-admin-badge {
+                        width: 100%;
+                        text-align: center;
+                        padding: 10px 0;
+                        font-size: 0.85rem !important;
+                        box-sizing: border-box;
+                    }
                 }
                 .nb-hamburger { display: none; flex-direction: column; justify-content: space-between;
                     width: 26px; height: 20px; background: none; border: none; cursor: pointer; z-index: 1200; }
@@ -85,7 +94,7 @@ export default function Navbar() {
             <div className={`nb-menu${menuOpen ? " open" : ""}`} style={menuContainer}>
                 {isAdminPage ? (
                     <>
-                        <span style={adminBadge}>ADMIN MODE</span>
+                        <span style={adminBadge} className="nb-admin-badge">ADMIN MODE</span>
                         <Link to="/" style={navLink} className="nb-nav-link" onClick={() => setMenuOpen(false)}>Quay lại Web</Link>
                         <button onClick={handleLogout} style={logoutBtn} className="nb-logout-btn">Đăng xuất</button>
                     </>

@@ -70,6 +70,9 @@ export default function MovieManager() {
     };
 
     const handleUpdateMovie = async () => {
+        if (!editingMovie.title || !editingMovie.description) {
+            return showNotify("Vui lòng nhập đầy đủ thông tin", "error");
+        }
         try {
             const formData = new FormData();
             Object.keys(editingMovie).forEach(key => {
@@ -126,7 +129,156 @@ export default function MovieManager() {
     };
 
     return (
-        <div style={{ padding: "20px", position: 'relative' }}>
+        <div style={{ padding: "20px", position: 'relative' }} className="movie-manager-container">
+            <style>{`
+                .movie-manager-container {
+                    padding: 20px !important;
+                    box-sizing: border-box;
+                    width: 100%;
+                    max-width: 100%;
+                }
+                .excel-import-box {
+                    background: #e8f5e9;
+                    padding: 20px;
+                    border-radius: 12px;
+                    border: 1px solid #c8e6c9;
+                    margin-bottom: 20px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 15px;
+                }
+                .movie-form-card {
+                    background: #fff;
+                    padding: 25px;
+                    border-radius: 12px;
+                    border: 1px solid #eee;
+                    margin-bottom: 25px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                }
+                .movie-form {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                }
+                .movie-form-full {
+                    grid-column: span 2;
+                }
+                .movie-filter-box {
+                    display: flex;
+                    gap: 15px;
+                    margin-bottom: 20px;
+                    background: #fdfcf0;
+                    padding: 15px;
+                    border-radius: 10px;
+                    border: 1px solid #eee;
+                    align-items: center;
+                }
+                .movie-table-wrapper {
+                    width: 100%;
+                    overflow-x: auto;
+                    margin-top: 15px;
+                    border-radius: 8px;
+                    border: 1px solid #eee;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+                }
+                .movie-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: #fff;
+                }
+                
+                /* Modal Styling */
+                .movie-modal-content {
+                    background: #fff;
+                    padding: 25px;
+                    border-radius: 12px;
+                    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                    width: 800px;
+                    max-width: 95%;
+                    box-sizing: border-box;
+                    animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .modal-form-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 15px;
+                    max-height: 75vh;
+                    overflow-y: auto;
+                    padding: 10px;
+                }
+
+                @keyframes scaleUp {
+                    from { transform: scale(0.9); opacity: 0; }
+                    to { transform: scale(1); opacity: 1; }
+                }
+
+                @media (max-width: 992px) {
+                    .movie-modal-content {
+                        width: 90% !important;
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .movie-manager-container {
+                        padding: 10px !important;
+                    }
+                    .excel-import-box {
+                        flex-direction: column;
+                        align-items: stretch;
+                        text-align: center;
+                        padding: 15px;
+                        gap: 12px;
+                    }
+                    .excel-import-box label {
+                        width: 100%;
+                        text-align: center;
+                        box-sizing: border-box;
+                    }
+                    .movie-form-card {
+                        padding: 15px;
+                    }
+                    .movie-form {
+                        grid-template-columns: 1fr;
+                        gap: 12px;
+                    }
+                    .movie-form-full {
+                        grid-column: span 1;
+                    }
+                    .movie-form textarea {
+                        grid-column: span 1 !important;
+                    }
+                    .movie-form .upload-box {
+                        grid-column: span 1 !important;
+                        flex-direction: column;
+                        align-items: flex-start;
+                        gap: 10px;
+                    }
+                    .movie-form button[type="submit"] {
+                        grid-column: span 1 !important;
+                    }
+                    .movie-filter-box {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 10px;
+                        padding: 12px;
+                    }
+                    .movie-filter-box button {
+                        width: 100%;
+                        padding: 12px;
+                    }
+                    .modal-form-grid {
+                        grid-template-columns: 1fr;
+                        gap: 12px;
+                    }
+                    .modal-form-grid > div {
+                        grid-column: span 1 !important;
+                    }
+                    .modal-form-grid button {
+                        width: 100%;
+                    }
+                }
+            `}</style>
             
             {/* 📢 THÔNG BÁO TỰ TẮT */}
             {notification.show && (
@@ -135,11 +287,11 @@ export default function MovieManager() {
                 </div>
             )}
 
-            {/* 🟢 1. KHU VỰC NHẬP EXCEL */}
-            <div style={excelImportBoxStyle}>
+            {/* 🟢 1. KHU VỰC NHẬP EXCEL (Đã responsive) */}
+            <div className="excel-import-box">
                 <div>
-                    <h3 style={{ margin: 0, color: "#2e7d32" }}>Nhập phim hàng loạt</h3>
-                    <p style={{ margin: "5px 0 0", fontSize: "0.85rem", color: "#666" }}>Tải file Excel lên để thêm nhanh danh sách phim.</p>
+                    <h3 style={{ margin: 0, color: "#2e7d32", fontSize: "1.1rem", fontWeight: "bold" }}>Nhập phim hàng loạt</h3>
+                    <p style={{ margin: "5px 0 0", fontSize: "0.82rem", color: "#666" }}>Tải file Excel lên để thêm nhanh danh sách phim.</p>
                 </div>
                 <input type="file" accept=".xlsx, .xls" onChange={handleImportExcel} style={hiddenInputStyle} id="excel-upload" disabled={isImporting} />
                 <label htmlFor="excel-upload" style={isImporting ? btnExcelDisabledStyle : btnExcelStyle}>
@@ -147,11 +299,11 @@ export default function MovieManager() {
                 </label>
             </div>
 
-            {/* 🔴 2. FORM THÊM PHIM MỚI */}
-            <div style={cardStyle}>
-                <h3 style={{ marginTop: 0, color: "#fb4226" }}>THÊM PHIM MỚI</h3>
-                <form onSubmit={handleAddMovie} style={formStyle}>
-                    <input placeholder="Tên phim" value={newMovie.title} style={inputStyle} onChange={e => setNewMovie({ ...newMovie, title: e.target.value })} required />
+            {/* 🔴 2. FORM THÊM PHIM MỚI (Đã responsive) */}
+            <div className="movie-form-card">
+                <h3 style={{ marginTop: 0, color: "#fb4226", fontSize: "1.2rem", fontWeight: "bold", marginBottom: "20px" }}>THÊM PHIM MỚI</h3>
+                <form onSubmit={handleAddMovie} className="movie-form">
+                    <input placeholder="Tên phim" value={newMovie.title} style={inputStyle} onChange={e => setNewMovie({ ...newMovie, title: e.target.value })} />
                     <input placeholder="Đạo diễn" value={newMovie.director} style={inputStyle} onChange={e => setNewMovie({ ...newMovie, director: e.target.value })} />
                     <input placeholder="Diễn viên" value={newMovie.cast} style={inputStyle} onChange={e => setNewMovie({ ...newMovie, cast: e.target.value })} />
                     <input placeholder="Thể loại" value={newMovie.genre} style={inputStyle} onChange={e => setNewMovie({ ...newMovie, genre: e.target.value })} />
@@ -167,7 +319,7 @@ export default function MovieManager() {
                         <option value="T18">T18 - Trên 18 tuổi</option>
                     </select>
 
-                    <input placeholder="Trailer (Youtube URL)" value={newMovie.trailer} style={inputStyle} onChange={e => setNewMovie({ ...newMovie, trailer: e.target.value })} />
+                    <input placeholder="Trailer (Youtube URL)" value={newMovie.trailer} style={inputStyle} className="movie-form-full" onChange={e => setNewMovie({ ...newMovie, trailer: e.target.value })} />
                     
                     <select style={inputStyle} value={newMovie.status} onChange={e => setNewMovie({...newMovie, status: e.target.value})}>
                         <option value="now_showing">Đang chiếu</option>
@@ -177,9 +329,9 @@ export default function MovieManager() {
 
                     <textarea placeholder="Mô tả nội dung phim..." value={newMovie.description} 
                         style={{ ...inputStyle, gridColumn: "span 2", minHeight: "80px" }} 
-                        onChange={e => setNewMovie({ ...newMovie, description: e.target.value })} required />
+                        onChange={e => setNewMovie({ ...newMovie, description: e.target.value })} />
 
-                    <div style={uploadBoxStyle}>
+                    <div style={uploadBoxStyle} className="upload-box movie-form-full">
                         <label style={{ fontSize: '0.75rem', fontWeight: 'bold' }}>POSTER PHIM</label>
                         <input type="file" accept="image/*" onChange={(e) => {
                             const file = e.target.files[0];
@@ -188,12 +340,12 @@ export default function MovieManager() {
                         {preview && <img src={preview} width="40" height="55" style={{ borderRadius: '4px', objectFit: 'cover' }} />}
                     </div>
 
-                    <button type="submit" style={btnSubmitStyle}>LƯU PHIM MỚI</button>
+                    <button type="submit" style={btnSubmitStyle} className="movie-form-full">LƯU PHIM MỚI</button>
                 </form>
             </div>
 
-            {/* 🟡 3. THANH BỘ LỌC (ĐÃ DI CHUYỂN XUỐNG ĐÂY) */}
-            <div style={filterContainerStyle}>
+            {/* 🟡 3. THANH BỘ LỌC (Đã responsive) */}
+            <div className="movie-filter-box">
                 <div style={{ flex: 2 }}>
                     <input 
                         placeholder="Tìm theo tên phim hoặc đạo diễn..." 
@@ -220,39 +372,43 @@ export default function MovieManager() {
                 <button onClick={() => { setSearchTerm(""); setFilterStatus("all"); setFilterDate(""); }} style={btnResetStyle}>LÀM MỚI</button>
             </div>
 
-            {/* 🔵 4. DANH SÁCH PHIM */}
-            <table style={tableStyle}>
-                <thead style={{ background: "#f8f9fa" }}>
-                    <tr>
-                        <th style={thStyle}>Poster</th>
-                        <th style={thStyle}>Tên Phim / Đạo Diễn</th>
-                        <th style={thStyle}>Thể Loại / Rated</th>
-                        <th style={thStyle}>Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {filteredMovies.length > 0 ? filteredMovies.map(m => (
-                        <tr key={m._id} style={{ borderBottom: "1px solid #eee", opacity: m.status === 'ended' ? 0.6 : 1 }}>
-                            <td style={tdStyle}><img src={`${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${m.image}`} width="50" height="70" style={{ borderRadius: 4, objectFit: 'cover' }} /></td>
-                            <td style={tdStyle}><b>{m.title}</b><br/><small style={{ color: '#888' }}>{m.director}</small></td>
-                            <td style={tdStyle}>{m.genre}<br/><span style={{ color: '#fb4226', fontWeight: 'bold' }}>{m.rated}</span></td>
-                            <td style={tdStyle}>
-                                <button onClick={() => { setEditingMovie(m); setPreview(null); }} style={btnEditStyle}>Sửa</button>
-                                <button onClick={() => handleToggleStatus(m)} style={m.status === 'ended' ? btnShowStyle : btnHideStyle}>{m.status === 'ended' ? "Hiện" : "Ẩn"}</button>
-                            </td>
+            {/* 🔵 4. DANH SÁCH PHIM (Đã responsive cuộn ngang chống tràn) */}
+            <div className="movie-table-wrapper">
+                <table className="movie-table">
+                    <thead style={{ background: "#f8f9fa" }}>
+                        <tr>
+                            <th style={thStyle}>Poster</th>
+                            <th style={thStyle}>Tên Phim / Đạo Diễn</th>
+                            <th style={thStyle}>Thể Loại / Rated</th>
+                            <th style={thStyle}>Hành động</th>
                         </tr>
-                    )) : (
-                        <tr><td colSpan="4" style={{ padding: "30px", textAlign: "center", color: "#999" }}>Không tìm thấy phim phù hợp</td></tr>
-                    )}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {filteredMovies.length > 0 ? filteredMovies.map(m => (
+                            <tr key={m._id} style={{ borderBottom: "1px solid #eee", opacity: m.status === 'ended' ? 0.6 : 1 }}>
+                                <td style={tdStyle}><img src={`${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${m.image}`} width="45" height="63" style={{ borderRadius: 4, objectFit: 'cover' }} /></td>
+                                <td style={tdStyle}><b>{m.title}</b><br/><small style={{ color: '#888' }}>{m.director}</small></td>
+                                <td style={tdStyle}>{m.genre}<br/><span style={{ color: '#fb4226', fontWeight: 'bold' }}>{m.rated}</span></td>
+                                <td style={tdStyle}>
+                                    <div style={{ display: 'flex', gap: '5px' }}>
+                                        <button onClick={() => { setEditingMovie(m); setPreview(null); }} style={btnEditStyle}>Sửa</button>
+                                        <button onClick={() => handleToggleStatus(m)} style={m.status === 'ended' ? btnShowStyle : btnHideStyle}>{m.status === 'ended' ? "Hiện" : "Ẩn"}</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        )) : (
+                            <tr><td colSpan="4" style={{ padding: "30px", textAlign: "center", color: "#999" }}>Không tìm thấy phim phù hợp</td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
 
-            {/* MODAL CHỈNH SỬA PHIM */}
+            {/* MODAL CHỈNH SỬA PHIM (Đã responsive mượt mà) */}
             {editingMovie && (
                 <div style={modalOverlayStyle}>
-                    <div style={{ ...modalContentStyle, width: "800px" }}>
-                        <h3 style={{ color: "#fb4226", marginTop: 0 }}>CẬP NHẬT PHIM</h3>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", maxHeight: '75vh', overflowY: 'auto', padding: '10px' }}>
+                    <div className="movie-modal-content">
+                        <h3 style={{ color: "#fb4226", marginTop: 0, fontSize: "1.3rem", fontWeight: "bold", marginBottom: "20px" }}>CẬP NHẬT PHIM</h3>
+                        <div className="modal-form-grid">
                             <div style={inputGroup}><label style={labelStyle}>Tên phim:</label>
                                 <input style={inputStyle} value={editingMovie.title} onChange={e => setEditingMovie({ ...editingMovie, title: e.target.value })} />
                             </div>
@@ -265,7 +421,7 @@ export default function MovieManager() {
                             <div style={inputGroup}><label style={labelStyle}>Thời lượng (phút):</label>
                                 <input type="number" style={inputStyle} value={editingMovie.duration} onChange={e => setEditingMovie({ ...editingMovie, duration: e.target.value })} />
                             </div>
-                            <div style={{ ...inputGroup, gridColumn: 'span 2' }}><label style={labelStyle}>Diễn viên:</label>
+                            <div style={{ ...inputGroup, gridColumn: 'span 2' }} className="movie-form-full"><label style={labelStyle}>Diễn viên:</label>
                                 <input style={inputStyle} value={editingMovie.cast} onChange={e => setEditingMovie({ ...editingMovie, cast: e.target.value })} />
                             </div>
                             <div style={inputGroup}><label style={labelStyle}>Ngày khởi chiếu:</label>
@@ -284,23 +440,23 @@ export default function MovieManager() {
                                     <option value="now_showing">Đang chiếu</option><option value="coming_soon">Sắp chiếu</option><option value="ended">Ngừng chiếu</option>
                                 </select>
                             </div>
-                            <div style={{ ...inputGroup, gridColumn: 'span 2' }}><label style={labelStyle}>Trailer Youtube:</label>
+                            <div style={{ ...inputGroup, gridColumn: 'span 2' }} className="movie-form-full"><label style={labelStyle}>Trailer Youtube:</label>
                                 <input style={inputStyle} value={editingMovie.trailer} onChange={e => setEditingMovie({ ...editingMovie, trailer: e.target.value })} />
                             </div>
-                            <div style={{ ...inputGroup, gridColumn: 'span 2' }}><label style={labelStyle}>Mô tả:</label>
+                            <div style={{ ...inputGroup, gridColumn: 'span 2' }} className="movie-form-full"><label style={labelStyle}>Mô tả:</label>
                                 <textarea style={{ ...inputStyle, height: "100px" }} value={editingMovie.description} onChange={e => setEditingMovie({ ...editingMovie, description: e.target.value })} />
                             </div>
-                            <div style={{ ...inputGroup, gridColumn: 'span 2' }}>
+                            <div style={{ ...inputGroup, gridColumn: 'span 2' }} className="movie-form-full">
                                 <label style={labelStyle}>Thay đổi Poster:</label>
                                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center', background: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
                                     <input type="file" accept="image/*" onChange={(e) => {
                                         const file = e.target.files[0];
                                         if(file) { setMovieFile(file); setPreview(URL.createObjectURL(file)); }
                                     }} />
-                                    <img src={preview || `${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${editingMovie.image}`} width="50" height="70" style={{ borderRadius: '4px', objectFit: 'cover' }} />
+                                    <img src={preview || `${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${editingMovie.image}`} width="45" height="63" style={{ borderRadius: '4px', objectFit: 'cover' }} />
                                 </div>
                             </div>
-                            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '15px', marginTop: '10px' }}>
+                            <div style={{ gridColumn: 'span 2', display: 'flex', gap: '15px', marginTop: '10px' }} className="movie-form-full">
                                 <button onClick={handleUpdateMovie} style={btnSubmitStyle}>LƯU THAY ĐỔI</button>
                                 <button onClick={() => { setEditingMovie(null); setMovieFile(null); setPreview(null); }} style={btnCancelStyle}>HỦY BỎ</button>
                             </div>

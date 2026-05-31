@@ -58,12 +58,100 @@ export default function RevenueManager() {
     };
 
     return (
-        <div>
-            <h2 style={{ color: "#333", marginBottom: 30 }}>BÁO CÁO CHI TIẾT TÀI CHÍNH</h2>
+        <div className="revenue-manager-container">
+            <style>{`
+                .revenue-manager-container {
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                .rev-filter-bar {
+                    background: #fff;
+                    padding: 15px 25px;
+                    border-radius: 12px;
+                    border: 1px solid #eee;
+                    margin-bottom: 25px;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+                }
+                .rev-filter-flex {
+                    display: flex;
+                    gap: 15px;
+                    align-items: center;
+                    flex-wrap: wrap;
+                }
+                .rev-grid-cards {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 20px;
+                    margin-bottom: 25px;
+                }
+                .rev-grid-counts {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr;
+                    gap: 20px;
+                    margin-bottom: 40px;
+                }
+                .rev-table-wrapper {
+                    background: #fff;
+                    border-radius: 15px;
+                    overflow-x: auto;
+                    box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+                    border: 1px solid #eee;
+                }
+                .rev-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                }
+
+                @media (max-width: 1024px) {
+                    .rev-grid-cards {
+                        grid-template-columns: 1fr 1fr;
+                    }
+                    .rev-filter-flex select,
+                    .rev-filter-flex input {
+                        width: 100% !important;
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .rev-filter-bar {
+                        padding: 15px;
+                    }
+                    .rev-filter-flex {
+                        flex-direction: column;
+                        align-items: stretch;
+                        gap: 12px;
+                    }
+                    .rev-filter-flex span {
+                        margin-bottom: 5px;
+                    }
+                    .rev-filter-flex select,
+                    .rev-filter-flex input,
+                    .rev-filter-flex button {
+                        width: 100% !important;
+                        margin: 0 !important;
+                    }
+                    .rev-grid-cards {
+                        grid-template-columns: 1fr;
+                        gap: 15px;
+                    }
+                    .rev-grid-counts {
+                        grid-template-columns: 1fr;
+                        gap: 15px;
+                        margin-bottom: 25px;
+                    }
+                    .rev-grid-counts > div {
+                        flex-direction: column;
+                        align-items: flex-start !important;
+                        gap: 10px;
+                    }
+                }
+            `}</style>
+            
+            <h2 style={{ color: "#333", marginBottom: 30, fontSize: "1.5rem", fontWeight: "800" }}>BÁO CÁO CHI TIẾT TÀI CHÍNH</h2>
 
             {/* 🔍 BỘ LỌC DOANH THU */}
-            <div style={filterBarStyle}>
-                <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
+            <div className="rev-filter-bar">
+                <div className="rev-filter-flex">
                     <span style={{ fontWeight: "bold", color: "#666" }}>Bộ lọc:</span>
                     <select style={filterInputStyle} value={filterMovie} onChange={e => setFilterMovie(e.target.value)}>
                         <option value="">Tất cả phim</option>
@@ -80,7 +168,7 @@ export default function RevenueManager() {
             </div>
 
             {/* 📊 CÁC THẺ DOANH THU (Tự động cập nhật theo filter) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", marginBottom: "25px" }}>
+            <div className="rev-grid-cards">
                 <div style={revenueCardStyle("#2ecc71")}>
                     <p style={labelStyle}>TỔNG DOANH THU</p>
                     <h2 style={valueStyle}>{revenueData.totalRevenue?.toLocaleString()}đ</h2>
@@ -99,7 +187,7 @@ export default function RevenueManager() {
             </div>
 
             {/* 📊 CÁC THẺ SỐ LƯỢNG */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "40px" }}>
+            <div className="rev-grid-counts">
                 <div style={countCardStyle("#9b59b6")}>
                     <span>Tổng vé đã bán:</span>
                     <b style={{fontSize: '1.5rem'}}>{revenueData.totalTickets} vé</b>
@@ -111,9 +199,9 @@ export default function RevenueManager() {
             </div>
 
             {/* 📋 NHẬT KÝ GIAO DỊCH (Đã fix Hydration Error) */}
-            <h3 style={{ marginBottom: 20 }}>Nhật ký giao dịch gần đây</h3>
-            <div style={{background: '#fff', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 5px 15px rgba(0,0,0,0.05)'}}>
-                <table style={tableStyle}>
+            <h3 style={{ marginBottom: 20, color: "#333", fontWeight: "bold" }}>Nhật ký giao dịch gần đây</h3>
+            <div className="rev-table-wrapper">
+                <table className="rev-table">
                     <thead>
                         <tr style={{ background: "#f8f9fa" }}>
                             <th style={thStyle}>Thời gian</th>
@@ -159,12 +247,10 @@ export default function RevenueManager() {
 }
 
 // --- STYLES NÂNG CẤP ---
-const filterBarStyle = { background: "#fff", padding: "15px 25px", borderRadius: "12px", border: "1px solid #eee", marginBottom: "25px", boxShadow: "0 2px 5px rgba(0,0,0,0.05)" };
-const filterInputStyle = { padding: "10px", borderRadius: "8px", border: "1px solid #ddd", outline: "none", fontSize: '0.9rem' };
-const btnSearchStyle = { padding: "10px 20px", background: "#333", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer" };
-const tableStyle = { width: "100%", borderCollapse: "collapse" };
-const thStyle = { padding: "18px 15px", textAlign: "left", color: "#666", fontSize: '0.85rem' };
-const tdStyle = { padding: "15px", color: "#333", verticalAlign: 'top' };
+const filterInputStyle = { padding: "12px", borderRadius: "8px", border: "1px solid #ddd", outline: "none", fontSize: '0.9rem', width: '100%', boxSizing: 'border-box' };
+const btnSearchStyle = { padding: "12px 25px", background: "#333", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", transition: "0.2s" };
+const thStyle = { padding: "18px 15px", textAlign: "left", color: "#666", fontSize: '0.85rem', borderBottom: '2px solid #eee' };
+const tdStyle = { padding: "15px", color: "#333", verticalAlign: 'top', fontSize: '0.9rem' };
 const labelStyle = { margin: 0, fontSize: "0.8rem", fontWeight: "bold", opacity: 0.9 };
 const valueStyle = { margin: "8px 0", fontSize: "1.8rem" };
 const subLabelStyle = { margin: 0, fontSize: "0.7rem", opacity: 0.8 };

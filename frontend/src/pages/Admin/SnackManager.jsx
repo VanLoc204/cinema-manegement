@@ -8,6 +8,14 @@ export default function SnackManager() {
     const [snackFile, setSnackFile] = useState(null); // Lưu file ảnh thật để upload
     const [preview, setPreview] = useState(null); // Để hiện ảnh nhỏ xem trước (preview)
 
+    // 🔔 State quản lý thông báo tự tắt
+    const [notification, setNotification] = useState({ show: false, message: "", type: "success" });
+
+    const showNotify = (message, type = "success") => {
+        setNotification({ show: true, message, type });
+        setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
+    };
+
     const fetchSnacks = () => {
         axios.get("/snacks").then(res => setSnacks(res.data));
     };
@@ -22,7 +30,7 @@ export default function SnackManager() {
 
         const data = editingSnack || newSnack;
         if (!data.name || !data.price || (!editingSnack && !snackFile)) {
-            return alert("Cần bổ sung thêm thông tin món");
+            return showNotify("Vui lòng nhập đầy đủ thông tin", "error");
         }
 
         const formData = new FormData();
@@ -37,12 +45,12 @@ export default function SnackManager() {
                 await axios.put(`/snacks/${editingSnack._id}`, formData, {
                     headers: { "Content-Type": "multipart/form-data" }
                 });
-                alert("Cập nhật thành công");
+                showNotify("Cập nhật thành công");
             } else {
                 await axios.post("/snacks", formData, {
                     headers: { "Content-Type": "multipart/form-data" }
                 });
-                alert("Thêm bắp nước mới thành công");
+                showNotify("Thêm bắp nước mới thành công");
             }
 
             // Reset form và file input sau khi thành công
@@ -55,9 +63,9 @@ export default function SnackManager() {
             fetchSnacks();
         } catch (err) {
             if (editingSnack) {
-                alert("Không thể cập nhật, vui lòng thử lại");
+                showNotify("Không thể cập nhật, vui lòng thử lại", "error");
             } else {
-                alert("Không thể xử lý, vui lòng thử lại");
+                showNotify("Không thể xử lý, vui lòng thử lại", "error");
             }
         }
     };
@@ -67,27 +75,94 @@ export default function SnackManager() {
         if (window.confirm("Xóa món này khỏi kho")) {
             try {
                 await axios.delete(`/snacks/${id}`);
+                showNotify("Đã xóa bắp nước thành công");
                 fetchSnacks();
             } catch (err) {
-                alert("Không thể xóa, vui lòng thử lại");
+                showNotify("Không thể xóa, vui lòng thử lại", "error");
             }
         }
     };
 
     return (
-        <div>
-            <div style={cardStyle}>
-                <h3 style={{ marginTop: 0 }}>{editingSnack ? "✏️ Sửa bắp nước" : "Thêm bắp nước mới"}</h3>
-                <form onSubmit={handleSaveSnack} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "15px" }}>
+        <div className="snack-manager-container" style={{ position: 'relative' }}>
+            {/* 📢 THÔNG BÁO TỰ TẮT */}
+            {notification.show && (
+                <div style={{ ...toastStyle, backgroundColor: notification.type === "success" ? "#2ecc71" : "#e74c3c" }}>
+                    {notification.message}
+                </div>
+            )}
+            <style>{`
+                .snack-manager-container {
+                    width: 100%;
+                    box-sizing: border-box;
+                }
+                .snack-card-box {
+                    background: #fdfcf0;
+                    padding: 25px;
+                    border-radius: 12px;
+                    border: 1px solid #eee;
+                    margin-bottom: 30px;
+                }
+                .snack-form-grid {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 15px;
+                }
+                .snack-table-wrapper {
+                    width: 100%;
+                    overflow-x: auto;
+                    border-radius: 8px;
+                    border: 1px solid #eee;
+                    margin-top: 15px;
+                }
+                .snack-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: #fff;
+                }
+
+                @media (max-width: 992px) {
+                    .snack-form-grid {
+                        grid-template-columns: 1fr 1fr;
+                    }
+                    .snack-form-grid textarea {
+                        grid-column: span 2 !important;
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .snack-card-box {
+                        padding: 15px;
+                        margin-bottom: 20px;
+                    }
+                    .snack-form-grid {
+                        grid-template-columns: 1fr;
+                        gap: 12px;
+                    }
+                    .snack-form-grid > div,
+                    .snack-form-grid textarea {
+                        grid-column: span 1 !important;
+                    }
+                    .snack-form-grid button {
+                        width: 100%;
+                    }
+                }
+            `}</style>
+            
+            <h2 style={{ color: "#333", marginBottom: 25, fontSize: "1.5rem", fontWeight: "800" }}>QUẢN LÝ BẮP NƯỚC & ĐỒ ĂN</h2>
+
+            <div className="snack-card-box">
+                <h3 style={{ marginTop: 0, marginBottom: "15px", color: "#555", fontWeight: "bold" }}>{editingSnack ? "✏️ Sửa bắp nước" : "Thêm bắp nước mới"}</h3>
+                <form onSubmit={handleSaveSnack} className="snack-form-grid">
                     <input placeholder="Tên món" style={inputStyle}
                         value={editingSnack ? editingSnack.name : newSnack.name}
-                        onChange={e => editingSnack ? setEditingSnack({ ...editingSnack, name: e.target.value }) : setNewSnack({ ...newSnack, name: e.target.value })} required />
+                        onChange={e => editingSnack ? setEditingSnack({ ...editingSnack, name: e.target.value }) : setNewSnack({ ...newSnack, name: e.target.value })} />
 
                     <input placeholder="Giá tiền" type="number" style={inputStyle}
                         value={editingSnack ? editingSnack.price : newSnack.price}
-                        onChange={e => editingSnack ? setEditingSnack({ ...editingSnack, price: e.target.value }) : setNewSnack({ ...newSnack, price: e.target.value })} required />
+                        onChange={e => editingSnack ? setEditingSnack({ ...editingSnack, price: e.target.value }) : setNewSnack({ ...newSnack, price: e.target.value })} />
 
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: 'wrap' }}>
                         <input type="file" accept="image/*" onChange={(e) => {
                             const file = e.target.files[0];
                             if (file) {
@@ -101,7 +176,7 @@ export default function SnackManager() {
                         )}
                     </div>
 
-                    <textarea placeholder="Mô tả" style={{ ...inputStyle, gridColumn: "span 2" }}
+                    <textarea placeholder="Mô tả" style={{ ...inputStyle, gridColumn: "span 2", minHeight: '60px' }}
                         value={editingSnack ? editingSnack.description : newSnack.description}
                         onChange={e => editingSnack ? setEditingSnack({ ...editingSnack, description: e.target.value }) : setNewSnack({ ...newSnack, description: e.target.value })} />
 
@@ -112,37 +187,41 @@ export default function SnackManager() {
                 </form>
             </div>
 
-            <table style={tableStyle}>
-                <thead style={{ background: "#f8f9fa" }}>
-                    <tr>
-                        <th style={thStyle}>Ảnh</th>
-                        <th style={thStyle}>Tên món</th>
-                        <th style={thStyle}>Giá</th>
-                        <th style={thStyle}>Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {snacks.map(s => (
-                        <tr key={s._id} style={{ borderBottom: "1px solid #eee" }}>
-                            <td style={tdStyle}>
-                                <img src={`${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${s.image}`} width="55" height="55" style={{ borderRadius: "8px", objectFit: "cover" }}
-                                    onError={(e) => e.target.src = "https://via.placeholder.com/50"} />
-                            </td>
-                            <td style={tdStyle}><b>{s.name}</b></td>
-                            <td style={{ ...tdStyle, color: "#fb4226", fontWeight: "bold" }}>{s.price.toLocaleString()}đ</td>
-                            <td style={tdStyle}>
-                                <button onClick={() => { setEditingSnack(s); setPreview(null); }} style={{ ...btnEditStyle, marginRight: 10 }}>Sửa</button>
-                                <button onClick={() => handleDeleteSnack(s._id)} style={btnDeleteStyle}>Xóa</button>
-                            </td>
-                        </tr>
-                    ))}
-                    {snacks.length === 0 && (
+            <div className="snack-table-wrapper">
+                <table className="snack-table">
+                    <thead style={{ background: "#f8f9fa" }}>
                         <tr>
-                            <td colSpan="4" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không tìm thấy món nào</td>
+                            <th style={thStyle}>Ảnh</th>
+                            <th style={thStyle}>Tên món</th>
+                            <th style={thStyle}>Giá</th>
+                            <th style={thStyle}>Hành động</th>
                         </tr>
-                    )}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {snacks.map(s => (
+                            <tr key={s._id} style={{ borderBottom: "1px solid #eee" }}>
+                                <td style={tdStyle}>
+                                    <img src={`${import.meta.env.DEV ? "http://localhost:5000" : window.location.origin}${s.image}`} width="50" height="50" style={{ borderRadius: "8px", objectFit: "cover" }}
+                                        onError={(e) => e.target.src = "https://via.placeholder.com/50"} />
+                                </td>
+                                <td style={tdStyle}><b>{s.name}</b></td>
+                                <td style={{ ...tdStyle, color: "#fb4226", fontWeight: "bold" }}>{s.price.toLocaleString()}đ</td>
+                                <td style={tdStyle}>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button onClick={() => { setEditingSnack(s); setPreview(null); }} style={btnEditStyle}>Sửa</button>
+                                        <button onClick={() => handleDeleteSnack(s._id)} style={btnDeleteStyle}>Xóa</button>
+                                    </div>
+                                </td>
+                            </tr>
+                        ))}
+                        {snacks.length === 0 && (
+                            <tr>
+                                <td colSpan="4" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không tìm thấy món nào</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
@@ -157,3 +236,4 @@ const thStyle = { padding: "15px", textAlign: "left", color: "#666" };
 const tdStyle = { padding: "15px", color: "#333" };
 const btnDeleteStyle = { padding: "5px 12px", background: "none", border: "1px solid #e74c3c", color: "#e74c3c", borderRadius: "4px", cursor: "pointer" };
 const btnEditStyle = { background: "none", border: "1px solid #3498db", color: "#3498db", padding: "5px 12px", borderRadius: "4px", cursor: "pointer" };
+const toastStyle = { position: 'fixed', top: '20px', right: '20px', padding: '12px 25px', color: 'white', borderRadius: '8px', zIndex: 9999, fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' };

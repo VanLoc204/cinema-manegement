@@ -154,7 +154,68 @@ export default function VoucherManager() {
     );
 
     return (
-        <div style={{ fontFamily: "'Inter', sans-serif", padding: "10px" }}>
+        <div className="voucher-manager-container">
+            <style>{`
+                .voucher-manager-container {
+                    width: 100%;
+                    box-sizing: border-box;
+                    font-family: 'Inter', sans-serif;
+                }
+                .vch-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 35px;
+                    gap: 15px;
+                }
+                .vch-table-wrapper {
+                    background: #fff;
+                    border-radius: 16px;
+                    box-shadow: 0 6px 25px rgba(0,0,0,0.02);
+                    border: 1px solid #eee;
+                    overflow-x: auto;
+                    width: 100%;
+                }
+                .vch-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    text-align: left;
+                }
+                .vch-modal-content {
+                    width: 550px;
+                    max-width: 90%;
+                    background: #fff;
+                    border-radius: 24px;
+                    padding: 35px;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+                    max-height: 90vh;
+                    overflow-y: auto;
+                    box-sizing: border-box;
+                }
+                .vch-form-row {
+                    display: flex;
+                    gap: 15px;
+                    margin-bottom: 15px;
+                }
+
+                @media (max-width: 768px) {
+                    .vch-header {
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    .vch-header button {
+                        width: 100%;
+                    }
+                    .vch-form-row {
+                        flex-direction: column;
+                        gap: 12px;
+                        margin-bottom: 12px;
+                    }
+                    .vch-modal-content {
+                        padding: 20px;
+                    }
+                }
+            `}</style>
             
             {/* THÔNG BÁO TOAST */}
             {notify.show && (
@@ -177,12 +238,7 @@ export default function VoucherManager() {
             )}
 
             {/* HEADER TRANG */}
-            <div style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "35px"
-            }}>
+            <div className="vch-header">
                 <div>
                     <h2 style={{ margin: 0, fontSize: "1.6rem", fontWeight: "900", color: "#222" }}>QUẢN LÝ VOUCHER KHUYẾN MÃI</h2>
                     <p style={{ margin: "5px 0 0 0", color: "#666", fontSize: "0.85rem", fontWeight: "600" }}>Tạo, sửa đổi và phân phối voucher trực tiếp tới khách hàng thân thiết</p>
@@ -210,23 +266,17 @@ export default function VoucherManager() {
             {loading ? (
                 <div style={{ textAlign: "center", padding: "100px 0", color: "#888", fontWeight: "700" }}>Đang tải danh sách voucher sếp ơi...</div>
             ) : vouchers.length > 0 ? (
-                <div style={{
-                    background: "#fff",
-                    borderRadius: "16px",
-                    boxShadow: "0 6px 25px rgba(0,0,0,0.02)",
-                    border: "1px solid #eee",
-                    overflow: "hidden"
-                }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", tableLayout: "fixed" }}>
+                <div className="vch-table-wrapper">
+                    <table className="vch-table">
                         <thead>
                             <tr style={{ background: "#f9f9f7", borderBottom: "1px solid #eee" }}>
-                                <th style={{ ...thStyle, width: "15%" }}>MÃ VOUCHER</th>
-                                <th style={{ ...thStyle, width: "12%" }}>LOẠI ƯU ĐÃI</th>
-                                <th style={{ ...thStyle, width: "10%" }}>GIÁ TRỊ GIẢM</th>
-                                <th style={{ ...thStyle, width: "10%" }}>ĐƠN TỐI THIỂU</th>
-                                <th style={{ ...thStyle, width: "10%" }}>HẠN SỬ DỤNG</th>
-                                <th style={{ ...thStyle, width: "20%" }}>ĐÃ PHÂN PHỐI / SỬ DỤNG</th>
-                                <th style={{ ...thStyle, width: "23%", textAlign: "center" }}>THAO TÁC</th>
+                                <th style={{ ...thStyle, width: "120px" }}>MÃ VOUCHER</th>
+                                <th style={{ ...thStyle, width: "120px" }}>LOẠI ƯU ĐÃI</th>
+                                <th style={{ ...thStyle, width: "110px" }}>GIÁ TRỊ GIẢM</th>
+                                <th style={{ ...thStyle, width: "120px" }}>ĐƠN TỐI THIỂU</th>
+                                <th style={{ ...thStyle, width: "120px" }}>HẠN SỬ DỤNG</th>
+                                <th style={{ ...thStyle, width: "200px" }}>ĐẠ PHÂN PHỐI / SỬ DỤNG</th>
+                                <th style={{ ...thStyle, width: "250px", textAlign: "center" }}>THAO TÁC</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -307,12 +357,12 @@ export default function VoucherManager() {
             {/* MODAL THÊM / SỬA VOUCHER */}
             {showForm && (
                 <div style={modalOverlayStyle}>
-                    <div style={modalContainerStyle}>
+                    <div className="vch-modal-content">
                         <h3 style={{ margin: "0 0 25px 0", fontSize: "1.3rem", fontWeight: "900", color: "#222" }}>
                             {editingId ? "CẬP NHẬT VOUCHER KHUYẾN MÃI" : "TẠO VOUCHER MỚI"}
                         </h3>
                         <form onSubmit={handleSave}>
-                            <div style={formRow}>
+                            <div className="vch-form-row">
                                 <div style={{ flex: 1 }}>
                                     <label style={labelStyle}>Mã Voucher (Viết hoa không dấu):</label>
                                     <input
@@ -321,7 +371,6 @@ export default function VoucherManager() {
                                         onChange={e => setCode(e.target.value.toUpperCase())}
                                         style={inputStyle}
                                         placeholder="VD: LUX50K, EVENT2026"
-                                        required
                                     />
                                 </div>
                                 <div style={{ flex: 1 }}>
@@ -339,7 +388,7 @@ export default function VoucherManager() {
                                 </div>
                             </div>
 
-                            <div style={formRow}>
+                            <div className="vch-form-row">
                                 <div style={{ flex: 1 }}>
                                     <label style={labelStyle}>Giá trị ưu đãi (% hoặc tiền hoặc số lượng):</label>
                                     <input
@@ -348,7 +397,6 @@ export default function VoucherManager() {
                                         onChange={e => setDiscountValue(e.target.value)}
                                         style={inputStyle}
                                         placeholder="VD: 20 đối với 20%, hoặc 50000 đối với 50k"
-                                        required
                                     />
                                 </div>
                                 <div style={{ flex: 1 }}>
@@ -363,7 +411,7 @@ export default function VoucherManager() {
                                 </div>
                             </div>
 
-                            <div style={formRow}>
+                            <div className="vch-form-row">
                                 <div style={{ flex: 1 }}>
                                     <label style={labelStyle}>Hạn sử dụng (Expiry Date):</label>
                                     <input
@@ -371,7 +419,6 @@ export default function VoucherManager() {
                                         value={expiryDate}
                                         onChange={e => setExpiryDate(e.target.value)}
                                         style={inputStyle}
-                                        required
                                     />
                                 </div>
                             </div>
@@ -388,7 +435,7 @@ export default function VoucherManager() {
                                     type="submit"
                                     style={{ ...formBtnStyle, background: "#fb4226", color: "#fff" }}
                                 >
-                                    LƯU LAI
+                                    LƯU LẠI
                                 </button>
                             </div>
                         </form>
@@ -399,7 +446,7 @@ export default function VoucherManager() {
             {/* MODAL PHÂN PHỐI CRM BLAST */}
             {showDistribute && (
                 <div style={modalOverlayStyle}>
-                    <div style={{ ...modalContainerStyle, width: "600px" }}>
+                    <div className="vch-modal-content" style={{ width: "600px" }}>
                         <h3 style={{ margin: "0 0 10px 0", fontSize: "1.3rem", fontWeight: "900", color: "#222" }}>
                             PHÂN PHỐI VOUCHER MỤC TIÊU
                         </h3>
@@ -555,20 +602,6 @@ const modalOverlayStyle = {
     justifyContent: "center",
     alignItems: "center",
     backdropFilter: "blur(4px)"
-};
-
-const modalContainerStyle = {
-    width: "550px",
-    background: "#fff",
-    borderRadius: "24px",
-    padding: "35px",
-    boxShadow: "0 20px 50px rgba(0,0,0,0.15)"
-};
-
-const formRow = {
-    display: "flex",
-    gap: "15px",
-    marginBottom: "15px"
 };
 
 const labelStyle = {
