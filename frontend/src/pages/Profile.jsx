@@ -636,7 +636,7 @@ export default function Profile() {
                                 </div>
                             ) : (
                                 <div style={{ textAlign: "center", padding: "80px 20px", color: "#ccc" }}>
-                                    <p style={{ margin: 0, fontStyle: "italic", fontSize: "0.95rem" }}>Sếp chưa có bộ phim nào đã xem tại hệ thống.</p>
+                                    <p style={{ margin: 0, fontStyle: "italic", fontSize: "0.95rem" }}>Chưa có bộ phim nào đã xem tại hệ thống.</p>
                                 </div>
                             )}
                         </div>

@@ -560,15 +560,53 @@ exports.payosWebhook = async (req, res) => {
                 await booking.save();
                 console.log("[WEBHOOK] Cập nhật Booking", booking._id, "sang Paid thành công!");
 
-                // Phát Socket.io để cập nhật sơ đồ ghế cho các client đang mở
+                // 🎟️ Đánh dấu voucher đã sử dụng
+                if (booking.appliedVoucher) {
+                    const Voucher = require("../models/Voucher");
+                    const voucher = await Voucher.findOne({ code: booking.appliedVoucher.toUpperCase() });
+                    if (voucher) {
+                        const userIndex = voucher.assignedUsers.findIndex(
+                            au => au.userId.toString() === booking.userId.toString()
+                        );
+                        if (userIndex !== -1) {
+                            voucher.assignedUsers[userIndex].used = true;
+                            voucher.assignedUsers[userIndex].usedAt = new Date();
+                        } else {
+                            voucher.assignedUsers.push({
+                                userId: booking.userId,
+                                  used: true,
+                                  usedAt: new Date()
+                            });
+                        }
+                        await voucher.save();
+                        console.log("[WEBHOOK] Đã đánh dấu voucher", booking.appliedVoucher, "được sử dụng!");
+                    }
+                }
+
+                // 📡 Kích hoạt Socket.io gửi cập nhật sơ đồ ghế của phòng chiếu sang các máy khác
                 const io = req.app.get("socketio");
                 if (io) {
-                    const allBookings = await Booking.find({
-                        showtimeId: booking.showtimeId,
-                        status: { $ne: "Cancelled" }
-                    });
+                    io.emit("cancel-hold-timer", { userId: booking.userId });
+                    const allBookings = await Booking.find({ showtimeId: booking.showtimeId, status: { $ne: "Cancelled" } });
                     const allBookedSeats = allBookings.flatMap(b => b.seats);
                     io.to(booking.showtimeId.toString()).emit("update-booked-seats", allBookedSeats);
+                }
+
+                // Gửi email xác nhận chạy ngầm
+                const fullBooking = await Booking.findById(booking._id)
+                    .populate({ path: 'showtimeId', populate: { path: 'movieId roomId' } })
+                    .populate('userId', 'email name');
+
+                if (fullBooking && fullBooking.userId && fullBooking.userId.email) {
+                    emailService.sendBookingConfirmation(fullBooking.userId.email, {
+                        bookingId: fullBooking._id,
+                        showtime: fullBooking.showtimeId,
+                        seats: fullBooking.seats,
+                        snacks: fullBooking.snacks,
+                        totalAmount: fullBooking.totalAmount,
+                        discountAmount: fullBooking.discountAmount,
+                        appliedVoucher: fullBooking.appliedVoucher
+                    }).catch(e => console.error("Email error:", e));
                 }
             }
         }

@@ -111,10 +111,26 @@ export default function Register() {
 
   return (
     <div style={containerStyle}>
+      <style>{`
+        @media (max-width: 768px) {
+          .auth-toast {
+            right: auto !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
+            width: calc(100% - 32px) !important;
+            max-width: 340px !important;
+            text-align: center !important;
+            justify-content: center !important;
+            padding: 12px 20px !important;
+            font-size: 0.9rem !important;
+            top: 20px !important;
+          }
+        }
+      `}</style>
       
       {/* 📢 THÔNG BÁO TOAST */}
       {notice.show && (
-        <div style={{
+        <div className="auth-toast" style={{
           ...toastStyle,
           backgroundColor: notice.type === "success" ? "#28a745" : "#dc3545"
         }}>

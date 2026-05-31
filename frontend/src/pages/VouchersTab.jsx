@@ -313,8 +313,8 @@ export default function VouchersTab({ history, info, loading, viewTitleStyle }) 
                 }}>
                     <p style={{ margin: 0, fontStyle: "italic", fontSize: "0.9rem" }}>
                         {activeSubTab === "unused" 
-                            ? "Sếp chưa có voucher ưu đãi khả dụng. Hãy tích lũy thêm chi tiêu hoặc chờ nhận quà sự kiện nhé!" 
-                            : "Lịch sử dùng voucher của sếp trống trải."}
+                            ? "Bạn chưa có voucher khả dụng" 
+                            : "Bạn chưa từng nhận ưu đãi nào!"}
                     </p>
                 </div>
             )}

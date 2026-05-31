@@ -12,6 +12,9 @@ import Admin from "./pages/Admin/Admin";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import Staff from "./pages/Staff/Staff";
+import TermsOfUse from "./pages/TermsOfUse";
+import TicketTerms from "./pages/TicketTerms";
+import PaymentPolicy from "./pages/PaymentPolicy";
 
 // --- 🕵️‍♂️ KIỂM TRA TOKEN HẾT HẠN NGAY KHI LOAD TRANG ---
 const checkTokenExpiration = () => {
@@ -80,6 +83,9 @@ export default function App() {
                         <Route path="/membership" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                         <Route path="/vouchers" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
                         <Route path="/booking/:id" element={<ProtectedRoute><Booking socket={socket} /></ProtectedRoute>} />
+                        <Route path="/terms-of-use" element={<TermsOfUse />} />
+                        <Route path="/ticket-terms" element={<TicketTerms />} />
+                        <Route path="/payment-policy" element={<PaymentPolicy />} />
 
                         {/* --- 🚀 ROUTES CHO NHÂN VIÊN (STAFF POS) --- */}
                         <Route

@@ -37,6 +37,20 @@ export default function StaffBooking({ socket }) {
     // 🪟 State quản lý modal xác nhận tùy chỉnh (thay thế window.confirm)
     const [confirmModal, setConfirmModal] = useState({ show: false, message: "", onConfirm: null });
 
+    // 🔔 State và hàm quản lý thông báo Toast Custom thay thế alert()
+    const [toast, setToast] = useState({ show: false, message: "", type: "info" });
+    const showToast = (message, type = "info") => {
+        setToast({ show: true, message, type });
+        setTimeout(() => {
+            setToast(prev => {
+                if (prev.message === message) {
+                    return { ...prev, show: false };
+                }
+                return prev;
+            });
+        }, 3500);
+    };
+
     // 🚩 REALTIME: Tham gia vào phòng của suất chiếu ngay khi vào trang
     useEffect(() => {
         if (socket && id) {
@@ -62,7 +76,7 @@ export default function StaffBooking({ socket }) {
                 axios.post("/bookings/cancel", { bookingId: currentBookingId })
                     .catch(err => console.error("Lỗi tự động hủy đơn hết hạn:", err));
             }
-            alert("⏰ Hết thời gian giữ vé! Ghế của khách đã tự động được giải phóng.");
+            showToast("Hết thời gian giữ vé! Ghế của khách đã tự động được giải phóng.", "warning");
             setShowQR(false);
             setIsCheckingPayment(false);
         }
@@ -175,7 +189,7 @@ export default function StaffBooking({ socket }) {
     const allAvailableVouchers = [...unusedTierVouchers, ...myVouchers];
 
     const handleSearchCustomer = async () => {
-        if (!searchKeyword.trim()) return alert("Vui lòng nhập SĐT hoặc Email khách hàng sếp ơi!");
+        if (!searchKeyword.trim()) return showToast("Vui lòng nhập SĐT hoặc Email khách hàng sếp ơi!", "warning");
         try {
             const res = await axios.get(`/users/find-customer?keyword=${searchKeyword}`);
             setCustomer(res.data);
@@ -187,10 +201,10 @@ export default function StaffBooking({ socket }) {
             ]);
             setMyVouchers(voucherRes.data.filter(v => !v.used));
             setUserHistory(bookingRes.data || []);
-            alert(`Tìm thấy khách hàng: ${res.data.name} (${res.data.membershipTier})`);
+            showToast(`Tìm thấy khách hàng: ${res.data.name} (${res.data.membershipTier})`, "success");
         } catch (err) {
             console.error("Lỗi tìm khách hàng:", err);
-            alert(err.response?.data || "Không tìm thấy khách hàng này!");
+            showToast(err.response?.data || "Không tìm thấy khách hàng này!", "error");
             setCustomer(null);
             setMyVouchers([]);
             setUserHistory([]);
@@ -308,7 +322,7 @@ export default function StaffBooking({ socket }) {
 
         } catch (err) {
             console.error("Lỗi bán vé tại quầy:", err);
-            alert("❌ Lỗi hệ thống khi tạo vé!");
+            showToast("❌ Lỗi hệ thống khi tạo vé!", "error");
         }
     };
 
@@ -376,7 +390,7 @@ export default function StaffBooking({ socket }) {
         } catch (err) {
             console.error("Lỗi tạo liên kết chuyển khoản:", err);
             setShowQR(false);
-            alert("❌ Lỗi hệ thống khi tạo liên kết PayOS QR!");
+            showToast("❌ Lỗi hệ thống khi tạo liên kết PayOS QR!", "error");
         }
     };
 
@@ -574,6 +588,27 @@ export default function StaffBooking({ socket }) {
         <div className="staff-booking-wrapper">
             <style>{`
                 /* --- HỆ THỐNG CSS RESPONSIVE BÁN VÉ TẠI QUẦY --- */
+                .checkout-btn-cash,
+                .checkout-btn-qr {
+                    transition: all 0.25s ease-in-out !important;
+                }
+                .checkout-btn-cash:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35) !important;
+                    filter: brightness(1.05);
+                }
+                .checkout-btn-cash:active {
+                    transform: translateY(0);
+                }
+                .checkout-btn-qr:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 18px rgba(59, 130, 246, 0.35) !important;
+                    filter: brightness(1.05);
+                }
+                .checkout-btn-qr:active {
+                    transform: translateY(0);
+                }
+
                 .staff-booking-wrapper {
                     padding: 40px;
                     display: flex;
@@ -611,14 +646,15 @@ export default function StaffBooking({ socket }) {
                 }
 
                 .staff-booking-header {
-                    display: flex;
-                    justify-content: space-between;
+                    display: grid;
+                    grid-template-columns: 1fr auto 1fr;
                     align-items: center;
                     margin-bottom: 20px;
                     width: 100%;
                 }
 
                 .staff-booking-back-btn {
+                    justify-self: start;
                     display: flex;
                     align-items: center;
                     gap: 8px;
@@ -644,9 +680,12 @@ export default function StaffBooking({ socket }) {
                     color: #fb4226;
                     font-size: 1.4rem;
                     font-weight: 900;
+                    text-align: center;
+                    justify-self: center;
                 }
 
                 .staff-booking-step-badge {
+                    justify-self: end;
                     padding: 5px 15px;
                     background: #eee;
                     border-radius: 20px;
@@ -731,24 +770,35 @@ export default function StaffBooking({ socket }) {
                     }
 
                     .staff-booking-header {
+                        display: grid !important;
+                        grid-template-columns: 1fr auto 1fr !important;
+                        align-items: center !important;
                         margin-bottom: 15px !important;
-                        gap: 10px !important;
-                        padding: 0 5px !important;
+                        padding: 0 2px !important;
+                        width: 100% !important;
                     }
 
                     .staff-booking-title {
-                        font-size: 1.15rem !important;
+                        font-size: 1.0rem !important;
+                        white-space: nowrap !important;
+                        text-align: center !important;
+                        justify-self: center !important;
                     }
 
                     .staff-booking-back-btn {
-                        padding: 6px 12px !important;
-                        font-size: 0.8rem !important;
+                        justify-self: start !important;
+                        padding: 6px 8px !important;
+                        font-size: 0.75rem !important;
                         border-radius: 8px !important;
+                        white-space: nowrap !important;
+                        gap: 4px !important;
                     }
 
                     .staff-booking-step-badge {
-                        padding: 4px 10px !important;
-                        font-size: 0.72rem !important;
+                        justify-self: end !important;
+                        padding: 4px 8px !important;
+                        font-size: 0.7rem !important;
+                        white-space: nowrap !important;
                     }
 
                     .staff-snacks-grid {
@@ -763,24 +813,37 @@ export default function StaffBooking({ socket }) {
                         border-radius: 16px !important;
                         box-sizing: border-box !important;
                     }
+
+                    .custom-toast {
+                        right: auto !important;
+                        left: 50% !important;
+                        transform: translateX(-50%) !important;
+                        width: calc(100% - 32px) !important;
+                        max-width: 340px !important;
+                        text-align: center !important;
+                        justify-content: center !important;
+                        padding: 12px 20px !important;
+                        font-size: 0.85rem !important;
+                        top: 20px !important;
+                    }
                 }
             `}</style>
 
             <div className="staff-booking-left">
                 <div className="staff-booking-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                        <button
-                            onClick={() => navigate("/staff/pos")}
-                            className="staff-booking-back-btn"
-                        >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="19" y1="12" x2="5" y2="12"></line>
-                                <polyline points="12 19 5 12 12 5"></polyline>
-                            </svg>
-                            Quay lại
-                        </button>
-                        <h2 className="staff-booking-title">BÁN VÉ TẠI QUẦY</h2>
-                    </div>
+                    <button
+                        onClick={() => navigate("/staff/pos")}
+                        className="staff-booking-back-btn"
+                    >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                        Quay lại
+                    </button>
+
+                    <h2 className="staff-booking-title">BÁN VÉ TẠI QUẦY</h2>
+
                     <span className="staff-booking-step-badge">Bước {step}/2</span>
                 </div>
 
@@ -901,11 +964,41 @@ export default function StaffBooking({ socket }) {
                         CHỌN BẮP NƯỚC ➔
                     </button>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 20 }}>
-                        <button onClick={handleConfirmCash} style={{ ...btnStyle, background: "#2e7d32", padding: "14px", fontSize: "0.9rem", fontWeight: "800", borderRadius: "10px" }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 20 }}>
+                        <button 
+                            onClick={handleConfirmCash} 
+                            style={{ 
+                                ...btnStyle, 
+                                background: "linear-gradient(135deg, #10b981 0%, #059669 100%)", 
+                                padding: "14px", 
+                                fontSize: "0.9rem", 
+                                fontWeight: "800", 
+                                borderRadius: "12px",
+                                border: "none",
+                                color: "#fff",
+                                cursor: "pointer",
+                                boxShadow: "0 4px 12px rgba(16, 185, 129, 0.2)"
+                            }}
+                            className="checkout-btn-cash"
+                        >
                             THANH TOÁN TIỀN MẶT
                         </button>
-                        <button onClick={handleConfirmTransfer} style={{ ...btnStyle, background: "linear-gradient(135deg, #fb4226 0%, #ff8a00 100%)", padding: "14px", fontSize: "0.9rem", fontWeight: "800", borderRadius: "10px" }}>
+                        <button 
+                            onClick={handleConfirmTransfer} 
+                            style={{ 
+                                ...btnStyle, 
+                                background: "linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)", 
+                                padding: "14px", 
+                                fontSize: "0.9rem", 
+                                fontWeight: "800", 
+                                borderRadius: "12px",
+                                border: "none",
+                                color: "#fff",
+                                cursor: "pointer",
+                                boxShadow: "0 4px 12px rgba(59, 130, 246, 0.2)"
+                            }}
+                            className="checkout-btn-qr"
+                        >
                             QUÉT MÃ CHUYỂN KHOẢN (QR)
                         </button>
                         <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888', fontWeight: "bold", fontSize: "0.8rem", marginTop: 5 }}>
@@ -918,7 +1011,7 @@ export default function StaffBooking({ socket }) {
             {/* Modal Chọn Kho Voucher của Khách */}
             {showVoucherModal && (
                 <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
-                    <div style={{ background: "#fff", padding: 25, borderRadius: 15, width: 400, maxHeight: "80vh", overflowY: "auto", boxShadow: "0 10px 35px rgba(0,0,0,0.2)" }}>
+                    <div style={{ background: "#fff", padding: 25, borderRadius: 15, width: "92%", maxWidth: "400px", maxHeight: "80vh", overflowY: "auto", boxShadow: "0 10px 35px rgba(0,0,0,0.2)" }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #eee", paddingBottom: 10, marginBottom: 15 }}>
                             <h3 style={{ margin: 0, color: "#333" }}>Kho Voucher Khách Hàng</h3>
                             <button onClick={() => setShowVoucherModal(false)} style={{ background: "none", border: "none", fontSize: "1.2rem", cursor: "pointer", fontWeight: "bold", color: "#999" }}>&times;</button>
@@ -1079,7 +1172,7 @@ export default function StaffBooking({ socket }) {
                                         <span
                                             onClick={() => {
                                                 navigator.clipboard.writeText(payosAccountNumber);
-                                                alert("Đã sao chép Số tài khoản thành công!");
+                                                showToast("Đã sao chép Số tài khoản thành công!", "success");
                                             }}
                                             style={{ color: "#fb4226", marginLeft: "8px", cursor: "pointer", fontSize: "0.75rem", textDecoration: "underline" }}
                                         >
@@ -1111,7 +1204,7 @@ export default function StaffBooking({ socket }) {
                                         <span
                                             onClick={() => {
                                                 navigator.clipboard.writeText(`LUXCINEMA ${String(currentBookingId).slice(-6)}`);
-                                                alert("Đã sao chép Nội dung chuyển khoản thành công!");
+                                                showToast("Đã sao chép Nội dung chuyển khoản thành công!", "success");
                                             }}
                                             style={{ color: "#fb4226", marginLeft: "8px", cursor: "pointer", fontSize: "0.75rem", textDecoration: "underline" }}
                                         >
@@ -1183,7 +1276,7 @@ export default function StaffBooking({ socket }) {
                         background: "#fff",
                         borderRadius: "20px",
                         padding: "35px 30px",
-                        width: "100%",
+                        width: "92%",
                         maxWidth: "400px",
                         boxShadow: "0 25px 60px rgba(0,0,0,0.2)",
                         textAlign: "center",
@@ -1238,6 +1331,64 @@ export default function StaffBooking({ socket }) {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* 🔔 CUSTOM PREMIUM GLASSMORPHISM TOAST */}
+            {toast.show && (
+                <div 
+                    className={`custom-toast ${toast.type}`}
+                    style={{
+                        position: "fixed",
+                        top: "24px",
+                        right: "24px",
+                        padding: "16px 24px",
+                        borderRadius: "16px",
+                        color: "#fff",
+                        fontWeight: "700",
+                        fontSize: "0.88rem",
+                        boxShadow: "0 15px 35px rgba(0,0,0,0.18)",
+                        zIndex: 10000,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        backdropFilter: "blur(12px)",
+                        border: "1px solid rgba(255,255,255,0.15)",
+                        background: toast.type === "success" 
+                            ? "linear-gradient(135deg, rgba(16, 185, 129, 0.95), rgba(5, 150, 105, 0.95))"
+                            : toast.type === "error"
+                            ? "linear-gradient(135deg, rgba(239, 68, 68, 0.95), rgba(220, 38, 38, 0.95))"
+                            : toast.type === "warning"
+                            ? "linear-gradient(135deg, rgba(245, 158, 11, 0.95), rgba(217, 119, 6, 0.95))"
+                            : "linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(29, 78, 216, 0.95))"
+                    }}
+                >
+                    {toast.type === "success" && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    )}
+                    {toast.type === "error" && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    )}
+                    {toast.type === "warning" && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    )}
+                    {toast.type === "info" && (
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                    )}
+                    <span style={{ letterSpacing: "0.2px" }}>{toast.message}</span>
                 </div>
             )}
         </div>

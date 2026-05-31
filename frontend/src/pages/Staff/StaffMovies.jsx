@@ -97,46 +97,84 @@ export default function StaffMovies() {
                 }
                 .pos-date-scroller {
                     display: flex;
-                    gap: 10px;
+                    gap: 12px;
                     overflow-x: auto !important;
-                    padding: 15px 20px;
-                    background: #f8f9fa;
-                    border-bottom: 1px solid #eee;
+                    padding: 16px 20px;
+                    background: #fdfbf7;
+                    border: 1px solid #f3ece0;
+                    border-radius: 16px;
+                    margin-bottom: 30px;
                     scrollbar-width: none;
                     -ms-overflow-style: none;
                     -webkit-overflow-scrolling: touch;
-                    width: 0px !important;
-                    min-width: 100% !important;
-                    max-width: 100% !important;
+                    width: 100% !important;
                     box-sizing: border-box;
                 }
 
                 .pos-date-card {
-                    flex: 0 0 75px;
-                    min-width: 75px;
-                    height: 85px;
-                    border-radius: 15px;
+                    flex: 0 0 80px;
+                    min-width: 80px;
+                    height: 90px;
+                    border-radius: 14px;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    transition: all 0.3s ease;
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
                     background: #fff;
-                    color: #333;
-                    border: 1px solid #eee;
+                    color: #5c4f40;
+                    border: 1px solid #ebdcb9;
                     box-sizing: border-box;
+                    box-shadow: 0 2px 5px rgba(115, 102, 78, 0.04);
+                }
+
+                .pos-date-card:hover {
+                    border-color: #fb4226;
+                    background: rgba(251, 66, 38, 0.02);
+                    transform: translateY(-1px);
                 }
 
                 .pos-date-card.active {
-                    background: #fb4226;
+                    background: linear-gradient(135deg, #fb4226 0%, #d82c14 100%);
                     color: #fff;
                     border: none;
-                    box-shadow: 0 8px 15px rgba(251, 66, 38, 0.2);
+                    box-shadow: 0 6px 16px rgba(251, 66, 38, 0.28);
+                    transform: translateY(-2px);
+                }
+
+                .pos-date-card .weekday {
+                    font-size: 0.65rem;
+                    font-weight: 800;
+                    letter-spacing: 0.8px;
+                    opacity: 0.85;
+                    margin-bottom: 4px;
+                    text-transform: uppercase;
+                }
+
+                .pos-date-card.active .weekday {
+                    opacity: 0.95;
+                }
+
+                .pos-date-card .day-num {
+                    font-size: 1.4rem;
+                    font-weight: 900;
+                    line-height: 1.1;
+                }
+
+                .pos-date-card .month {
+                    font-size: 0.6rem;
+                    font-weight: 700;
+                    opacity: 0.75;
+                    margin-top: 4px;
+                }
+
+                .pos-date-card.active .month {
+                    opacity: 0.9;
                 }
 
                 .pos-container {
-                    padding: 30px;
+                    padding: 10px 20px 30px;
                     width: 100%;
                     max-width: 100%;
                     box-sizing: border-box;
@@ -146,7 +184,7 @@ export default function StaffMovies() {
                     display: flex;
                     align-items: center;
                     gap: 15px;
-                    margin-bottom: 35px;
+                    margin-bottom: 30px;
                     width: 100%;
                     box-sizing: border-box;
                 }
@@ -155,62 +193,84 @@ export default function StaffMovies() {
                     width: 4px;
                     height: 24px;
                     background: #fb4226;
-                    borderRadius: 10px;
+                    border-radius: 10px;
                 }
 
                 .pos-movie-list {
                     display: flex;
                     flex-direction: column;
-                    gap: 35px;
+                    gap: 30px;
                     width: 100%;
                     box-sizing: border-box;
                 }
 
                 .pos-movie-row {
                     display: flex;
-                    gap: 25px;
-                    padding-bottom: 25px;
-                    border-bottom: 1px solid #f5f5f5;
+                    flex-direction: column;
+                    gap: 18px;
+                    padding: 26px 24px;
+                    background: #fff;
+                    border: 1px solid #f3ece0;
+                    border-radius: 18px;
+                    box-shadow: 0 4px 15px rgba(115, 102, 78, 0.04);
                     width: 100%;
                     box-sizing: border-box;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease;
+                }
+
+                .pos-movie-row:hover {
+                    box-shadow: 0 8px 25px rgba(115, 102, 78, 0.08);
+                    transform: translateY(-2px);
+                }
+
+                .pos-movie-title {
+                    margin: 0;
+                    font-size: 1.45rem;
+                    font-weight: 900;
+                    color: #3a2d1f;
+                    letter-spacing: -0.3px;
+                    border-left: 4px solid #fb4226;
+                    padding-left: 12px;
+                }
+
+                .pos-movie-body {
+                    display: flex;
+                    gap: 25px;
+                    width: 100%;
                 }
 
                 .pos-poster-container {
-                    width: 130px;
+                    width: 125px;
                     flex-shrink: 0;
                 }
 
                 .pos-poster-img {
                     width: 100%;
                     border-radius: 12px;
-                    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+                    box-shadow: 0 8px 20px rgba(115, 102, 78, 0.12);
                     aspect-ratio: 2/3;
                     object-fit: cover;
+                    border: 2px solid #fff;
                 }
 
                 .pos-movie-info {
                     flex: 1;
                     min-width: 0;
-                }
-
-                .pos-movie-title {
-                    margin: 0 0 5px 0;
-                    font-size: 1.35rem;
-                    font-weight: 900;
-                    color: #2c3e50;
+                    display: flex;
+                    flex-direction: column;
                 }
 
                 .pos-movie-meta {
-                    color: #999;
-                    font-size: 0.85rem;
-                    margin: 0 0 20px 0;
+                    color: #8a7e6d;
+                    font-size: 0.88rem;
+                    margin: 0 0 16px 0;
+                    font-weight: 600;
                 }
 
                 .pos-slots-grid {
                     display: flex;
                     flex-wrap: wrap;
                     gap: 16px;
-                    margin-top: 20px;
                     width: 100%;
                     box-sizing: border-box;
                 }
@@ -218,7 +278,7 @@ export default function StaffMovies() {
                 .momo-slot-btn {
                     padding: 10px 8px;
                     background: #fff;
-                    border: 1px solid #e2e8f0;
+                    border: 1px solid #ebdcb9;
                     border-radius: 12px;
                     cursor: pointer;
                     text-align: center;
@@ -307,47 +367,53 @@ export default function StaffMovies() {
                     }
 
                     .pos-date-card {
-                        /* 100vw trừ đi padding ngoài của Main, padding của Scroller và gap rồi chia cho 5 */
                         flex: 0 0 calc((100vw - 30px - 16px - 24px) / 5) !important;
                         min-width: calc((100vw - 30px - 16px - 24px) / 5) !important;
-                        height: 62px !important;
+                        height: 68px !important;
                         border-radius: 10px !important;
                     }
 
-                    .pos-date-card div:first-child {
+                    .pos-date-card .weekday {
                         font-size: 0.55rem !important;
                         margin-bottom: 2px !important;
                     }
 
-                    .pos-date-card div:nth-child(2) {
-                        font-size: 1.0rem !important;
+                    .pos-date-card .day-num {
+                        font-size: 1.05rem !important;
                         font-weight: 800 !important;
                         line-height: 1.1;
                     }
 
-                    .pos-date-card div:last-child {
-                        font-size: 0.48rem !important;
+                    .pos-date-card .month {
+                        font-size: 0.5rem !important;
+                        margin-top: 2px !important;
                     }
 
-                    /* Bố cục phim: Tên phim ở trên, Poster bên trái, Giờ chiếu bên phải */
                     .pos-movie-row {
-                        display: flex !important;
-                        flex-wrap: wrap !important;
+                        padding: 18px 15px !important;
+                        border-radius: 14px !important;
+                        margin-bottom: 20px !important;
                         gap: 12px !important;
-                        padding-bottom: 20px !important;
                     }
 
                     .pos-movie-title {
-                        width: 100% !important; /* Đưa tên phim lên hàng trên cùng */
-                        font-size: 1.1rem !important;
-                        font-weight: 900 !important;
-                        margin-bottom: 5px !important;
-                        color: #2c3e50 !important;
+                        font-size: 1.15rem !important;
+                        padding-left: 8px !important;
+                        border-left-width: 3px !important;
+                    }
+
+                    .pos-movie-body {
+                        gap: 12px !important;
                     }
 
                     .pos-poster-container {
-                        width: 75px !important;
-                        flex: 0 0 75px !important;
+                        width: 80px !important;
+                        flex: 0 0 80px !important;
+                    }
+
+                    .pos-poster-img {
+                        border-width: 1px !important;
+                        box-shadow: 0 4px 10px rgba(115, 102, 78, 0.1) !important;
                     }
 
                     .pos-movie-info {
@@ -356,8 +422,8 @@ export default function StaffMovies() {
                     }
 
                     .pos-movie-meta {
-                        font-size: 0.75rem !important;
-                        margin-bottom: 8px !important;
+                        font-size: 0.78rem !important;
+                        margin-bottom: 10px !important;
                     }
 
                     /* Giờ chiếu: Grid 2 cột nhỏ xinh chữ nhật như Momo */
@@ -388,9 +454,11 @@ export default function StaffMovies() {
                     }
 
                     .momo-slot-time-wrapper {
-                        padding: 4px 2px !important;
-                        font-size: 0.72rem !important;
+                        padding: 4px 1px !important;
+                        font-size: 0.65rem !important;
                         border-radius: 6px !important;
+                        white-space: nowrap !important;
+                        letter-spacing: -0.3px !important;
                     }
                 }
 
@@ -413,11 +481,11 @@ export default function StaffMovies() {
                             className={`pos-date-card ${isActive ? 'active' : ''}`}
                             onClick={() => setSelectedDate(fullDate)}
                         >
-                            <div>
-                                {index === 0 ? "H.NAY" : date.toLocaleDateString('vi-VN', { weekday: 'short' }).toUpperCase()}
-                            </div>
-                            <div>{date.getDate()}</div>
-                            <div>Tháng {date.getMonth() + 1}</div>
+                            <span className="weekday">
+                                {index === 0 ? "H.NAY" : ["CN", "THỨ 2", "THỨ 3", "THỨ 4", "THỨ 5", "THỨ 6", "THỨ 7"][date.getDay()]}
+                            </span>
+                            <span className="day-num">{date.getDate()}</span>
+                            <span className="month">Tháng {date.getMonth() + 1}</span>
                         </div>
                     );
                 })}
@@ -426,33 +494,33 @@ export default function StaffMovies() {
             <div className="pos-container">
                 <div className="pos-status-header">
                     <div className="pos-red-line"></div>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem' }}>LỊCH CHIẾU NGÀY {new Date(selectedDate).toLocaleDateString('vi-VN')}</h3>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#3a2d1f' }}>LỊCH CHIẾU NGÀY {new Date(selectedDate).toLocaleDateString('vi-VN')}</h3>
                 </div>
 
                 <div className="pos-movie-list">
                     {displayData.length > 0 ? displayData.map(movie => (
                         <div key={movie.info._id} className="pos-movie-row">
-
-                            {/* 🎯 TÊN PHIM TRÊN MOBILE */}
+                            {/* 🎯 TÊN PHIM TRÊN CÙNG CARD */}
                             <h2 className="pos-movie-title">{movie.info.title}</h2>
 
-                            {/* 🎯 POSTER TRÁI */}
-                            <div className="pos-poster-container">
-                                <img
-                                    src={`${API_URL}${movie.info.image}`}
-                                    alt={movie.info.title}
-                                    className="pos-poster-img"
-                                    onError={(e) => {
-                                        e.target.onerror = null;
-                                        e.target.src = "https://via.placeholder.com/300x450?text=No+Poster";
-                                    }}
-                                />
-                            </div>
+                            <div className="pos-movie-body">
+                                {/* 🎯 POSTER */}
+                                <div className="pos-poster-container">
+                                    <img
+                                        src={`${API_URL}${movie.info.image}`}
+                                        alt={movie.info.title}
+                                        className="pos-poster-img"
+                                        onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://via.placeholder.com/300x450?text=No+Poster";
+                                        }}
+                                    />
+                                </div>
 
-                            {/* 🎯 LỊCH CHIẾU PHẢI */}
-                            <div className="pos-movie-info">
-                                <p className="pos-movie-meta">{movie.info.genre} | {movie.info.duration} Phút</p>
-                                <div className="pos-slots-grid">
+                                {/* 🎯 LỊCH CHIẾU PHẢI */}
+                                <div className="pos-movie-info">
+                                    <p className="pos-movie-meta">{movie.info.genre} | {movie.info.duration} Phút</p>
+                                    <div className="pos-slots-grid">
                                     {movie.slots && movie.slots.map(slot => {
                                         const startTime = new Date(slot.time);
                                         const duration = slot.movieId?.duration || 120;
@@ -486,6 +554,7 @@ export default function StaffMovies() {
                                 </div>
                             </div>
                         </div>
+                    </div>
                     )) : (
                         <div className="pos-empty">
                             <p>Hôm nay chưa có suất chiếu</p>

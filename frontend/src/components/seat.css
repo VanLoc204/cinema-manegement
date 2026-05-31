@@ -11,88 +11,167 @@
 
 /* 📺 Hiệu ứng màn hình cong phía trên */
 .screen-container {
-  margin-bottom: 50px;
+  margin-bottom: 65px;
   perspective: 1000px;
+  position: relative;
 }
 
 .screen-arc {
-  width: 80%;
-  height: 8px;
-  background: #bcbcbc;
+  width: 75%;
+  height: 24px;
+  background: linear-gradient(180deg, #ffffff 0%, #e0e0e0 100%);
   margin: 0 auto;
-  border-radius: 50% / 100% 100% 0 0;
-  box-shadow: 0 15px 30px rgba(0,0,0,0.1);
+  border-radius: 10px 10px 100px 100px / 10px 10px 30px 30px;
+  box-shadow: 0 4px 20px rgba(255, 255, 255, 0.95), 
+              0 15px 45px rgba(75, 141, 248, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Simulated screen light projection */
+.screen-arc::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(180deg, rgba(75, 141, 248, 0.18) 0%, rgba(251, 66, 38, 0.1) 100%);
+  mix-blend-mode: screen;
 }
 
 .screen-text {
-  margin-top: 10px;
-  font-size: 14px;
-  font-weight: bold;
-  color: #888;
-  letter-spacing: 10px;
+  margin-top: 15px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #70624d;
+  letter-spacing: 12px;
+  text-shadow: 0 0 8px rgba(75, 141, 248, 0.2);
   text-transform: uppercase;
 }
 
-/* 💺 Bố cục hàng ghế */
+/* 💺 Bố cục hàng ghế & Phối cảnh 3D Isometric */
+.seat-scroll-wrapper {
+  perspective: 1500px;
+  overflow: visible !important;
+}
+
+.seat-map-grid {
+  transform: rotateX(18deg);
+  transform-style: preserve-3d;
+  transition: all 0.5s ease;
+  position: relative;
+  padding: 30px 0;
+}
+
+/* Animated spotlight beam background on the seat grid */
+.seat-map-grid::before {
+  content: '';
+  position: absolute;
+  top: -85px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 65%;
+  height: 100%;
+  background: radial-gradient(ellipse at top, rgba(75, 141, 248, 0.12) 0%, rgba(75, 141, 248, 0.02) 55%, transparent 100%);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.seat-map-grid.has-selected::before {
+  opacity: 1;
+  animation: beaconPulse 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes beaconPulse {
+  0% { opacity: 0.7; filter: saturate(1); }
+  100% { opacity: 0.95; filter: saturate(1.4); }
+}
+
 .seat-row {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  transform-style: preserve-3d;
 }
 
 .row-label {
   width: 25px;
-  font-weight: bold;
-  color: #888;
-  font-size: 14px;
+  font-weight: 800;
+  color: #a0907d;
+  font-size: 13px;
+  transform: translateZ(2px);
 }
 
-/* 🎨 Định dạng chung cho từng ô ghế */
+/* 🎨 Định dạng chung cho từng ô ghế 3D */
 .seat-item {
   width: 34px;
   height: 30px;
-  border-radius: 5px;
+  border-radius: 6px;
   font-size: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  background: #7d7d7d; /* Mặc định: Xám đậm cho ghế thường */
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); /* Ghế thường: Bạc sang trọng */
   color: #fff;
-  border: 1px solid rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.15);
+  transform: translateZ(0);
+  transform-style: preserve-3d;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: 0 4px 6px rgba(115, 102, 78, 0.15),
+              inset 0 2px 2px rgba(255, 255, 255, 0.15);
+  font-weight: 700;
 }
 
-/* Ghế VIP - Màu đỏ cam */
+.seat-item:hover {
+  transform: translateZ(8px) scale(1.08) !important;
+  box-shadow: 0 8px 18px rgba(115, 102, 78, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+/* Ghế VIP - Màu đỏ nhung rạp phim */
 .seat-item.vip {
-  background-color: #fb4226;
+  background: linear-gradient(135deg, #ff6b57 0%, #e1270e 100%);
+  border-color: rgba(225, 39, 14, 0.25);
 }
 
-/* Ghế Sweetbox - Màu hồng tím */
+/* Ghế Sweetbox - Màu hồng tím ngọt ngào */
 .seat-item.sweetbox {
-  background-color: #e91e63;
+  background: linear-gradient(135deg, #f472b6 0%, #db2777 100%);
+  border-color: rgba(219, 39, 119, 0.25);
+  border-radius: 8px;
 }
 
-/* Ghế đang chọn - Màu xanh dương */
+/* Ghế đang chọn - Ánh neon cực đỉnh */
 .seat-item.selected {
-  background-color: #4b8df8 !important;
-  transform: scale(1.1);
-  box-shadow: 0 0 10px rgba(75, 141, 248, 0.5);
+  background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%) !important;
+  transform: translateZ(12px) scale(1.08) !important;
+  box-shadow: 0 6px 15px rgba(37, 99, 235, 0.45),
+              0 0 20px rgba(37, 99, 235, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.7) !important;
+  animation: floatSelected 2s ease-in-out infinite alternate;
 }
 
-/* 🎯 ĐỒNG BỘ 100%: Ghế đã bán và Ghế người khác đang chọn (Real-time) */
+@keyframes floatSelected {
+  0% { transform: translateZ(12px) scale(1.08); }
+  100% { transform: translateZ(15px) scale(1.12); }
+}
+
+/* 🎯 ĐỒNG BỘ 100%: Ghế đã bán chìm xuống sàn */
 .seat-item.booked, 
 .seat-item.others-selecting {
-  background-color: #e9e9e9 !important; /* Màu xám nhạt báo hiệu đã khóa */
-  color: #bbb !important;             /* Màu dấu X mờ giống hình sếp gửi */
-  border: 1px solid #ddd !important;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+  color: #bdc3c7 !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
   cursor: not-allowed;
-  pointer-events: none;               /* Chặn click */
-  font-size: 14px;                    /* Cỡ chữ cho dấu X */
-  font-weight: bold;
-  position: relative;
+  pointer-events: none;
+  font-size: 13px;
+  font-weight: 800;
+  transform: translateZ(-2px) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08) !important;
 }
 
 /* Gỡ bỏ các ::after cũ để không bị lặp dấu X */
@@ -278,6 +357,7 @@
     margin: 0 auto !important;
     box-sizing: border-box !important;
     padding: 0 10px !important;
+    transform: rotateX(12deg) !important; /* Độ nghiêng thấp hơn trên mobile để dễ ấn chính xác */
   }
 
   .legend {

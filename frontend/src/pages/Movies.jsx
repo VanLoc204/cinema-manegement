@@ -40,8 +40,8 @@ export default function Movies() {
     };
 
     return (
-        <div style={{ background: "#fdfcf0", minHeight: "100vh", paddingBottom: "50px" }}>
-            <Banner />
+        <div className="movies-page-wrapper">
+            <Banner movies={movies} />
 
             <div className="container">
                 {/* BỘ LỌC NÚT BẤM */}
@@ -106,7 +106,7 @@ export default function Movies() {
                         ))
                     ) : (
                         <div style={{ textAlign: "center", width: "100%", gridColumn: "1/-1", padding: "80px 0" }}>
-                           <p style={{ fontSize: "1.2rem", color: "#888" }}>Hạng mục này hiện chưa có phim nào sếp ơi! 🎬</p>
+                           <p style={{ fontSize: "1.2rem", color: "#888" }}>Hạng mục này hiện chưa có phim nào sếp ơi! </p>
                         </div>
                     )}
                 </div>

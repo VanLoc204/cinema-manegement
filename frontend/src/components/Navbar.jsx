@@ -68,9 +68,22 @@ export default function Navbar() {
                 .nb-hamburger span { display: block; height: 3px; background: #333; border-radius: 3px; transition: 0.3s; }
                 .nb-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1050; }
                 .nb-staff-hi { display: none; align-items: center; gap: 6px; font-size: 0.85rem; color: #fb4226; font-weight: 600; }
+                @media (max-width: 768px) {
+                    .nb-logout-toast {
+                        right: auto !important;
+                        left: 50% !important;
+                        transform: translateX(-50%) !important;
+                        width: calc(100% - 32px) !important;
+                        max-width: 300px !important;
+                        text-align: center !important;
+                        top: 20px !important;
+                        padding: 12px 20px !important;
+                        font-size: 0.9rem !important;
+                    }
+                }
             `}</style>
 
-            {notice.show && <div style={logoutToastStyle}>{notice.message}</div>}
+            {notice.show && <div className="nb-logout-toast" style={logoutToastStyle}>{notice.message}</div>}
 
             <div style={logoContainer} onClick={handleLogoClick}>
                 <h2 style={logoStyle} className="nb-logo">CINEMA <span style={{ color: "#333" }}>LUX</span></h2>
