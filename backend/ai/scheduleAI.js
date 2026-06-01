@@ -61,6 +61,19 @@ class GeneticAlgorithm {
         this.generations = 50;    // Cho tiến hóa qua 50 vòng đời để tìm ra lịch tối ưu nhất
     }
 
+    // Lọc ra các phim đã khởi chiếu tính tới ngày 'date'
+    getEligibleMovies(moviesList, targetDate) {
+        if (!moviesList) return [];
+        return moviesList.filter(m => {
+            if (!m.releaseDate) return true;
+            const release = new Date(m.releaseDate);
+            const current = new Date(targetDate);
+            release.setHours(0, 0, 0, 0);
+            current.setHours(0, 0, 0, 0);
+            return release <= current;
+        });
+    }
+
     // TÍNH NĂNG ĐỘT PHÁ 1: Thuật toán THAM LAM (Greedy) Lấp đầy liên tục 1 ngày cho 1 phòng
     generateDailyRoomSchedule(date, room) {
         let dailySch = [];
@@ -88,15 +101,22 @@ class GeneticAlgorithm {
                 clusterIdx = Math.floor(Math.random() * 3);
             }
 
-            let clusterMovies = this.moviesByCluster[clusterIdx];
-            // Nếu xui xẻo bốc trúng cụm rỗng (VD không có phim ế nào), thì lấy đại phim nhóm khác
-            if (!clusterMovies || clusterMovies.length === 0) {
-                clusterMovies = this.moviesByCluster[0] || this.moviesByCluster[1] || this.moviesByCluster[2];
+            let eligibleMovies = this.getEligibleMovies(this.moviesByCluster[clusterIdx], date);
+            
+            // Nếu không có phim phù hợp trong cụm này, thử tìm ở cụm khác
+            if (eligibleMovies.length === 0) {
+                eligibleMovies = this.getEligibleMovies(this.moviesByCluster[0], date);
+                if (eligibleMovies.length === 0) {
+                    eligibleMovies = this.getEligibleMovies(this.moviesByCluster[1], date);
+                    if (eligibleMovies.length === 0) {
+                        eligibleMovies = this.getEligibleMovies(this.moviesByCluster[2], date);
+                    }
+                }
             }
 
-            if (clusterMovies && clusterMovies.length > 0) {
-                // Bốc ngẫu nhiên 1 bộ phim trong cái Cụm vừa chỉ định ở trên
-                let randomMovie = clusterMovies[Math.floor(Math.random() * clusterMovies.length)];
+            if (eligibleMovies && eligibleMovies.length > 0) {
+                // Bốc ngẫu nhiên 1 bộ phim hợp lệ đã khởi chiếu
+                let randomMovie = eligibleMovies[Math.floor(Math.random() * eligibleMovies.length)];
 
                 dailySch.push({
                     movieId: randomMovie._id,
@@ -272,16 +292,44 @@ exports.runSmartScheduling = async (startDateStr, endDateStr) => {
         }
     });
 
-    const activeMovies = await Movie.find();
+    // Tìm điểm lớn nhất hiện tại làm mốc để boost cho phim mới
+    const maxRealScore = Math.max(...Object.values(movieScores), 30); // tối thiểu là 30 điểm
+
+    // KHÔNG đề xuất phim đã ngừng chiếu (status: "ended")
+    const activeMovies = await Movie.find({ status: { $ne: "ended" } });
+    
     // Đóng gói thông tin Phim + Điểm doanh thu + Thể loại/Độ tuổi gửi cho AI K-Means
-    const movieDataList = activeMovies.map(m => ({
-        _id: m._id,
-        title: m.title,
-        duration: m.duration || 120,
-        genre: m.genre, // Phục vụ luật 1, 2
-        rated: m.rated, // Phục vụ luật 3, 4
-        score: movieScores[m._id.toString()] || 0
-    }));
+    const movieDataList = activeMovies.map(m => {
+        const mId = m._id.toString();
+        let score = movieScores[mId] || 0;
+
+        // 🚀 THUẬT TOÁN ƯU ÁI PHIM MỚI & THỜI GIAN ĐỌ ĐỘ HOT (Grace Period: 10 ngày)
+        const release = m.releaseDate ? new Date(m.releaseDate) : new Date();
+        const diffTime = today - release;
+        const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+        let isNewMovie = false;
+        let gracePeriodDays = 10; // 10 ngày đầu tiên được xem là phim mới để chạy đua độ hot
+        
+        if (diffDays <= gracePeriodDays) {
+            isNewMovie = true;
+            // Cho phim mới một điểm cộng khởi điểm lớn (85% của điểm của phim hot nhất) 
+            // để đảm bảo phim mới được xếp vào cụm HOT hoặc cụm THƯỜNG nhằm có nhiều suất chiếu đọ độ hot.
+            const newMovieBoost = maxRealScore * 0.85;
+            score = Math.max(score, newMovieBoost);
+        }
+
+        return {
+            _id: m._id,
+            title: m.title,
+            duration: m.duration || 120,
+            genre: m.genre, // Phục vụ luật 1, 2
+            rated: m.rated, // Phục vụ luật 3, 4
+            releaseDate: m.releaseDate, // Để lọc suất chiếu theo ngày bắt đầu khởi chiếu
+            score: score,
+            isNewMovie: isNewMovie
+        };
+    });
 
     // BƯỚC 2: Gom 13 phim thành 3 cụm Hot, Thường, Ế
     const clusters = kMeans(movieDataList, 3, 20);
