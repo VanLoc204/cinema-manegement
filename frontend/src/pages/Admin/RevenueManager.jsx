@@ -208,6 +208,7 @@ export default function RevenueManager() {
                             <th style={thStyle}>Phim</th>
                             <th style={thStyle}>Số ghế</th>
                             <th style={thStyle}>Combo / Bắp nước</th>
+                            <th style={thStyle}>Voucher sử dụng</th>
                             <th style={thStyle}>Tổng tiền</th>
                             <th style={thStyle}>Trạng thái</th>
                         </tr>
@@ -217,7 +218,7 @@ export default function RevenueManager() {
                             revenueData.history.map(item => (
                                 <tr key={item._id} style={{ borderBottom: "1px solid #eee" }}>
                                     <td style={tdStyle}>{new Date(item.createdAt).toLocaleString('vi-VN')}</td>
-                                    <td style={{ ...tdStyle, fontWeight: "bold" }}>{item.showtimeId?.movieId?.title || "N/A"}</td>
+                                    <td style={{ ...tdStyle, fontWeight: "bold", whiteSpace: "nowrap" }}>{item.showtimeId?.movieId?.title || "N/A"}</td>
                                     <td style={tdStyle}>{item.seats?.join(", ")}</td>
                                     <td style={{ ...tdStyle, fontSize: '0.85rem', color: '#666' }}>
                                         {item.snacks && item.snacks.length > 0 ? (
@@ -228,6 +229,22 @@ export default function RevenueManager() {
                                             <span style={{ color: '#ccc' }}>Không mua bắp</span>
                                         )}
                                     </td>
+                                    <td style={{ ...tdStyle, fontSize: '0.85rem' }}>
+                                        {item.appliedVoucher ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
+                                                <span style={voucherBadgeStyle}>
+                                                    {item.appliedVoucher}
+                                                </span>
+                                                {item.discountAmount > 0 && (
+                                                    <span style={{ fontSize: '0.75rem', color: '#e74c3c', fontWeight: 'bold', marginTop: '2px' }}>
+                                                        -{item.discountAmount.toLocaleString()}đ
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <span style={{ color: '#ccc' }}>Không dùng</span>
+                                        )}
+                                    </td>
                                     <td style={{ ...tdStyle, color: "#2ecc71", fontWeight: "bold" }}>
                                         +{item.totalAmount?.toLocaleString()}đ
                                     </td>
@@ -236,7 +253,7 @@ export default function RevenueManager() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="6" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không có giao dịch nào trong khoảng này!</td>
+                                <td colSpan="7" style={{ textAlign: "center", padding: "30px", color: "#999" }}>Không có giao dịch nào trong khoảng này!</td>
                             </tr>
                         )}
                     </tbody>
@@ -256,4 +273,5 @@ const valueStyle = { margin: "8px 0", fontSize: "1.8rem" };
 const subLabelStyle = { margin: 0, fontSize: "0.7rem", opacity: 0.8 };
 const revenueCardStyle = (color) => ({ background: color, color: "#fff", padding: "20px", borderRadius: "20px", boxShadow: `0 10px 20px ${color}44` });
 const countCardStyle = (color) => ({ background: '#fff', color: color, padding: "20px", borderRadius: "15px", borderLeft: `8px solid ${color}`, boxShadow: `0 5px 15px rgba(0,0,0,0.01)`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' });
-const statusSuccessStyle = { background: "#e8f5e9", color: "#2e7d32", padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: "bold" };
+const statusSuccessStyle = { background: "#e8f5e9", color: "#2e7d32", padding: "4px 10px", borderRadius: "20px", fontSize: "0.7rem", fontWeight: "bold", whiteSpace: "nowrap", display: "inline-block" };
+const voucherBadgeStyle = { background: "#ffe0b2", color: "#e65100", padding: "4px 8px", borderRadius: "6px", fontSize: "0.75rem", fontWeight: "bold", textTransform: "uppercase", display: "inline-block" };

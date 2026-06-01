@@ -227,6 +227,11 @@ export default function ShowtimeManager() {
                     align-items: center;
                     flex-wrap: wrap;
                 }
+                .st-day-picker {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
                 .st-table-wrapper {
                     width: 100%;
                     overflow-x: auto;
@@ -440,8 +445,8 @@ export default function ShowtimeManager() {
                     <button onClick={handleSearch} style={btnSearchStyle}>TÌM KIẾM</button>
                     
                     <div className="st-view-modes" style={{ marginLeft: "auto", display: "flex", gap: "10px" }}>
-                        <button onClick={() => setViewMode("table")} style={{ ...btnViewStyle, background: viewMode === "table" ? "#333" : "#ddd", color: viewMode === "table" ? "#fff" : "#333" }}>📋 Dạng Bảng</button>
-                        <button onClick={() => setViewMode("pos")} style={{ ...btnViewStyle, background: viewMode === "pos" ? "#fb4226" : "#ddd", color: viewMode === "pos" ? "#fff" : "#333" }}>🎫 Dạng POS</button>
+                        <button onClick={() => setViewMode("table")} style={{ ...btnViewStyle, background: viewMode === "table" ? "#333" : "#ddd", color: viewMode === "table" ? "#fff" : "#333" }}>Dạng Bảng</button>
+                        <button onClick={() => setViewMode("pos")} style={{ ...btnViewStyle, background: viewMode === "pos" ? "#fb4226" : "#ddd", color: viewMode === "pos" ? "#fff" : "#333" }}>Dạng POS</button>
                     </div>
                 </div>
             </div>

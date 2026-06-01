@@ -26,13 +26,13 @@ exports.getMovieDetail = async (req, res) => {
 exports.createMovie = async (req, res) => {
     try {
         const movieData = { ...req.body };
-        
+
         // Dọn rác dữ liệu rỗng để tránh lỗi CastError (Number/Date)
         if (!movieData.releaseDate || movieData.releaseDate === "") delete movieData.releaseDate;
         if (!movieData.duration || movieData.duration === "") delete movieData.duration;
 
-        movieData.image = req.file 
-            ? `/uploads/movies/${req.file.filename}` 
+        movieData.image = req.file
+            ? `/uploads/movies/${req.file.filename}`
             : "/uploads/movies/default-poster.jpg";
 
         const newMovie = await Movie.create(movieData);
@@ -99,9 +99,9 @@ exports.importMoviesExcel = async (req, res) => {
         }));
 
         const result = await Movie.insertMany(formattedMovies);
-        res.status(201).json({ 
-            success: true, 
-            message: `Đã nhập thành công ${result.length} bộ phim từ Excel sếp nhé!` 
+        res.status(201).json({
+            success: true,
+            message: `Đã nhập thành công ${result.length} bộ phim từ Excel sếp nhé!`
         });
     } catch (err) {
         console.error("Lỗi Import:", err);

@@ -13,14 +13,14 @@ export default function Banner({ movies = [] }) {
     const [swiperRef, setSwiperRef] = useState(null);
     const API_URL = import.meta.env.DEV ? "http://localhost:5000" : window.location.origin;
 
-    // Lọc các phim đang chiếu để đưa lên banner (Tối đa 8 phim Hot)
-    const activeBannerMovies = movies.filter(m => m.status === "now_showing").slice(0, 8);
-    const baseMovies = activeBannerMovies.length > 0 ? activeBannerMovies : movies.slice(0, 8);
+    // Lọc các phim đang chiếu (now_showing) và phim sắp chiếu (coming_soon) để đưa lên banner (Tối đa 12 phim Hot)
+    const activeBannerMovies = movies.filter(m => m.status === "now_showing" || m.status === "coming_soon").slice(0, 12);
+    const baseMovies = activeBannerMovies.length > 0 ? activeBannerMovies : movies.slice(0, 12);
 
     // 🔄 Nhân bản danh sách phim để tạo thành vòng tròn vô tận thực sự (ENDLESS END-TO-END LOOP)
     // Giúp Swiper có đủ slide nhân bản, lướt 1 vòng tròn mượt mà sẽ quay lại đúng số 1
     let moviesToRender = [...baseMovies];
-    if (baseMovies.length > 0 && baseMovies.length < 12) {
+    if (baseMovies.length > 0 && baseMovies.length < 24) {
         moviesToRender = [...baseMovies, ...baseMovies, ...baseMovies];
     }
 
@@ -37,7 +37,7 @@ export default function Banner({ movies = [] }) {
             }, 180); // Độ trễ 180ms cực kỳ an toàn để DOM hoàn thành quá trình kết xuất 3D
             return () => clearTimeout(timer);
         }
-    }, [swiperRef, movies.length]); // Sử dụng movies.length cực kỳ ổn định, ngăn chặn lặp lại vòng lặp
+    }, [swiperRef, movies.length]);
 
     // Xử lý định dạng thời lượng phim (Ví dụ: 107 phút -> 1giờ 47phút)
     const formatDuration = (minutes) => {
@@ -304,10 +304,10 @@ export default function Banner({ movies = [] }) {
             `}</style>
 
             {/* Background mờ ảo đồng bộ rực rỡ sắc màu */}
-            <div 
-                className="coverflow-backdrop-blur" 
-                style={{ 
-                    backgroundImage: activeMovie ? `url(${API_URL}${activeMovie.image})` : 'none' 
+            <div
+                className="coverflow-backdrop-blur"
+                style={{
+                    backgroundImage: activeMovie ? `url(${API_URL}${activeMovie.image})` : 'none'
                 }}
             ></div>
 

@@ -42,7 +42,7 @@ export default function VoucherManager() {
 
     const fetchUsers = async () => {
         try {
-            const res = await axios.get("/users");
+            const res = await axios.get("/users/admin/list");
             const customers = res.data.filter(u => u.role === "customer");
             setUsers(customers);
         } catch (err) {
@@ -282,8 +282,16 @@ export default function VoucherManager() {
                         <tbody>
                             {vouchers.map((v) => {
                                 const usedCount = v.assignedUsers.filter(au => au.used).length;
+                                const expiry = new Date(v.expiryDate);
+                                expiry.setHours(23, 59, 59, 999);
+                                const isExpired = expiry < new Date();
                                 return (
-                                    <tr key={v._id} style={{ borderBottom: "1px solid #f5f5f5", transition: "all 0.2s ease" }}>
+                                    <tr key={v._id} style={{ 
+                                        borderBottom: "1px solid #f5f5f5", 
+                                        transition: "all 0.2s ease",
+                                        opacity: isExpired ? 0.45 : 1,
+                                        background: isExpired ? "#fafaf9" : "transparent"
+                                    }}>
                                         <td style={{ ...tdStyle, fontWeight: "900", color: "#fb4226", wordBreak: "break-all" }}>{v.code}</td>
                                         <td style={tdStyle}>
                                             <span style={{
@@ -307,8 +315,22 @@ export default function VoucherManager() {
                                              `${v.discountValue} Phần`}
                                         </td>
                                         <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>{v.minSpend ? `${v.minSpend.toLocaleString("vi-VN")}đ` : "0đ"}</td>
-                                        <td style={{ ...tdStyle, fontWeight: "700", color: "#777", whiteSpace: "nowrap" }}>
+                                        <td style={{ ...tdStyle, fontWeight: "700", color: isExpired ? "#c62828" : "#777", whiteSpace: "nowrap" }}>
                                             {new Date(v.expiryDate).toLocaleDateString("vi-VN")}
+                                            {isExpired && (
+                                                <span style={{ 
+                                                    marginLeft: "8px", 
+                                                    fontSize: "0.7rem", 
+                                                    color: "#c62828", 
+                                                    background: "rgba(198,40,40,0.08)", 
+                                                    padding: "2px 6px", 
+                                                    borderRadius: "4px",
+                                                    fontWeight: "bold",
+                                                    display: "inline-block"
+                                                }}>
+                                                    Hết hạn
+                                                </span>
+                                            )}
                                         </td>
                                         <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
                                             <span style={{ fontWeight: "800", color: "#333" }}>{v.assignedUsers.length}</span> Khách nhận / <span style={{ fontWeight: "800", color: "#2e7d32" }}>{usedCount}</span> Đã dùng
