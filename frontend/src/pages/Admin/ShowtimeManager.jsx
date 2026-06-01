@@ -17,6 +17,26 @@ export default function ShowtimeManager() {
         setTimeout(() => setNotification({ show: false, message: "", type: "success" }), 3000);
     };
 
+    // ❓ State quản lý hộp thoại xác nhận Custom Modal
+    const [confirmModal, setConfirmModal] = useState({
+        show: false,
+        title: "",
+        message: "",
+        onConfirm: null
+    });
+
+    const askConfirm = (title, message, onConfirm) => {
+        setConfirmModal({
+            show: true,
+            title,
+            message,
+            onConfirm: () => {
+                onConfirm();
+                setConfirmModal({ show: false, title: "", message: "", onConfirm: null });
+            }
+        });
+    };
+
     // 🤖 AI States
     const [aiDates, setAiDates] = useState({ start: "", end: "" });
     const [isAiLoading, setIsAiLoading] = useState(false);
@@ -123,16 +143,20 @@ export default function ShowtimeManager() {
     };
 
     // ❌ HÀM XÓA SUẤT CHIẾU
-    const handleDeleteShowtime = async (id) => {
-        if (window.confirm("Xóa suất chiếu này")) {
-            try {
-                await axios.delete(`/showtimes/${id}`);
-                showNotify("Đã xóa suất chiếu thành công");
-                fetchAllData();
-            } catch (err) {
-                showNotify("Không thể xử lý, vui lòng thử lại", "error");
+    const handleDeleteShowtime = (id) => {
+        askConfirm(
+            "Xác nhận xóa suất chiếu",
+            "Sếp có chắc chắn muốn xóa suất chiếu này không? Hành động này sẽ không thể khôi phục lại.",
+            async () => {
+                try {
+                    await axios.delete(`/showtimes/${id}`);
+                    showNotify("Đã xóa suất chiếu thành công");
+                    fetchAllData();
+                } catch (err) {
+                    showNotify("Không thể xử lý, vui lòng thử lại", "error");
+                }
             }
-        }
+        );
     };
 
     // 🤖 HÀM CHẠY AI
@@ -150,29 +174,37 @@ export default function ShowtimeManager() {
     };
 
     // ✅ HÀM DUYỆT AI
-    const handleApproveAI = async () => {
-        if (window.confirm("Sếp có chắc muốn duyệt toàn bộ bản nháp này để công bố cho khách hàng?")) {
-            try {
-                await axios.post("/showtimes/ai/approve");
-                showNotify("Đã duyệt và xuất bản lịch chiếu thành công!");
-                fetchAllData();
-            } catch (err) {
-                showNotify("Lỗi duyệt lịch", "error");
+    const handleApproveAI = () => {
+        askConfirm(
+            "Duyệt tất cả bản nháp AI",
+            "Sếp có chắc muốn duyệt toàn bộ bản nháp này để công bố cho khách hàng?",
+            async () => {
+                try {
+                    await axios.post("/showtimes/ai/approve");
+                    showNotify("Đã duyệt và xuất bản lịch chiếu thành công!");
+                    fetchAllData();
+                } catch (err) {
+                    showNotify("Lỗi duyệt lịch", "error");
+                }
             }
-        }
+        );
     };
 
     // ❌ HÀM HỦY BẢN NHÁP AI
-    const handleDeleteDrafts = async () => {
-        if (window.confirm("Sếp không ưng ý và muốn xóa tất cả bản nháp này?")) {
-            try {
-                const res = await axios.delete("/showtimes/ai/drafts");
-                showNotify(res.data.message || "Đã xóa bản nháp thành công!");
-                fetchAllData();
-            } catch (err) {
-                showNotify("Lỗi xóa bản nháp", "error");
+    const handleDeleteDrafts = () => {
+        askConfirm(
+            "Xóa tất cả bản nháp AI",
+            "Sếp không ưng ý và muốn xóa tất cả bản nháp này?",
+            async () => {
+                try {
+                    const res = await axios.delete("/showtimes/ai/drafts");
+                    showNotify(res.data.message || "Đã xóa bản nháp thành công!");
+                    fetchAllData();
+                } catch (err) {
+                    showNotify("Lỗi xóa bản nháp", "error");
+                }
             }
-        }
+        );
     };
 
     return (
@@ -561,6 +593,37 @@ export default function ShowtimeManager() {
                             </div>
                             <button onClick={handleUpdateShowtime} style={{ ...btnSubmitStyle, marginTop: 10 }}>CẬP NHẬT NGAY</button>
                             <button onClick={() => setEditingShowtime(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#888", fontWeight: "bold" }}>Hủy bỏ</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 🟦 CUSTOM CONFIRMATION MODAL */}
+            {confirmModal.show && (
+                <div style={modalOverlayStyle}>
+                    <div className="st-modal-content" style={{ animation: "scaleIn 0.2s ease-out" }}>
+                        <style>{`
+                            @keyframes scaleIn {
+                                from { transform: scale(0.9); opacity: 0; }
+                                to { transform: scale(1); opacity: 1; }
+                            }
+                        `}</style>
+                        <div style={{ fontSize: "3rem", color: "#fb4226", marginBottom: "15px" }}>⚠️</div>
+                        <h3 style={{ color: "#333", marginTop: 0, fontWeight: "900", fontSize: "1.4rem" }}>{confirmModal.title}</h3>
+                        <p style={{ color: "#666", fontSize: "0.95rem", margin: "15px 0 25px 0", lineHeight: "1.5" }}>{confirmModal.message}</p>
+                        <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+                            <button 
+                                onClick={() => setConfirmModal({ show: false, title: "", message: "", onConfirm: null })} 
+                                style={{ padding: "10px 20px", background: "#eee", color: "#333", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "0.9rem" }}
+                            >
+                                Hủy bỏ
+                            </button>
+                            <button 
+                                onClick={confirmModal.onConfirm} 
+                                style={{ padding: "10px 25px", background: "#fb4226", color: "white", border: "none", borderRadius: "8px", fontWeight: "bold", cursor: "pointer", fontSize: "0.9rem", boxShadow: "0 4px 12px rgba(251, 66, 38, 0.2)" }}
+                            >
+                                Đồng ý
+                            </button>
                         </div>
                     </div>
                 </div>
