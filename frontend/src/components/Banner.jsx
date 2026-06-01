@@ -100,8 +100,8 @@ export default function Banner({ movies = [] }) {
                     top: 0; left: 0; right: 0; bottom: 0;
                     background-size: cover;
                     background-position: center;
-                    filter: blur(55px) brightness(0.48) saturate(1.6);
-                    opacity: 0.75;
+                    filter: blur(45px) brightness(0.7) saturate(1.8);
+                    opacity: 0.9;
                     transform: scale(1.12);
                     transition: background-image 0.7s cubic-bezier(0.25, 0.8, 0.25, 1);
                     z-index: 1;
