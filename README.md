@@ -1,384 +1,485 @@
-# 🎬 Cinema Lux - Hệ thống Quản lý Rạp Chiếu Phim Tích Hợp AI & Real-time
+# Cinema Lux — Hệ thống Quản lý Rạp Chiếu Phim Tích hợp AI & Real-time
 
-**Cinema Lux** là một hệ thống quản lý rạp chiếu phim toàn diện (Full-stack MERN), được thiết kế để tối ưu hóa toàn bộ quy trình vận hành của một rạp chiếu phim hiện đại. Điểm đột phá lớn nhất của dự án là **Hệ thống Trí tuệ Nhân tạo (AI) tự động lập lịch chiếu** thông minh kết hợp thuật toán Phân cụm Máy học (K-Means), Thuật toán Di truyền (Genetic Algorithm), Thuật toán Tham lam (Greedy) và Hệ số Phao rã Thời gian (Time Decay Factor). Hệ thống cũng tích hợp công nghệ **Giao dịch thời gian thực (Real-time Transaction Lock)** thông qua WebSockets và **Cổng thanh toán tự động qua mã QR** (PayOS).
+**Cinema Lux** là hệ thống quản lý rạp chiếu phim toàn diện được xây dựng theo kiến trúc **Full-stack MERN** (MongoDB, Express, React, Node.js). Điểm nổi bật của dự án là **Lõi AI tự động xếp lịch chiếu** kết hợp ba thuật toán: Phân cụm K-Means, Thuật toán Di truyền (Genetic Algorithm) và Thuật toán Tham lam (Greedy), cùng với **Đồng bộ ghế ngồi thời gian thực** qua WebSockets và **Thanh toán QR tự động** qua cổng PayOS.
 
 ---
 
-## 📐 Kiến trúc dự án (Project Architecture)
+## Cấu trúc thư mục dự án
 
-Hệ thống tuân thủ kiến trúc phân tầng chuẩn công nghiệp, tách biệt rõ ràng giữa các lớp xử lý dữ liệu, logic nghiệp vụ và giao diện người dùng.
+```
+cinema/
+├── backend/                  # Node.js + Express Server
+│   ├── ai/
+│   │   └── scheduleAI.js     # Lõi AI: K-Means + Genetic Algorithm + Greedy
+│   ├── config/
+│   │   └── db.js             # Kết nối MongoDB
+│   ├── controllers/          # Xử lý logic nghiệp vụ
+│   │   ├── authController.js
+│   │   ├── bookingController.js
+│   │   ├── movieController.js
+│   │   ├── paymentController.js
+│   │   ├── reviewController.js
+│   │   ├── showtimeController.js
+│   │   ├── snackController.js
+│   │   ├── userController.js
+│   │   └── voucherController.js
+│   ├── middleware/            # JWT Auth, Role-based Authorization
+│   ├── models/               # Mongoose Schema
+│   │   ├── Booking.js
+│   │   ├── Movie.js
+│   │   ├── ProfileDetail.js
+│   │   ├── Review.js
+│   │   ├── Room.js
+│   │   ├── Showtime.js
+│   │   ├── Snack.js
+│   │   ├── User.js
+│   │   └── Voucher.js
+│   ├── routes/               # Express Router (10 nhóm API)
+│   ├── uploads/              # Lưu ảnh upload (poster phim, snack)
+│   ├── utils/                # Tiện ích dùng chung
+│   ├── seedData.js           # Sinh dữ liệu bán vé 7 ngày qua
+│   ├── seedTestAi.js         # Kiểm tra tính nhạy bén của AI
+│   ├── trainCurrentAI.js     # Đào tạo lại AI ngay lập tức
+│   ├── server.js             # Entry point: Express + Socket.io
+│   └── .env                  # Biến môi trường (KHÔNG commit lên Git)
+│
+├── frontend/                 # React 19 + Vite SPA
+│   └── src/
+│       ├── api/              # Axios instance & API calls
+│       ├── components/       # UI tái sử dụng (Navbar, Banner, SeatMap, Footer)
+│       └── pages/
+│           ├── Admin/        # Dashboard, MovieManager, ShowtimeManager, ...
+│           ├── Staff/        # StaffBooking, StaffCheckin, StaffDashboard, ...
+│           ├── Booking.jsx   # Luồng đặt vé + chọn ghế + thanh toán
+│           ├── MovieDetail.jsx
+│           ├── Profile.jsx
+│           └── ...
+│
+└── ngrok.exe                 # Tool tạo HTTPS tunnel (test PayOS webhook)
+```
+
+---
+
+## Kiến trúc hệ thống
 
 ```mermaid
 graph TD
-    %% Định nghĩa các lớp
-    subgraph ClientLayer ["Client Layer (Frontend)"]
-        CustomerUI["Giao diện Khách hàng (React 19 + Swiper)"]
-        StaffUI["Giao diện Quầy POS & Quét QR Vé (Staff POS)"]
-        AdminUI["Dashboard Quản trị & AI Showtime Manager (Recharts)"]
+    subgraph ClientLayer ["Client Layer (Frontend - React 19)"]
+        CustomerUI["Giao diện Khách hàng"]
+        StaffUI["Giao diện Quầy POS & Quét QR"]
+        AdminUI["Dashboard Quản trị & AI Manager"]
     end
 
-    subgraph NetworkLayer ["Real-time & Network Layer"]
+    subgraph NetworkLayer ["Network Layer"]
         HttpReq["Axios (RESTful APIs)"]
-        WSConn["Socket.io-client (Real-time Seat Lock)"]
+        WSConn["Socket.io-client (Real-time)"]
     end
 
-    subgraph ServerLayer ["Server Layer (Backend - Node & Express)"]
-        Routes["API Routers (Express Router)"]
-        Middlewares["Lớp Bảo mật & Xác thực (JWT Auth, OTP Validation)"]
-        Controllers["Controllers (Xử lý Nghiệp vụ & Giao dịch)"]
-        AIScheduler["AI Showtime Core (K-Means & Genetic Engine)"]
+    subgraph ServerLayer ["Server Layer (Node.js + Express)"]
+        Routes["API Routers"]
+        Middlewares["JWT Auth & Role Authorization"]
+        Controllers["Controllers (Business Logic)"]
+        AIScheduler["AI Core: scheduleAI.js"]
     end
 
     subgraph ThirdParty ["External Services"]
-        PayOS["Cổng thanh toán PayOS (QR Auto-webhook)"]
-        Nodemailer["SMTP Server (Gửi mã OTP qua Email)"]
+        PayOS["PayOS (QR Payment + Webhook)"]
+        SMTP["Nodemailer SMTP (OTP Email)"]
     end
 
-    subgraph DatabaseLayer ["Database Layer"]
-        MongoDB[("MongoDB Atlas Database")]
+    subgraph DatabaseLayer ["Database"]
+        MongoDB[("MongoDB")]
     end
 
-    %% Các luồng kết nối
     CustomerUI & StaffUI & AdminUI --> HttpReq & WSConn
-    HttpReq --> Routes
-    WSConn <-->|Socket Server v4.x| Controllers
-    Routes --> Middlewares --> Controllers
+    HttpReq --> Routes --> Middlewares --> Controllers
+    WSConn <-->|WebSocket v4| Controllers
     Controllers --> AIScheduler
     Controllers <--> MongoDB
     Controllers <--> PayOS
-    Controllers --> Nodemailer
+    Controllers --> SMTP
 ```
 
-### 1. Kiến trúc Backend (MVC Hybrid)
-*   **Lớp Models (Database):** Định nghĩa cấu trúc dữ liệu chặt chẽ qua Mongoose Schema (`User`, `Movie`, `Room`, `Showtime`, `Booking`, `Snack`, `Voucher`, `Review`).
-*   **Lớp Controllers (Business Logic):** Chứa toán bộ logic nghiệp vụ, quản lý trạng thái giữ ghế, xử lý giao dịch tài chính, kết hợp với Socket.io để cập nhật trạng thái ngay lập tức.
-*   **Lớp Routes:** Phân định rõ nhóm API công khai (Public API) và API cần bảo mật (Protected API).
-*   **Lớp Middleware:** Kiểm soát quyền hạn (Role-based Authorization), giải mã JSON Web Token (JWT) và bảo mật luồng API.
-*   **Lớp AI Engine (scheduleAI.js):** Lõi xử lý độc lập nhận đầu vào từ Database để thực hiện tính toán tiến hóa lịch chiếu.
+### Backend — MVC Hybrid
 
-### 2. Kiến trúc Frontend (React 19 & Component-Driven SPA)
-*   **Lớp Pages:** Chia cụm theo chức năng của từng Actor (`Admin`, `Staff`, `Customer`).
-*   **Lớp Components:** Các thành phần UI có thể tái sử dụng cao (SeatMapGrid, SnackSelector, QRCodeScanner, v.v.).
-*   **Lớp Router:** Quản lý điều hướng động và bảo vệ tuyến đường (Protected Routes) thông qua phân quyền người dùng.
+| Lớp | Mô tả |
+|---|---|
+| **Models** | 9 Mongoose Schema: `User`, `Movie`, `Room`, `Showtime`, `Booking`, `Snack`, `Voucher`, `Review`, `ProfileDetail` |
+| **Controllers** | Toàn bộ logic nghiệp vụ, quản lý trạng thái ghế, xử lý giao dịch tài chính |
+| **Routes** | 10 nhóm API: `/api/auth`, `/api/movies`, `/api/rooms`, `/api/showtimes`, `/api/bookings`, `/api/payment`, `/api/snacks`, `/api/reviews`, `/api/vouchers`, `/api/users` |
+| **Middleware** | Kiểm tra JWT, phân quyền Role (customer / staff / admin) |
+| **AI Engine** | `ai/scheduleAI.js` — xử lý độc lập, nhận dữ liệu từ DB, sinh lịch nháp |
 
----
+### Frontend — React 19 Component-Driven SPA
 
-## 🚀 Công nghệ sử dụng (Technology Stack)
-
-### 1. Backend & AI Core
-*   **Node.js & Express.js (v5.x):** Framework backend hiệu năng cao, xây dựng API RESTful tốc độ nhanh.
-*   **MongoDB & Mongoose (v9.x):** Cơ sở dữ liệu NoSQL hướng tài liệu linh hoạt, hỗ trợ truy vấn quan hệ phức tạp qua `.populate()`.
-*   **Socket.io (v4.x):** Kết nối WebSockets hai chiều thời gian thực (duy trì phiên giữ ghế, đồng bộ QR PayOS).
-*   **Nodemailer:** Tự động gửi Email chứa mã xác thực OTP dùng để khôi phục mật khẩu.
-*   **PayOS SDK Node:** Tích hợp sâu cổng thanh toán thế hệ mới, tự động tạo link thanh toán chứa QR code động.
-
-### 2. Frontend
-*   **React (v19):** Thư viện UI mới nhất, tối ưu hóa cơ chế render và quản lý State.
-*   **Vite (v8.x):** Công cụ build frontend siêu tốc thay thế cho CRA lỗi thời, rút ngắn thời gian hot-reload.
-*   **React Router Dom (v7):** Hệ thống định tuyến mạnh mẽ điều khiển phân quyền người dùng trực quan.
-*   **Recharts:** Thư viện vẽ biểu đồ tương tác cao để trực quan hóa doanh thu, top phim trong trang Admin.
-*   **Swiper.js:** Tạo các slide băng chuyền phim mượt mà trên cả máy tính lẫn thiết bị di động.
-*   **Html5-qrcode:** Cho phép camera thiết bị quét trực tiếp mã QR Code của vé tại quầy (dành cho Nhân viên).
+| Lớp | Mô tả |
+|---|---|
+| **Pages/Admin** | Dashboard, MovieManager, ShowtimeManager, RoomManager, SnackManager, VoucherManager, MemberManager, RevenueManager, ReviewManager |
+| **Pages/Staff** | StaffBooking (POS), StaffCheckin (QR Scan), StaffDashboard, StaffMovies, StaffShowtimes |
+| **Pages/Customer** | Booking (đặt vé), MovieDetail, Profile, TicketHistory, MembershipTab, VouchersTab, ForgotPassword |
+| **Components** | Navbar, Banner (Swiper), SeatMap, Footer |
 
 ---
 
-## 👥 Hệ thống Đối Tượng Sử Dụng (Actors & Permissions)
+## Công nghệ sử dụng
 
-Dự án phân cấp rõ ràng 3 phân hệ đối tượng chính, mỗi đối tượng có một luồng giao diện và quyền truy cập API hoàn toàn riêng biệt:
+### Backend
+| Package | Phiên bản | Vai trò |
+|---|---|---|
+| `express` | ^5.2.1 | Framework REST API |
+| `mongoose` | ^9.3.1 | ODM cho MongoDB |
+| `socket.io` | ^4.8.3 | WebSockets real-time |
+| `jsonwebtoken` | ^9.0.3 | Xác thực JWT |
+| `bcrypt` | ^6.0.0 | Mã hóa mật khẩu |
+| `@payos/node` | ^2.0.5 | Cổng thanh toán PayOS |
+| `nodemailer` | ^8.0.7 | Gửi email OTP |
+| `multer` | ^2.1.1 | Upload ảnh poster/snack |
+| `dotenv` | ^17.3.1 | Biến môi trường |
+| `moment` | ^2.30.1 | Xử lý ngày/giờ |
 
-| Actor | Quyền truy cập giao diện | Các tính năng cốt lõi được thực hiện |
-| :--- | :--- | :--- |
-| **Khách hàng** *(Customer)* | Giao diện Web đặt vé trực tuyến | - Xem danh sách phim đang chiếu, sắp chiếu, đánh giá và phản hồi phim.<br>- Xem chi tiết phim, đặt vé trực tuyến, chọn phòng chiếu/giờ chiếu.<br>- Giữ ghế thời gian thực (5 phút) và thanh toán tự động qua quét mã QR PayOS.<br>- Sử dụng mã giảm giá (Vouchers) và tích điểm thăng hạng thành viên (Thường / VIP).<br>- Tra cứu lịch sử đặt vé cá nhân và nhận vé điện tử kèm mã QR Code. |
-| **Nhân viên** *(Staff)* | Giao diện Quầy bán vé POS & Check-in | - **Staff POS booking:** Bán vé và combo bắp nước trực tiếp tại quầy cho khách vãng lai.<br>- **Đồng bộ hóa ghế ngồi:** Chọn ghế thời gian thực đồng bộ trực tiếp với khách đặt online.<br>- **Ticket Check-in:** Sử dụng Camera điện thoại/Laptop để quét QR Code trên vé khách hàng để thực hiện kiểm vé (Check-in) nhanh chóng.<br>- Xem Dashboard doanh số bán hàng trong ngày của cá nhân. |
-| **Quản trị viên** *(Admin)* | Dashboard Quản trị & Quản lý AI | - **AI Showtime Manager:** Trình quản lý lịch chiếu tối ưu bằng AI (Tạo lịch chiếu nháp tự động, duyệt xuất bản lịch chiếu, xóa lịch nháp).<br>- **Dashboard Analytics:** Xem thống kê doanh thu đa chiều qua biểu đồ trực quan.<br>- **Voucher & Campaign Engine:** Quản lý chiến dịch khuyến mại (phát hành voucher giảm giá).<br>- **CRUD System:** Quản lý toàn bộ thông tin Phim, Phòng chiếu (Seat Map), Combo đồ ăn, Thành viên rạp phim và phản hồi đánh giá. |
+### Frontend
+| Package | Phiên bản | Vai trò |
+|---|---|---|
+| `react` | ^19.2.4 | UI Library |
+| `vite` | ^8.0.1 | Build tool |
+| `react-router-dom` | ^7.13.1 | Routing & Protected Routes |
+| `axios` | ^1.13.6 | HTTP Client |
+| `socket.io-client` | ^4.8.3 | WebSocket Client |
+| `recharts` | ^3.8.1 | Biểu đồ doanh thu |
+| `swiper` | ^12.1.2 | Băng chuyền phim |
+| `html5-qrcode` | ^2.3.8 | Quét QR code bằng camera |
+| `react-icons` | ^5.6.0 | Bộ icon |
 
 ---
 
-## 🧠 Các chức năng cốt lõi nổi bật (Core Features)
+## Phân hệ người dùng (Actors)
 
-### 1. Hệ thống tự động xếp lịch chiếu AI (AI Smart Scheduling)
-Đây là tính năng độc quyền và phức tạp nhất của hệ thống, giải quyết bài toán tối ưu hóa phòng chiếu mà các rạp lớn đang đau đầu:
-*   **Time Decay Factor (Hệ số phân rã thời gian):** AI tự động đọc lịch sử giao dịch 30 ngày qua. Doanh thu của ngày hôm nay sẽ có trọng số cao nhất (x1.0), doanh thu càng cũ thì điểm số giảm dần (về x0.1). Điều này giúp AI nhạy bén nhận diện ra phim nào đang hạ nhiệt và phim nào đang đột phá phòng vé.
-*   **K-Means Clustering:** Phân cụm toàn bộ phim đang hoạt động thành 3 nhóm khoa học: **Phim Cực HOT** (nhóm 0), **Phim Bình thường** (nhóm 1) và **Phim Ít khách/Ế** (nhóm 2).
-*   **Genetic Algorithm (Thuật toán Di truyền):** 
-    *   Tạo ra một quần thể ban đầu gồm 20 bản nháp lịch chiếu ngẫu nhiên.
-    *   **Hàm Thích nghi (Fitness Function):** Đánh giá từng bản nháp dựa trên các tiêu chí thực tế: *Ưu tiên chiếu phim HOT vào giờ Vàng (17h-21h)*; *Trừ điểm nặng nếu xếp phim Ế chiếm giờ vàng hoặc phim trẻ em chiếu sau 10h đêm*; *Thưởng điểm nếu chiếu phim ma/kinh dị/18+ vào đêm muộn hoặc phim hoạt hình vào cuối tuần*.
-    *   **Tiến hóa (Evolution):** Chạy qua 50 thế hệ lai ghép chéo (Crossover) và đột biến tự nhiên (Mutation - xóa trắng lịch một ngày của một phòng rồi dùng thuật toán Tham lam/Greedy để lấp kín tối ưu) để tìm ra lịch chiếu đem lại doanh thu cao nhất.
-    *   Lịch chiếu AI sinh ra sẽ ở trạng thái **Nháp (Draft)** để Admin duyệt hoặc chỉnh sửa trước khi xuất bản lên trang chủ.
+| Actor | Giao diện | Tính năng chính |
+|---|---|---|
+| **Khách hàng** | Web đặt vé trực tuyến | Xem phim, đặt vé, chọn ghế real-time, thanh toán QR PayOS, dùng voucher, tích Lux Points, xem lịch sử vé, đánh giá phim |
+| **Nhân viên** | Quầy POS & Check-in | Bán vé + combo tại quầy, đồng bộ ghế real-time với khách online, quét QR vé để check-in |
+| **Quản trị viên** | Dashboard quản trị | Chạy AI xếp lịch, duyệt/xuất bản lịch nháp, CRUD phim/phòng/snack, quản lý voucher & khuyến mại, xem biểu đồ doanh thu, quản lý thành viên & đánh giá |
+
+---
+
+## Tính năng cốt lõi
+
+### 1. AI Smart Scheduling — Tự động xếp lịch chiếu
 
 ```mermaid
 graph TD
-    A["Bắt đầu: Lịch sử bán vé 30 ngày"] --> B["Áp dụng Hệ số phân rã (Time Decay Factor)"]
-    B --> C["Tính Điểm sức mạnh (Popularity Score)"]
-    C --> D["Thuật toán K-Means: Gom thành 3 nhóm (HOT, Thường, Ế)"]
-    D --> E["Thuật toán Di truyền (Genetic Algorithm)"]
-    E -->|Khởi tạo| F["Sinh 20 bản nháp lịch chiếu ngẫu nhiên"]
-    F --> G["Chấm điểm bằng Hàm thích nghi (Fitness Function)"]
-    G --> H["Chọn lọc 4 bản nháp thông minh nhất (Elitism)"]
-    H --> I["Lai ghép (Crossover) & Đột biến (Greedy Mutation)"]
+    A["Lịch sử bán vé 30 ngày"] --> B["Time Decay Factor\n(Ngày gần = trọng số cao)"]
+    B --> C["Tính Popularity Score"]
+    C --> D["K-Means Clustering\n→ 3 nhóm: HOT / Thường / Ế"]
+    D --> E["Genetic Algorithm"]
+    E --> F["Sinh 20 bản nháp ngẫu nhiên"]
+    F --> G["Fitness Function chấm điểm"]
+    G --> H["Elitism: giữ 4 bản tốt nhất"]
+    H --> I["Crossover + Greedy Mutation"]
     I --> J{Đủ 50 thế hệ?}
     J -- Không --> G
-    J -- Có --> K["Chọn bản nháp xuất sắc nhất"]
-    K --> L["Đăng ký lịch chiếu trạng thái NHÁP (Draft)"]
-    L --> M["Admin xem xét, tinh chỉnh và Xuất bản (Publish)"]
+    J -- Có --> K["Lịch tốt nhất → trạng thái NHÁP"]
+    K --> L["Admin xem xét và Xuất bản"]
 ```
 
-### 2. Giữ ghế thời gian thực (Real-time Seat Locking)
-*   Sử dụng WebSockets để giải quyết triệt để tình trạng **Tranh chấp ghế** (2 người cùng thanh toán 1 ghế cùng lúc).
-*   Khi người dùng hoặc nhân viên quầy click chọn ghế, hệ thống sẽ gửi tín hiệu khóa ghế lên server và broadcast lập tức đến tất cả người dùng khác đang xem cùng phòng chiếu đó. Ghế sẽ đổi sang màu vàng (đang được người khác chọn).
-*   **Cơ chế Hủy tự động (Hold Timer):** Server sẽ tự động đếm ngược 5 phút. Nếu sau 5 phút người dùng không tiến hành thanh toán, Socket Server sẽ tự giải phóng ghế, hủy đếm ngược và cập nhật lại trạng thái ghế trống cho toàn hệ thống để tránh tình trạng "giữ ghế ảo".
+- **Time Decay**: Doanh thu hôm nay = trọng số 1.0, càng cũ càng giảm về 0.1
+- **K-Means**: Tự động phân loại phim → HOT / Bình thường / Ế
+- **Genetic Algorithm**: 20 cá thể, 50 thế hệ tiến hóa, fitness function ưu tiên phim HOT vào giờ vàng (17h–21h)
+- **Greedy Mutation**: Đột biến bằng cách lấp kín lịch một phòng theo thuật toán tham lam
 
-### 3. Thanh toán QR Code tự động (PayOS Integration)
-*   Thay vì nhập tay số tiền hoặc chuyển khoản thủ công chụp hóa đơn, hệ thống tạo ra một cổng thanh toán tự động bằng mã QR động chuẩn VietQR.
-*   Khách hàng quét mã QR, số tiền và nội dung chuyển khoản được khóa cứng giúp giao dịch chính xác 100%.
-*   Ngay khi ngân hàng nhận tiền, cổng PayOS sẽ bắn tín hiệu Webhook về Backend, Socket.io sẽ lập tức xác nhận giao dịch thành công trên giao diện của khách hàng chỉ sau 1-2 giây mà không cần khách hàng F5 trình duyệt.
+### 2. Real-time Seat Locking — Giữ ghế thời gian thực
 
-### 4. Quét mã QR Check-in tại quầy
-*   Sau khi mua vé thành công trực tuyến, khách hàng nhận được vé điện tử có mã QR độc nhất chứa chữ ký bảo mật.
-*   Nhân viên soát vé chỉ cần bật camera trên giao diện Staff và quét mã QR của khách. Hệ thống tự động xác thực vé hợp lệ, cập nhật trạng thái "Đã sử dụng" trong cơ sở dữ liệu để ngăn ngừa gian lận hoặc tái sử dụng vé.
+- Khi khách click chọn ghế → Socket.io broadcast lập tức đến **tất cả** người đang xem cùng suất chiếu
+- Ghế màu vàng = đang được người khác giữ; ghế màu đỏ = đã bán
+- **Hold Timer 5 phút**: Nếu không thanh toán sau 5 phút → server tự giải phóng ghế
+- Nhân viên POS và khách online **nhìn thấy nhau** và đồng bộ ngay lập tức
 
----
+### 3. PayOS QR Payment — Thanh toán tự động
 
-## 💡 Giải thích các công nghệ mới nổi & Đột phá trong dự án
+- Tạo link + mã QR động chuẩn VietQR, khóa cứng số tiền & nội dung
+- Sau khi quét và chuyển tiền → PayOS gửi **Webhook** về `/api/payment/payos-webhook`
+- Socket.io xác nhận giao dịch thành công trên màn hình khách **trong 1–2 giây**
 
-Để bảo vệ đồ án xuất sắc và đạt điểm tuyệt đối trước Hội đồng chấm thi, dưới đây là định nghĩa và vai trò khoa học của các công nghệ được tích hợp trong dự án:
+### 4. QR Ticket Check-in — Kiểm vé tại quầy
 
-> [!NOTE]
-> ### 1. Cổng thanh toán PayOS là gì?
-> **PayOS** là cổng thanh toán mở thế hệ mới hỗ trợ tạo link thanh toán và quét mã QR tĩnh/động theo chuẩn VietQR của Napas. 
-> *   *Điểm vượt trội:* Không cần phải có các thiết bị POS đắt tiền hay thủ tục tích hợp phức tạp với ngân hàng truyền thống. Nhờ cơ chế Webhook (tự động đẩy dữ liệu giao dịch về server), hệ thống của chúng ta có thể nhận biết giao dịch thành công ngay tức khắc để kích hoạt in vé hoặc giữ chỗ.
-> *   *Lợi ích dự án:* Tự động hóa 100% quy trình đối soát giao dịch, loại bỏ rủi ro sai sót số tiền chuyển khoản của khách hàng.
+- Vé điện tử chứa mã QR ký số độc nhất
+- Nhân viên bật camera → quét QR → hệ thống xác thực & cập nhật trạng thái "Đã sử dụng" ngay lập tức
 
-> [!TIP]
-> ### 2. WebSockets & Socket.io là gì?
-> Giao thức HTTP truyền thống chỉ cho phép Client gửi yêu cầu và Server phản hồi (One-way). Đối với bài toán đặt ghế rạp phim, nếu 10 người cùng đặt vé mà dùng HTTP, họ phải liên tục F5 trang web để biết ghế nào đã bị mua.
-> *   **Socket.io** là thư viện xây dựng trên giao thức **WebSockets**, cho phép thiết lập kết nối song phương (Two-way) liên tục và thời gian thực giữa Client và Server với độ trễ cực thấp (< 50ms).
-> *   *Lợi ích dự án:* Giúp đồng bộ hóa ghế ngồi tức thời. Khách đặt online và nhân viên quầy POS nhìn thấy thay đổi của nhau ngay lập tức, ngăn chặn hoàn toàn hiện tượng trùng lặp đặt chỗ.
+### 5. Hệ thống thành viên & Lux Points
 
-> [!IMPORTANT]
-> ### 3. Thuật toán phân cụm K-Means (Machine Learning) là gì?
-> **K-Means Clustering** là thuật toán Học không giám sát (Unsupervised Learning) dùng để gom nhóm các đối tượng vào $K$ cụm khác nhau dựa trên các thuộc tính đặc trưng (trong dự án này là điểm số doanh thu có trọng số thời gian).
-> *   *Cơ chế hoạt động:* Thuật toán tự tìm ra các trọng tâm (centroids) của các cụm và phân bổ các bộ phim về cụm có khoảng cách khoảng chênh lệch điểm nhỏ nhất, sau đó cập nhật lại trọng tâm qua nhiều vòng lặp cho đến khi hội tụ.
-> *   *Ý nghĩa dự án:* Đóng vai trò làm "bộ não" phân loại phim tự động thay thế hoàn toàn cho trực giác thủ công của quản lý rạp. Giúp rạp thích ứng tức thì với các cơn sốt phòng vé đột xuất.
+- 3 hạng thành viên: **NORMAL / VIP / PLATINUM** tự động nâng hạng theo `yearlySpending`
+- Tích lũy **Lux Points** từ mỗi giao dịch, dùng để đổi voucher
 
-> [!IMPORTANT]
-> ### 4. Thuật toán Di truyền - Genetic Algorithm (GA) là gì?
-> **Genetic Algorithm** là thuật toán tìm kiếm tối ưu hóa mô phỏng theo thuyết tiến hóa của Charles Darwin: Chọn lọc tự nhiên, Lai ghép và Đột biến.
-> *   *Cơ chế hoạt động:* Biến các bản nháp lịch chiếu thành các "cá thể NST". Các cá thể tốt được giữ lại (Elitism), lai ghép với nhau (Crossover - trao đổi ca chiếu giữa các phòng) và thỉnh thoảng xảy ra đột biến (Mutation - thay đổi đột ngột toàn bộ lịch của 1 phòng) để thoát khỏi các tối ưu cục bộ. Qua nhiều thế hệ, chất lượng lịch chiếu sẽ tiến hóa vượt trội.
-> *   *Ý nghĩa dự án:* Giải quyết bài toán NP-hard về lập lịch. Đảm bảo lịch chiếu được lấp đầy kín rạp mà vẫn tuân thủ các quy tắc logic nghiệp vụ ngặt nghèo nhằm tối đa hóa doanh thu.
+### 6. Hệ thống Voucher đa dạng
+
+- 4 loại voucher: `Percentage` (%), `FixedAmount` (tiền mặt), `FreeTicket` (vé miễn phí), `FreeSnack` (đồ ăn miễn phí)
+- Admin phát hành voucher cho từng thành viên cụ thể, theo dõi trạng thái sử dụng
 
 ---
 
-## ⚙️ Hướng dẫn cài đặt và khởi chạy hệ thống
+## Hướng dẫn cài đặt & Khởi chạy
 
-### 1. Yêu cầu môi trường cài đặt
-*   **Node.js:** Phiên bản khuyến nghị v18.x hoặc cao hơn.
-*   **MongoDB:** MongoDB Community Server (chạy cục bộ tại cổng mặc định `27017`) hoặc một tài khoản MongoDB Atlas Cloud.
+### Yêu cầu môi trường
+
+- **Node.js** v18.x trở lên
+- **MongoDB** Community Server (cổng `27017`) hoặc MongoDB Atlas
+- **Git**
 
 ---
 
-### 2. Cài đặt và cấu hình Backend
+### Bước 1: Clone dự án
 
-1.  Mở terminal tại thư mục gốc dự án và di chuyển vào thư mục `backend`:
-    ```powershell
-    cd backend
-    npm install
-    ```
-2.  Tạo file cấu hình môi trường `.env` nằm trong thư mục `backend/` với nội dung mẫu gợi ý như sau:
-    ```env
-    PORT=5000
-    MONGO_URI=mongodb://127.0.0.1:27017/cinema_lux  # Hoặc đường dẫn MongoDB Atlas Cloud của bạn
-    
-    # Cấu hình bảo mật JWT (Chuỗi ký tự ngẫu nhiên bí mật để mã hóa token đăng nhập)
-    JWT_SECRET=[YOUR_SECURE_JWT_SECRET_KEY]
-    
-    # Cấu hình kết nối cổng thanh toán PayOS (Lấy từ tài khoản đối tác merchant của PayOS)
-    PAYOS_CLIENT_ID=[YOUR_PAYOS_CLIENT_ID]
-    PAYOS_API_KEY=[YOUR_PAYOS_API_KEY]
-    PAYOS_CHECKSUM_KEY=[YOUR_PAYOS_CHECKSUM_KEY]
-    
-    # Cấu hình gửi mail OTP bằng SMTP (Dùng tài khoản email và Mật khẩu ứng dụng)
-    EMAIL_USER=[YOUR_EMAIL_ADDRESS]
-    EMAIL_PASS=[YOUR_EMAIL_APP_PASSWORD]
-    ```
+```bash
+git clone <repository-url>
+cd cinema
+```
+
+---
+
+### Bước 2: Thiết lập file `.env` cho Backend
+
+Tạo file `backend/.env` với nội dung sau:
+
+```env
+# =============================================
+# SERVER CONFIGURATION
+# =============================================
+PORT=5000
+
+# =============================================
+# DATABASE — MongoDB
+# =============================================
+# Cục bộ (Local):
+MONGO_URI=mongodb://127.0.0.1:27017/cinema_lux
+
+# Hoặc dùng MongoDB Atlas Cloud:
+# MONGO_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/cinema_lux
+
+# =============================================
+# JWT — JSON Web Token
+# =============================================
+# Chuỗi bí mật ngẫu nhiên để ký token đăng nhập.
+# Có thể tạo bằng lệnh: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+JWT_SECRET=your_super_secret_jwt_key_here
+
+# =============================================
+# PAYOS — Cổng thanh toán QR
+# Đăng ký tại: https://payos.vn → Merchant Dashboard
+# =============================================
+PAYOS_CLIENT_ID=your_payos_client_id
+PAYOS_API_KEY=your_payos_api_key
+PAYOS_CHECKSUM_KEY=your_payos_checksum_key
+
+# =============================================
+# EMAIL — Nodemailer SMTP (Gửi OTP)
+# Dùng tài khoản Gmail + Mật khẩu ứng dụng (App Password)
+# Tạo App Password tại: https://myaccount.google.com/apppasswords
+# =============================================
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_gmail_app_password
+```
 
 > [!WARNING]
-> *Lưu ý về bảo mật:* Tuyệt đối không để lộ các khóa bí mật của `PayOS` hay mật khẩu ứng dụng Gmail lên GitHub hoặc môi trường công khai. Bạn có thể đăng ký tài khoản PayOS Merchant miễn phí để lấy các khóa API ở chế độ Sandbox (Thử nghiệm) và điền vào file `.env`.
+> **Bảo mật:** Không bao giờ commit file `.env` lên GitHub. File `.gitignore` đã loại trừ `.env` rồi. Đăng ký PayOS Sandbox miễn phí để lấy key thử nghiệm.
 
-3.  Khởi động Server Backend:
-    ```powershell
-    npm start
-    # Hoặc chạy ở chế độ phát triển (dev): npm run dev
-    ```
-    *Server Backend sẽ khởi chạy tại: `http://localhost:5000`*
+> [!TIP]
+> **Lấy Gmail App Password:** Vào Google Account → Security → 2-Step Verification → App passwords → Tạo mật khẩu cho "Mail". Dán chuỗi 16 ký tự đó vào `EMAIL_PASS`.
 
 ---
 
-### 3. 🛠 Công cụ khởi tạo dữ liệu mẫu cực kỳ mạnh mẽ (Seed Data)
+### Bước 3: Cài đặt & Khởi chạy Backend
 
-Hệ thống tích hợp sẵn các công cụ giả lập dữ liệu cực kỳ mạnh mẽ để bạn chạy thử nghiệm toàn bộ hệ thống ngay lập tức mà không mất thời gian nhập tay hàng ngàn dòng dữ liệu:
+```powershell
+cd backend
+npm install
+npm start
+# Hoặc chế độ phát triển (tự reload):
+# npm run dev
+```
 
-*   **Tạo dữ liệu bán vé 7 ngày qua (Để test Doanh thu & Khởi động AI):**
-    ```powershell
-    node seedData.js
-    ```
-    *Script này sẽ tự động sinh hàng chục ngàn vé ngẫu nhiên trong vòng 7 ngày gần nhất, chấm điểm sức mạnh và in ra Top 3 bộ phim bán chạy nhất làm tư liệu ban đầu cho AI.*
-
-*   **Kiểm tra tính thích ứng nhạy bén của AI K-Means:**
-    ```powershell
-    node seedTestAi.js
-    ```
-    *Script này sẽ bốc ngẫu nhiên 3 phim bất kỳ và "bơm" lượng lớn vé giả vào 2 ngày gần nhất để biến chúng thành siêu phẩm phòng vé ảo. Dùng để xem AI có nhạy bén nhận diện ra sự thay đổi và lập tức đẩy các phim này lên làm phim Cực HOT hay không.*
-
-*   **Kiểm toán chấm điểm AI tự động (AI Auditor Evaluation):**
-    ```powershell
-    node evaluateAI.js
-    ```
-    *Chạy thử nghiệm lõi AI xếp lịch độc lập cho ngày mai và tiến hành đánh giá chi tiết xem lịch chiếu do AI sinh ra đạt được bao nhiêu điểm thích nghi, có vi phạm luật tuổi tác hay thời gian hay không.*
-
-*   **Đào tạo trực tiếp mô hình AI hiện tại:**
-    ```powershell
-    node trainCurrentAI.js
-    ```
-    *Chạy tiến hóa mô hình ngay lập tức trên tập dữ liệu hiện thời để cập nhật phân cụm phim.*
+✅ Backend chạy tại: `http://localhost:5000`
 
 ---
 
-### 4. Cài đặt và cấu hình Frontend
+### Bước 4: Cài đặt & Khởi chạy Frontend
 
-1.  Mở một terminal mới (song song với terminal chạy backend) và trỏ vào thư mục `frontend`:
-    ```powershell
-    cd frontend
-    npm install
-    ```
-2.  Khởi động ứng dụng React trên máy chủ ảo Vite ở chế độ phát triển:
-    ```powershell
-    npm run dev
-    ```
-    *Giao diện Web Client sẽ chạy tại: `http://localhost:5173`*
+Mở terminal **mới** (song song với terminal Backend):
 
-3.  Đóng gói tối ưu hóa ứng dụng Frontend (Build Production):
-    ```powershell
-    npm run build
-    ```
-    *Thư mục `frontend/dist` chứa giao diện hoàn thiện đã được nén tối ưu sẽ được tự động tạo ra.*
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+✅ Frontend chạy tại: `http://localhost:5173`
 
 ---
 
-### 4.5. 🌐 Cấu hình Ngrok để thử nghiệm Thanh toán PayOS (Local Testing Webhook)
+### Bước 5: Khởi tạo dữ liệu mẫu (Seed Data)
 
-Vì cổng thanh toán PayOS yêu cầu một đường dẫn công khai hỗ trợ **HTTPS (Webhook URL)** để gửi tín hiệu tự động xác nhận khi khách quét mã chuyển tiền thành công, khi chạy thử nghiệm trên máy cục bộ (localhost), bạn cần sử dụng **Ngrok** (Dự án đã tích hợp sẵn tệp `ngrok.exe` tại thư mục gốc `cinema/`):
+Mở terminal trong thư mục `backend/` và chạy các lệnh sau theo thứ tự:
 
-1. Mở một terminal mới và trỏ thẳng vào thư mục gốc `cinema/` (nơi chứa file `ngrok.exe`):
-   ```powershell
-   # Chạy ngrok để mở cổng 5000 ra môi trường Internet
-   ./ngrok http 5000
-   ```
-2. Ngrok sẽ tạo ra một đường dẫn HTTPS công khai tạm thời, ví dụ: `https://xxxx-xxx-xxx.ngrok-free.app`
-3. Truy cập vào dashboard quản trị Merchant của PayOS và cấu hình đường dẫn **Webhook URL** của bạn bằng cách nối thêm API endpoint của server:
-   ```text
-   https://xxxx-xxx-xxx.ngrok-free.app/api/payment/payos-webhook
-   ```
-4. Khi khách quét mã QR thanh toán ảo thành công, PayOS sẽ gửi tín hiệu trực tuyến đi qua đường dẫn Ngrok này để tự động cập nhật trạng thái đặt vé của hệ thống ngay lập tức!
+```powershell
+# 1. Sinh dữ liệu bán vé 7 ngày qua (bắt buộc để test AI & doanh thu)
+node seedData.js
+
+# 2. (Tuỳ chọn) Bơm vé ảo để test tính nhạy bén của AI
+node seedTestAi.js
+
+# 3. (Tuỳ chọn) Đào tạo lại AI ngay lập tức trên dữ liệu hiện có
+node trainCurrentAI.js
+```
 
 ---
 
-## 🌐 5. Hướng dẫn Triển khai & Chạy dự án trên Host/Server (Production Deployment)
+## Cấu hình Ngrok — Test PayOS Webhook cục bộ
 
-Khi mang dự án lên máy chủ thật (VPS Linux như Ubuntu/CentOS, Heroku, Render...) để vận hành thực tế 24/7, hãy làm theo quy trình chuẩn sau:
+PayOS yêu cầu **HTTPS public URL** để gửi webhook xác nhận thanh toán. Khi chạy trên localhost, dùng **Ngrok** (đã tích hợp sẵn `ngrok.exe` tại thư mục gốc):
 
-### Bước 1: Build tối ưu hóa Frontend
-Thay vì chạy server ảo hot-reload của Vite (chỉ dùng khi phát triển), bạn cần biên dịch mã nguồn React thành tệp tin tĩnh tối ưu hóa cao:
+```powershell
+# Mở terminal tại thư mục gốc cinema/
+./ngrok http 5000
+```
+
+Ngrok sẽ tạo URL dạng: `https://xxxx-xxx-xxx.ngrok-free.app`
+
+Vào **PayOS Merchant Dashboard** → cài đặt Webhook URL:
+```
+https://xxxx-xxx-xxx.ngrok-free.app/api/payment/payos-webhook
+```
+
+---
+
+## Tài khoản thử nghiệm mặc định
+
+Sau khi chạy `node seedData.js`, đăng nhập bằng:
+
+| Vai trò | Email | Mật khẩu | Hướng dẫn |
+|---|---|---|---|
+| **Admin** | `admin@gmail.com` | `123456` | Truy cập `/admin` để quản lý toàn hệ thống, chạy AI |
+| **Staff** | `staff@gmail.com` | `123456` | Tự động chuyển đến màn hình POS sau khi đăng nhập |
+| **Khách hàng** | Tự đăng ký | — | Đăng ký tài khoản mới trên trang Register |
+
+---
+
+## Triển khai Production (VPS/Server)
+
+### Bước 1: Build Frontend
+
 ```bash
 cd frontend
 npm run build
+# Tạo ra thư mục frontend/dist (tĩnh, tối ưu hóa)
 ```
-Lệnh này sẽ tạo ra một thư mục `frontend/dist` chứa toàn bộ HTML, JS, CSS đã được nén và tối ưu hóa cực kỳ gọn nhẹ.
 
-### Bước 2: Cơ chế phục vụ Static Files từ Backend
-Backend trong file `server.js` của chúng ta đã được cấu hình sẵn để tự động phát hiện và phục vụ thư mục tĩnh `frontend/dist` này:
+### Bước 2: Backend tự serve Frontend
+
+`server.js` đã cấu hình sẵn phục vụ thư mục tĩnh:
+
 ```javascript
 app.use(express.static(path.join(__dirname, "../frontend/dist")));
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/dist/index.html"));
 });
 ```
+
+Chỉ cần chạy 1 port duy nhất (`5000`), không cần chạy Vite dev server.
+
+### Bước 3: Quản lý tiến trình với PM2
+
+```bash
+npm install -g pm2
+cd backend
+pm2 start server.js --name "cinema-lux"
+pm2 save
+pm2 startup   # Tự khởi động khi reboot server
+```
+
+Các lệnh hữu ích:
+```bash
+pm2 list              # Xem danh sách tiến trình
+pm2 logs cinema-lux   # Xem log real-time
+pm2 restart cinema-lux
+pm2 stop cinema-lux
+```
+
+### Bước 4: Nginx Reverse Proxy (Khuyến nghị)
+
+```nginx
+server {
+    listen 80;
+    server_name yourdomain.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Cài SSL miễn phí:
+```bash
+sudo apt install certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com
+```
+
+### Bước 5: Cập nhật PayOS Webhook URL Production
+
+Vào PayOS Merchant Dashboard → cập nhật:
+```
+https://yourdomain.com/api/payment/payos-webhook
+```
+
+---
+
+## Mô hình dữ liệu (Data Models)
+
+| Model | Các trường chính |
+|---|---|
+| `User` | name, email, password, role (`customer/staff/admin`), membershipTier (`NORMAL/VIP/PLATINUM`), yearlySpending, luxPoints |
+| `Movie` | title, description, director, cast, genre, releaseDate, duration, language, rated (`P/K/T13/T16/T18`), image, trailer, status (`now_showing/coming_soon/ended`) |
+| `Room` | name, rows, seatsPerRow, layout |
+| `Showtime` | movieId, roomId, time, isDraft, isAiSuggested, virtual: status (`upcoming/running/finished`) |
+| `Booking` | showtimeId, userId, seats, snacks, totalAmount, appliedVoucher, discountAmount, orderCode (PayOS), status (`Pending/Paid/Used`) |
+| `Snack` | name, price, image, category |
+| `Voucher` | code, discountType (`Percentage/FixedAmount/FreeTicket/FreeSnack`), discountValue, minSpend, expiryDate, assignedUsers |
+| `Review` | movieId, userId, rating, comment, createdAt |
+| `ProfileDetail` | userId, phone, birthDate, avatar |
+
+---
+
+## Giải thích công nghệ nổi bật
+
+> [!NOTE]
+> **PayOS** là cổng thanh toán mở thế hệ mới hỗ trợ tạo mã QR động chuẩn VietQR/Napas. Webhook tự động đẩy dữ liệu giao dịch về server trong vòng 1–2 giây sau khi chuyển tiền thành công, loại bỏ hoàn toàn rủi ro nhập sai số tiền.
+
 > [!TIP]
-> Nhờ cơ chế này, khi triển khai thực tế trên Host, bạn **không cần phải chạy song song 2 port khác nhau**. Bạn chỉ cần chạy duy nhất Server Backend ở port `5000`, toàn bộ giao diện Frontend sẽ tự động được tải khi truy cập trực tiếp vào IP/Domain của Host.
+> **Socket.io (WebSockets)** cho phép kết nối hai chiều liên tục giữa Client và Server với độ trễ < 50ms. Khác với HTTP truyền thống (client hỏi → server trả lời), WebSocket cho phép **server chủ động đẩy dữ liệu** xuống client bất kỳ lúc nào — cốt lõi cho tính năng đồng bộ ghế ngồi tức thời.
 
-### Bước 3: Cài đặt và Quản lý Tiến trình chạy ngầm bằng PM2
-Để server NodeJS không bị tắt khi bạn tắt terminal, và tự động khởi động lại nếu bị lỗi hệ thống, hãy sử dụng **PM2 (Process Manager 2)**:
-1. Cài đặt PM2 toàn cục trên Host:
-   ```bash
-   npm install -g pm2
-   ```
-2. Di chuyển vào thư mục `backend` và khởi chạy máy chủ:
-   ```bash
-   cd backend
-   pm2 start server.js --name "cinema-lux-backend"
-   ```
-3. Các câu lệnh quản lý tiến trình hữu ích:
-   * **Xem danh sách tiến trình:** `pm2 list` hoặc `pm2 status`
-   * **Xem log hệ thống thời gian thực:** `pm2 logs`
-   * **Dừng server:** `pm2 stop cinema-lux-backend`
-   * **Khởi động lại server:** `pm2 restart cinema-lux-backend`
-   * **Cài đặt tự khởi chạy khi reboot server:** `pm2 startup` rồi chạy `pm2 save`
+> [!IMPORTANT]
+> **K-Means Clustering** là thuật toán Học không giám sát tự động gom phim thành 3 cụm dựa trên điểm doanh thu có trọng số thời gian (Time Decay). Thay thế hoàn toàn phán đoán thủ công của quản lý.
 
-### Bước 4: Cấu hình Nginx Reverse Proxy (Khuyên dùng)
-Để bảo mật server, hỗ trợ chứng chỉ SSL (HTTPS) và trỏ tên miền (domain) về cổng `5000` của dự án, hãy sử dụng **Nginx**:
-1. Cài đặt Nginx trên server Linux: `sudo apt update && sudo apt install nginx`
-2. Tạo file cấu hình site mới: `sudo nano /etc/nginx/sites-available/cinema_lux`
-3. Điền cấu hình Proxy mẫu như sau:
-   ```nginx
-   server {
-       listen 80;
-       server_name ten_mien_cua_ban.com; # Thay bằng tên miền thực tế của bạn
-
-       # Cấu hình chuyển tiếp tất cả request về cổng 5000 của NodeJS
-       location / {
-           proxy_pass http://127.0.0.1:5000;
-           proxy_http_version 1.1;
-           proxy_set_header Upgrade $http_upgrade;
-           proxy_set_header Connection 'upgrade';
-           proxy_set_header Host $host;
-           proxy_cache_bypass $http_upgrade;
-           proxy_set_header X-Real-IP $remote_addr;
-           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-       }
-   }
-   ```
-4. Kích hoạt cấu hình và restart Nginx:
-   ```bash
-   sudo ln -s /etc/nginx/sites-available/cinema_lux /etc/nginx/sites-enabled/
-   sudo nginx -t
-   sudo systemctl restart nginx
-   ```
-
-### Bước 5: Cấu hình Webhook PayOS trên Production
-Khi chạy trên VPS với tên miền thực tế của bạn:
-1. Đăng nhập vào trang quản trị Merchant của PayOS.
-2. Cập nhật **Webhook URL** của bạn thành: `https://ten_mien_cua_ban.com/api/payment/payos-webhook`.
-   *(Lưu ý: PayOS yêu cầu link Webhook bắt buộc phải sử dụng giao thức bảo mật HTTPS. Bạn có thể sử dụng Certbot Let's Encrypt miễn phí để cấp phát SSL nhanh chóng: `sudo apt install certbot python3-certbot-nginx && sudo certbot --nginx`).*
+> [!IMPORTANT]
+> **Genetic Algorithm** mô phỏng tiến hóa Darwin: 20 bản nháp lịch → đánh giá fitness → giữ lại 4 tốt nhất → lai ghép + đột biến → lặp lại 50 thế hệ. Giải bài toán lập lịch NP-hard để tối đa hóa doanh thu.
 
 ---
 
-## 🔑 Danh sách tài khoản thử nghiệm hệ thống (Default Credentials)
+## Các script tiện ích
 
-Sau khi chạy thành công các tập lệnh khởi tạo dữ liệu (Seed Data), bạn có thể đăng nhập bằng các tài khoản kiểm thử mặc định sau:
-
-1.  **Tài khoản Quản trị viên (Administrator):**
-    *   **Email:** `admin@gmail.com`
-    *   **Mật khẩu:** `123456`
-    *   *Tính năng trải nghiệm:* Vào trang `/admin` hoặc click vào nút quản trị trên thanh Menu để duyệt lịch AI, quản lý phim, phòng chiếu, bắp nước, xem biểu đồ doanh thu.
-
-2.  **Tài khoản Nhân viên (Staff / Cashier):**
-    *   **Email:** `staff@gmail.com`
-    *   **Mật khẩu:** `123456`
-    *   *Tính năng trải nghiệm:* Đăng nhập xong sẽ tự động chuyển đến màn hình Quầy POS. Thực hiện bán vé trực tiếp cho khách, quét camera mã QR vé để check-in.
-
-3.  **Tài khoản Khách hàng (Customer):**
-    *   Bạn có thể đăng ký trực tiếp một tài khoản mới tinh ngay trên giao diện Web thông qua trang Đăng ký (Register) để trải nghiệm toàn bộ luồng mua vé, tích điểm thành viên, khôi phục mật khẩu qua email OTP vô cùng mượt mà.
+| Script | Lệnh | Mô tả |
+|---|---|---|
+| Seed dữ liệu bán vé | `node seedData.js` | Sinh hàng nghìn vé ảo 7 ngày qua để test AI & doanh thu |
+| Test AI nhạy bén | `node seedTestAi.js` | Bơm vé ảo cho 3 phim ngẫu nhiên để kiểm tra phân cụm K-Means |
+| Đào tạo AI | `node trainCurrentAI.js` | Chạy tiến hóa GA ngay lập tức trên dữ liệu hiện có |
+| Nâng VIP | `node makeUserVIP.js` | Nâng hạng thành viên cho tài khoản chỉ định |
+| Reset mật khẩu | `node resetPasswords.js` | Đặt lại mật khẩu về mặc định `123456` |
+| Dọn lịch cũ | `node cleanEndedMoviesShowtimes.js` | Xóa lịch chiếu của phim đã kết thúc |
 
 ---
-Chúc bạn bảo vệ đồ án xuất sắc và đạt điểm tuyệt đối với dự án **Cinema Lux**! 🎉
 
+*Chúc bạn bảo vệ đồ án thành công và đạt điểm xuất sắc!*
