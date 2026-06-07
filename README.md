@@ -60,46 +60,6 @@ cinema/
 
 ---
 
-## Kiến trúc hệ thống
-
-```mermaid
-graph TD
-    subgraph ClientLayer ["Client Layer (Frontend - React 19)"]
-        CustomerUI["Giao diện Khách hàng"]
-        StaffUI["Giao diện Quầy POS & Quét QR"]
-        AdminUI["Dashboard Quản trị & AI Manager"]
-    end
-
-    subgraph NetworkLayer ["Network Layer"]
-        HttpReq["Axios (RESTful APIs)"]
-        WSConn["Socket.io-client (Real-time)"]
-    end
-
-    subgraph ServerLayer ["Server Layer (Node.js + Express)"]
-        Routes["API Routers"]
-        Middlewares["JWT Auth & Role Authorization"]
-        Controllers["Controllers (Business Logic)"]
-        AIScheduler["AI Core: scheduleAI.js"]
-    end
-
-    subgraph ThirdParty ["External Services"]
-        PayOS["PayOS (QR Payment + Webhook)"]
-        SMTP["Nodemailer SMTP (OTP Email)"]
-    end
-
-    subgraph DatabaseLayer ["Database"]
-        MongoDB[("MongoDB")]
-    end
-
-    CustomerUI & StaffUI & AdminUI --> HttpReq & WSConn
-    HttpReq --> Routes --> Middlewares --> Controllers
-    WSConn <-->|WebSocket v4| Controllers
-    Controllers --> AIScheduler
-    Controllers <--> MongoDB
-    Controllers <--> PayOS
-    Controllers --> SMTP
-```
-
 ### Backend — MVC Hybrid
 
 | Lớp | Mô tả |
