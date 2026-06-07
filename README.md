@@ -1,4 +1,4 @@
-# Cinema Lux — Hệ thống Quản lý Rạp Chiếu Phim Tích hợp AI & Real-time
+# Cinema Lux — Hệ thống Quản lý Rạp Chiếu Phim
 
 **Cinema Lux** là hệ thống quản lý rạp chiếu phim toàn diện được xây dựng theo kiến trúc **Full-stack MERN** (MongoDB, Express, React, Node.js). Điểm nổi bật của dự án là **Lõi AI tự động xếp lịch chiếu** kết hợp ba thuật toán: Phân cụm K-Means, Thuật toán Di truyền (Genetic Algorithm) và Thuật toán Tham lam (Greedy), cùng với **Đồng bộ ghế ngồi thời gian thực** qua WebSockets và **Thanh toán QR tự động** qua cổng PayOS.
 
