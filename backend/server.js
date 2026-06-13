@@ -26,7 +26,7 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "http://localhost:5173",
+    origin: process.env.CLIENT_URL || "http://localhost:5173",
     methods: ["GET", "POST"]
   }
 });
@@ -35,6 +35,9 @@ app.set("socketio", io);
 app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Health check cho Render
+app.get("/health", (req, res) => res.status(200).json({ status: "ok" }));
 
 // 4. SỬ DỤNG CÁC ROUTES (Sếp nhớ thêm /api vào link gọi Axios ở Frontend nhé)
 app.use("/api/auth", require("./routes/authRoutes"));
