@@ -41,7 +41,7 @@ exports.sendBookingConfirmation = async (userEmail, bookingData) => {
         }
 
         const mailOptions = {
-            from: `"Cinema Lux" <${process.env.EMAIL_USER}>`,
+            from: `"Cinema Lux" <${process.env.SENDER_EMAIL || process.env.EMAIL_USER}>`,
             to: userEmail,
             subject: "Xác nhận đặt vé thành công - Cinema Lux",
             html: `
@@ -119,7 +119,7 @@ exports.sendBookingConfirmation = async (userEmail, bookingData) => {
 // 📧 GỬI MÃ XÁC THỰC OTP QUA EMAIL
 exports.sendOTP = async (email, otp) => {
     const mailOptions = {
-        from: `"Cinema Lux" <${process.env.EMAIL_USER}>`,
+        from: `"Cinema Lux" <${process.env.SENDER_EMAIL || process.env.EMAIL_USER}>`,
         to: email,
         subject: "Mã xác thực đăng ký - Cinema Lux",
         html: `
