@@ -133,10 +133,10 @@ const seedData = async () => {
                 status: "Paid",
                 createdAt: bookingTime
               });
-              
+
               // CỘNG DỒN SỐ VÉ BÁN ĐƯỢC CHO PHIM NÀY
               ticketCounter[randomMovie.title] = (ticketCounter[randomMovie.title] || 0) + bookedSeats.length;
-              
+
               totalBookingsCreated++;
             }
           }
